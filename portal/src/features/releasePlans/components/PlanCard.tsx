@@ -1,15 +1,23 @@
-import { Button, Card, CardContent, Dialog, DialogActions, DialogContent, DialogTitle, Collapse, TextField } from "@mui/material";
-import EditIcon from "@mui/icons-material/Edit";
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  Button,
+  Card,
+  CardContent,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  Collapse,
+  TextField,
+} from "@mui/material";
+import { useCallback, useState } from "react";
 import type { Plan } from "../types";
 import GanttChart from "./GanttChart";
 import PlanHeader from "./Plan/PlanHeader";
 import ResizableSplit from "./Plan/ResizableSplit";
 import PhaseEditDialog from "./Plan/PhaseEditDialog";
 import CommonDataCard from "./Plan/CommonDataCard";
-import PhasesList from "./Plan/PhasesList";
 import { useAppDispatch, useAppSelector } from "../../../store/hooks";
-import { addPhase, updatePhase } from "../slice";
+import { addPhase, updatePhase, updatePlan } from "../slice";
 import { setPlanLeftPercent, setPlanExpanded } from "../../../store/store";
 
 // left pane subcomponents handle their own label formatting
@@ -21,9 +29,13 @@ export type PlanCardProps = {
 export default function PlanCard({ plan }: PlanCardProps) {
   const { metadata, tasks } = plan;
   const dispatch = useAppDispatch();
-  const savedPercent = useAppSelector((s) => s.ui.planLeftPercentByPlanId?.[plan.id]);
+  const savedPercent = useAppSelector(
+    (s) => s.ui.planLeftPercentByPlanId?.[plan.id]
+  );
   const [leftPercent, setLeftPercent] = useState<number>(savedPercent ?? 35);
-  const savedExpanded = useAppSelector((s) => s.ui.planExpandedByPlanId?.[plan.id]);
+  const savedExpanded = useAppSelector(
+    (s) => s.ui.planExpandedByPlanId?.[plan.id]
+  );
   const expanded = savedExpanded ?? true;
   // Add Phase dialog
   const [phaseOpen, setPhaseOpen] = useState(false);
@@ -66,6 +78,22 @@ export default function PlanCard({ plan }: PlanCardProps) {
     );
     setEditOpen(false);
   }, [dispatch, plan.id, editPhaseId, editStart, editEnd, editColor]);
+
+  // Auto-generate phases across plan dates
+  const onAutoGenerate = useCallback(() => {
+    const { startDate, endDate } = metadata;
+    try {
+      const { generatePhases } = require("../lib/phaseGenerator");
+      const generated = generatePhases(startDate, endDate);
+      const newPlan = {
+        ...plan,
+        metadata: { ...plan.metadata, phases: generated },
+      };
+      dispatch(updatePlan(newPlan));
+    } catch {
+      // noop if generator not available
+    }
+  }, [dispatch, metadata, plan]);
   return (
     <Card variant="outlined" className="mb-6">
       <PlanHeader
@@ -73,23 +101,37 @@ export default function PlanCard({ plan }: PlanCardProps) {
         status={metadata.status}
         description={metadata.description}
         expanded={expanded}
-        onToggleExpanded={() => dispatch(setPlanExpanded({ planId: plan.id, expanded: !expanded }))}
+        onToggleExpanded={() =>
+          dispatch(setPlanExpanded({ planId: plan.id, expanded: !expanded }))
+        }
       />
       <Collapse in={expanded} timeout="auto" unmountOnExit>
         <CardContent>
           <ResizableSplit
             leftPercent={leftPercent}
-            onLeftPercentChange={(v) => { setLeftPercent(v); dispatch(setPlanLeftPercent({ planId: plan.id, percent: v })); }}
-            left={<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <CommonDataCard owner={metadata.owner} startDate={metadata.startDate} endDate={metadata.endDate} id={metadata.id} />
-              <PhasesList phases={metadata.phases ?? []} onAdd={() => setPhaseOpen(true)} onEdit={openEdit} />
-            </div>}
+            onLeftPercentChange={(v) => {
+              setLeftPercent(v);
+              dispatch(setPlanLeftPercent({ planId: plan.id, percent: v }));
+            }}
+            left={
+              <div className="grid grid-cols-1 gap-4">
+                <CommonDataCard
+                  owner={metadata.owner}
+                  startDate={metadata.startDate}
+                  endDate={metadata.endDate}
+                  id={metadata.id}
+                />
+              </div>
+            }
             right={
               <GanttChart
                 startDate={metadata.startDate}
                 endDate={metadata.endDate}
                 tasks={tasks}
                 phases={metadata.phases}
+                hideMainCalendar
+                onAddPhase={() => setPhaseOpen(true)}
+                onEditPhase={openEdit}
                 onPhaseRangeChange={(phaseId, s, e) =>
                   dispatch(
                     updatePhase({

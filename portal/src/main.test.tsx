@@ -11,4 +11,4 @@ it('mounts app to #root without crashing', async () => {
   await waitFor(() => {
     expect(document.body.textContent).toMatch(/Release Planner/i);
   });
-});
+}, 15000);

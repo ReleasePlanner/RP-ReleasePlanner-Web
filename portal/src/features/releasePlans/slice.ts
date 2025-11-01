@@ -1,6 +1,7 @@
 import { createSlice } from "@reduxjs/toolkit";
 import type { PayloadAction } from "@reduxjs/toolkit";
 import type { ReleasePlansState, Plan, PlanPhase } from "./types";
+import { getNextDistinctColor } from "./lib/colors";
 
 const initialState: ReleasePlansState = {
   plans: [
@@ -28,9 +29,24 @@ const initialState: ReleasePlansState = {
         ],
       },
       tasks: [
-        { id: "t1", title: "Discovery", startDate: "2025-01-06", endDate: "2025-01-17" },
-        { id: "t2", title: "Development", startDate: "2025-01-20", endDate: "2025-03-07" },
-        { id: "t3", title: "Stabilization", startDate: "2025-03-10", endDate: "2025-03-21" },
+        {
+          id: "t1",
+          title: "Discovery",
+          startDate: "2025-01-06",
+          endDate: "2025-01-17",
+        },
+        {
+          id: "t2",
+          title: "Development",
+          startDate: "2025-01-20",
+          endDate: "2025-03-07",
+        },
+        {
+          id: "t3",
+          title: "Stabilization",
+          startDate: "2025-03-10",
+          endDate: "2025-03-21",
+        },
       ],
     },
     {
@@ -49,9 +65,24 @@ const initialState: ReleasePlansState = {
         ],
       },
       tasks: [
-        { id: "t4", title: "Planning", startDate: "2025-04-07", endDate: "2025-04-18" },
-        { id: "t5", title: "Execution", startDate: "2025-04-21", endDate: "2025-06-13" },
-        { id: "t6", title: "Hardening", startDate: "2025-06-16", endDate: "2025-06-27" },
+        {
+          id: "t4",
+          title: "Planning",
+          startDate: "2025-04-07",
+          endDate: "2025-04-18",
+        },
+        {
+          id: "t5",
+          title: "Execution",
+          startDate: "2025-04-21",
+          endDate: "2025-06-13",
+        },
+        {
+          id: "t6",
+          title: "Hardening",
+          startDate: "2025-06-16",
+          endDate: "2025-06-27",
+        },
       ],
     },
   ],
@@ -77,12 +108,13 @@ const releasePlansSlice = createSlice({
       if (!plan.metadata.phases) plan.metadata.phases = [];
       const name = action.payload.name.trim();
       if (!name) return;
+      const usedColors = (plan.metadata.phases ?? []).map((ph) => ph.color);
       const newPhase: PlanPhase = {
         id: `phase-${Date.now()}`,
         name,
         startDate: plan.metadata.startDate,
         endDate: plan.metadata.endDate,
-        // color optional: fall back to theme
+        color: getNextDistinctColor(usedColors, plan.metadata.phases.length),
       };
       plan.metadata.phases.push(newPhase);
     },

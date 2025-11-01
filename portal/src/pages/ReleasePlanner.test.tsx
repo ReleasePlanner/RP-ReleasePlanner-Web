@@ -38,6 +38,8 @@ it('renders controls when plans exist and triggers expand/collapse actions', () 
   fireEvent.click(collapseAll);
 });
 
+// Add release button removed per design
+
 it('renders null when no plans exist', () => {
   const store = createStoreWithPlans({ plans: [] });
   const { container } = render(
