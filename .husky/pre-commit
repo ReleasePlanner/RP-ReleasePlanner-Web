@@ -1,0 +1,9 @@
+#!/usr/bin/env sh
+
+ROOT_DIR="$(dirname -- "$0")/.."
+
+cd "$ROOT_DIR/portal" || exit 1
+echo "Running lint-staged in portal..."
+npx --no-install lint-staged
+
+

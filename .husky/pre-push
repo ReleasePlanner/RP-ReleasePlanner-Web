@@ -1,0 +1,10 @@
+#!/usr/bin/env sh
+
+ROOT_DIR="$(dirname -- "$0")/.."
+
+cd "$ROOT_DIR/portal" || exit 1
+echo "Running typecheck and tests in portal before push..."
+npm run typecheck || exit 1
+npm run test:ci || exit 1
+
+
