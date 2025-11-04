@@ -1,13 +1,10 @@
-import { render, screen } from './test/test-utils';
-import { Provider } from 'react-redux';
-import { store } from './store/store';
-import App from './App';
+import { it, expect } from "vitest";
+import { render, screen } from "./test/test-utils";
+import App from "./App";
 
-it('renders ReleasePlanner via routes', () => {
-  render(
-    <Provider store={store}>
-      <App />
-    </Provider>
-  );
-  expect(screen.getByRole('button', { name: /expand all/i })).toBeInTheDocument();
+it("renders ReleasePlanner via routes", () => {
+  render(<App />);
+  expect(
+    screen.getByRole("button", { name: /expand all/i })
+  ).toBeInTheDocument();
 });

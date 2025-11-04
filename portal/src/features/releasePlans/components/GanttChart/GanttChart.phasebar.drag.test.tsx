@@ -1,10 +1,10 @@
-import { render, screen, fireEvent } from '@testing-library/react';
-import { ThemeProvider } from '@mui/material/styles';
-import GanttChart from './GanttChart';
-import { theme } from '../../../../theme';
+import { vi, it, expect, describe } from "vitest";
+import { render, screen, fireEvent } from "../../../../test/test-utils";
+import GanttChart from "./GanttChart";
+import type { PlanPhase } from "../../types";
 
 describe("GanttChart phase bar drag/resize", () => {
-  const phase = {
+  const phase: PlanPhase = {
     id: "ph1",
     name: "Phase A",
     startDate: "2025-01-05",
@@ -15,15 +15,13 @@ describe("GanttChart phase bar drag/resize", () => {
   it("calls onPhaseRangeChange when moving a phase bar", () => {
     const spy = vi.fn();
     render(
-      <ThemeProvider theme={theme}>
-        <GanttChart
-          startDate="2025-01-01"
-          endDate="2025-12-31"
-          tasks={[]}
-          phases={[phase] as any}
-          onPhaseRangeChange={spy}
-        />
-      </ThemeProvider>
+      <GanttChart
+        startDate="2025-01-01"
+        endDate="2025-12-31"
+        tasks={[]}
+        phases={[phase]}
+        onPhaseRangeChange={spy}
+      />
     );
 
     const moveHandle = screen.getByTestId("phasebar-move-ph1");
@@ -37,15 +35,13 @@ describe("GanttChart phase bar drag/resize", () => {
   it("calls onPhaseRangeChange when resizing a phase bar (right)", () => {
     const spy = vi.fn();
     render(
-      <ThemeProvider theme={theme}>
-        <GanttChart
-          startDate="2025-01-01"
-          endDate="2025-12-31"
-          tasks={[]}
-          phases={[phase] as any}
-          onPhaseRangeChange={spy}
-        />
-      </ThemeProvider>
+      <GanttChart
+        startDate="2025-01-01"
+        endDate="2025-12-31"
+        tasks={[]}
+        phases={[phase]}
+        onPhaseRangeChange={spy}
+      />
     );
 
     const rightHandle = screen.getByTestId("phasebar-resize-right-ph1");
@@ -56,5 +52,3 @@ describe("GanttChart phase bar drag/resize", () => {
     expect(spy).toHaveBeenCalled();
   });
 });
-
-

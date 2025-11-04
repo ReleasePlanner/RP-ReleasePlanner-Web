@@ -1,12 +1,12 @@
-import { render, screen, fireEvent } from '@testing-library/react';
-import { ThemeProvider } from '@mui/material/styles';
-import GanttChart from './GanttChart';
-import { theme } from '../../../../theme';
+import { vi, it, expect, describe } from "vitest";
+import { render, screen, fireEvent } from "../../../../test/test-utils";
+import GanttChart from "./GanttChart";
+import type { PlanPhase } from "../../types";
 
 describe("GanttChart phase bar double click to edit", () => {
   it("invokes onEditPhase when double clicking a phase bar", () => {
     const onEdit = vi.fn();
-    const phase = {
+    const phase: PlanPhase = {
       id: "ph1",
       name: "Phase A",
       startDate: "2025-03-10",
@@ -15,15 +15,13 @@ describe("GanttChart phase bar double click to edit", () => {
     };
 
     render(
-      <ThemeProvider theme={theme}>
-        <GanttChart
-          startDate="2025-01-01"
-          endDate="2025-12-31"
-          tasks={[]}
-          phases={[phase] as any}
-          onEditPhase={onEdit}
-        />
-      </ThemeProvider>
+      <GanttChart
+        startDate="2025-01-01"
+        endDate="2025-12-31"
+        tasks={[]}
+        phases={[phase]}
+        onEditPhase={onEdit}
+      />
     );
 
     const overlay = screen.getByTitle("Drag to set Phase A period");
@@ -31,5 +29,3 @@ describe("GanttChart phase bar double click to edit", () => {
     expect(onEdit).toHaveBeenCalledWith("ph1");
   });
 });
-
-

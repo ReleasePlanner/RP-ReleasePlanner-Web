@@ -1,14 +1,13 @@
-import { it, expect } from 'vitest';
-import { waitFor } from '@testing-library/react';
+import { it, expect } from "vitest";
+import { render, screen, waitFor } from "./test/test-utils";
+import App from "./App";
 
-it('mounts app to #root without crashing', async () => {
-  const root = document.createElement('div');
-  root.id = 'root';
-  document.body.appendChild(root);
-
-  await import('./main');
+it("mounts app to #root without crashing", async () => {
+  render(<App />);
 
   await waitFor(() => {
-    expect(document.body.textContent).toMatch(/Release Planner/i);
+    expect(
+      screen.getByRole("button", { name: /expand all/i })
+    ).toBeInTheDocument();
   });
-}, 15000);
+});

@@ -1,9 +1,9 @@
-import { render, screen, fireEvent } from '@testing-library/react';
-import { ThemeProvider } from '@mui/material/styles';
-import GanttChart from './GanttChart';
-import { theme } from '../../../../theme';
+import { vi, it, expect, describe } from "vitest";
+import { render, screen, fireEvent } from "../../../../test/test-utils";
+import GanttChart from "./GanttChart";
+import type { PlanPhase } from "../../types";
 
-const phase = {
+const phase: PlanPhase = {
   id: "ph1",
   name: "Phase A",
   startDate: "2025-03-10",
@@ -16,14 +16,12 @@ describe("GanttChart alert at day/phase intersection", () => {
     const alertSpy = vi.spyOn(window, "alert").mockImplementation(() => {});
 
     render(
-      <ThemeProvider theme={theme}>
-        <GanttChart
-          startDate="2025-01-01"
-          endDate="2025-12-31"
-          tasks={[]}
-          phases={[phase] as any}
-        />
-      </ThemeProvider>
+      <GanttChart
+        startDate="2025-01-01"
+        endDate="2025-12-31"
+        tasks={[]}
+        phases={[phase]}
+      />
     );
 
     // Overlay has a title like: "Drag to set Phase A period"
@@ -40,5 +38,3 @@ describe("GanttChart alert at day/phase intersection", () => {
     alertSpy.mockRestore();
   });
 });
-
-
