@@ -1,14 +1,17 @@
 import styled from "@emotion/styled";
 
 export const TodayMarker = styled.div`
-  border-left: 2px dashed ${(props) => props.theme.palette.secondary.main};
+  border-left: 2px dashed
+    ${(props) => props.theme?.palette?.secondary?.main || "#185ABD"};
 `;
 
 export const Preview = styled.div`
   height: 100%;
   border-radius: 0.125rem; /* rounded-sm */
-  border: 2px solid ${(props) => props.theme.palette.primary.main};
-  background-color: ${(props) => props.theme.palette.primary.main}1A;
+  border: 2px solid
+    ${(props) => props.theme?.palette?.primary?.main || "#217346"};
+  background-color: ${(props) =>
+    props.theme?.palette?.primary?.main || "#217346"}1A;
 `;
 
 export const PreviewContainer = styled.div<{

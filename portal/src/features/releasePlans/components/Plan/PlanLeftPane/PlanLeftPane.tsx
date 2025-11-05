@@ -1,6 +1,6 @@
-import CommonDataCard from '../CommonDataCard/CommonDataCard';
-import PhasesList from '../PhasesList/PhasesList';
-import type { PlanPhase } from '../../../types';
+import { CommonDataCard } from "../CommonDataCard";
+import PhasesList from "../PhasesList/PhasesList";
+import type { PlanPhase } from "../../../types";
 
 export type PlanLeftPaneProps = {
   owner: string;
@@ -12,13 +12,24 @@ export type PlanLeftPaneProps = {
   onEditPhase: (id: string) => void;
 };
 
-export default function PlanLeftPane({ owner, startDate, endDate, id, phases, onAddPhase, onEditPhase }: PlanLeftPaneProps) {
+export default function PlanLeftPane({
+  owner,
+  startDate,
+  endDate,
+  id,
+  phases,
+  onAddPhase,
+  onEditPhase,
+}: PlanLeftPaneProps) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-      <CommonDataCard owner={owner} startDate={startDate} endDate={endDate} id={id} />
+      <CommonDataCard
+        owner={owner}
+        startDate={startDate}
+        endDate={endDate}
+        id={id}
+      />
       <PhasesList phases={phases} onAdd={onAddPhase} onEdit={onEditPhase} />
     </div>
   );
 }
-
-
