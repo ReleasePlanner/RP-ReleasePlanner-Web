@@ -1,5 +1,6 @@
 import { createTheme } from "@mui/material/styles";
-import { GANTT_COLORS, GANTT_DIMENSIONS } from "./index";
+import { GANTT_COLORS } from "./colors";
+import { GANTT_DIMENSIONS } from "./index";
 
 /**
  * Centralized theme system for Release Planner

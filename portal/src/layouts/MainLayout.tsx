@@ -12,7 +12,7 @@ import {
 import CloseIcon from "@mui/icons-material/Close";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
 import { toggleLeftSidebar, toggleRightSidebar } from "../store/store";
-import { Header } from "./Header";
+import HeaderMaterial from "./HeaderMaterial";
 
 const drawerWidth = 260;
 
@@ -37,7 +37,10 @@ export function MainLayout({ children }: PropsWithChildren) {
       </Box>
       <Divider />
       <Box className="p-4 space-y-2">
-        <Link className="block text-sm hover:text-primary-600" to="/release-planner">
+        <Link
+          className="block text-sm hover:text-primary-600"
+          to="/release-planner"
+        >
           Release Planner
         </Link>
       </Box>
@@ -72,7 +75,7 @@ export function MainLayout({ children }: PropsWithChildren) {
       }}
     >
       <CssBaseline />
-      <Header />
+      <HeaderMaterial />
 
       {/* Left Sidebar */
       /* Temporary on mobile, persistent on md+ */}

@@ -4,11 +4,46 @@ export interface CommonDataItem {
   icon: string;
 }
 
+export interface ComponentVersion {
+  id: string;
+  name: string;
+  type: string; // 'web', 'mobile', 'service', 'api', 'dashboard', etc.
+  version?: string; // Optional version control number (e.g., "1.2.3", "v2.0.0")
+  description?: string;
+  status?: "development" | "testing" | "production" | "deprecated";
+  lastUpdated?: string;
+}
+
+export interface FeatureVersion {
+  id: string;
+  name: string;
+  description?: string;
+  priority?: "low" | "medium" | "high" | "critical";
+  status?: "backlog" | "in-progress" | "testing" | "completed" | "blocked";
+  assignedTeam?: string;
+  category?: string; // 'ui', 'backend', 'integration', 'security', etc.
+  estimatedHours?: number;
+  lastUpdated?: string;
+}
+
+export interface Product {
+  id: string;
+  name: string;
+  description?: string;
+  components: ComponentVersion[]; // Enhanced components with version info
+  features: FeatureVersion[]; // Project features and requirements
+}
+
+export type ViewMode = "grid" | "list";
+
 export interface CommonDataCardProps {
   owner: string;
   startDate: string;
   endDate: string;
   id: string;
+  selectedProduct?: string;
+  products?: Product[];
+  onProductChange?: (productId: string) => void;
 }
 
 export const COMMON_DATA_ICONS = {

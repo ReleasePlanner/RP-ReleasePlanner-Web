@@ -1,0 +1,258 @@
+/**
+ * Components Tab - Shows components based on selected product
+ *
+ * This component demonstrates how the product selection in Common Data
+ * can be used to filter and display relevant components.
+ */
+
+import React from "react";
+import {
+  Box,
+  Typography,
+  Card,
+  CardContent,
+  Chip,
+  Grid,
+  useTheme,
+  alpha,
+} from "@mui/material";
+import {
+  Web as WebIcon,
+  PhoneAndroid as MobileIcon,
+  Cloud as ServiceIcon,
+  Dashboard as PortalIcon,
+  API as ApiIcon,
+  Storage as DatabaseIcon,
+} from "@mui/icons-material";
+import { getProductById } from "../../lib/productData";
+
+interface ComponentsTabProps {
+  selectedProduct?: string;
+}
+
+interface ComponentConfig {
+  name: string;
+  icon: React.ReactElement;
+  color: "primary" | "secondary" | "success" | "info" | "warning";
+  description: string;
+}
+
+const getComponentConfig = (componentName: string): ComponentConfig => {
+  const name = componentName.toLowerCase();
+
+  if (name.includes("web") || name.includes("portal")) {
+    return {
+      name: componentName,
+      icon: <WebIcon />,
+      color: "primary",
+      description: "Frontend web application or portal",
+    };
+  }
+
+  if (name.includes("mobile") || name.includes("app")) {
+    return {
+      name: componentName,
+      icon: <MobileIcon />,
+      color: "secondary",
+      description: "Mobile application",
+    };
+  }
+
+  if (name.includes("service") || name.includes("api")) {
+    return {
+      name: componentName,
+      icon: <ServiceIcon />,
+      color: "success",
+      description: "Backend service or API",
+    };
+  }
+
+  if (name.includes("dashboard")) {
+    return {
+      name: componentName,
+      icon: <PortalIcon />,
+      color: "info",
+      description: "Dashboard or analytics interface",
+    };
+  }
+
+  if (name.includes("gateway")) {
+    return {
+      name: componentName,
+      icon: <ApiIcon />,
+      color: "warning",
+      description: "API Gateway or routing service",
+    };
+  }
+
+  // Default
+  return {
+    name: componentName,
+    icon: <DatabaseIcon />,
+    color: "primary",
+    description: "System component",
+  };
+};
+
+function ComponentCard({
+  config,
+}: {
+  component: string;
+  config: ComponentConfig;
+}) {
+  const theme = useTheme();
+
+  return (
+    <Card
+      sx={{
+        borderRadius: 2,
+        border: `1px solid ${alpha(theme.palette.divider, 0.12)}`,
+        transition: theme.transitions.create(["transform", "box-shadow"], {
+          duration: theme.transitions.duration.short,
+        }),
+        "&:hover": {
+          transform: "translateY(-2px)",
+          boxShadow: theme.shadows[4],
+        },
+      }}
+    >
+      <CardContent sx={{ p: 2 }}>
+        <Box sx={{ display: "flex", alignItems: "center", mb: 1.5 }}>
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: 40,
+              height: 40,
+              borderRadius: 2,
+              backgroundColor: alpha(theme.palette[config.color].main, 0.1),
+              color: theme.palette[config.color].main,
+              mr: 1.5,
+            }}
+          >
+            {config.icon}
+          </Box>
+          <Box sx={{ flex: 1 }}>
+            <Typography
+              variant="h6"
+              sx={{
+                fontSize: "1rem",
+                fontWeight: 600,
+                lineHeight: 1.2,
+                mb: 0.5,
+              }}
+            >
+              {config.name}
+            </Typography>
+            <Chip
+              label={
+                config.color.charAt(0).toUpperCase() + config.color.slice(1)
+              }
+              size="small"
+              color={config.color}
+              sx={{ height: 20, fontSize: "0.75rem" }}
+            />
+          </Box>
+        </Box>
+        <Typography
+          variant="body2"
+          color="text.secondary"
+          sx={{ fontSize: "0.875rem", lineHeight: 1.4 }}
+        >
+          {config.description}
+        </Typography>
+      </CardContent>
+    </Card>
+  );
+}
+
+export function ComponentsTab({ selectedProduct }: ComponentsTabProps) {
+  const theme = useTheme();
+  const product = selectedProduct ? getProductById(selectedProduct) : null;
+
+  if (!selectedProduct || !product) {
+    return (
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          minHeight: 200,
+          textAlign: "center",
+          p: 3,
+        }}
+      >
+        <Box>
+          <Typography
+            variant="h6"
+            color="text.secondary"
+            sx={{ mb: 1, fontWeight: 500 }}
+          >
+            No Product Selected
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Please select a product from the Common Data tab to view its
+            components.
+          </Typography>
+        </Box>
+      </Box>
+    );
+  }
+
+  return (
+    <Box sx={{ p: 3 }}>
+      <Box sx={{ mb: 3 }}>
+        <Typography
+          variant="h6"
+          sx={{
+            fontWeight: 600,
+            fontSize: "1.125rem",
+            color: theme.palette.text.primary,
+            mb: 0.5,
+          }}
+        >
+          Components for {product.name}
+        </Typography>
+        <Typography
+          variant="body2"
+          color="text.secondary"
+          sx={{ fontSize: "0.875rem" }}
+        >
+          {product.description}
+        </Typography>
+      </Box>
+
+      <Grid container spacing={2}>
+        {product.components.map((component, index) => {
+          const config = getComponentConfig(component);
+          return (
+            <Grid item xs={12} sm={6} md={4} key={index}>
+              <ComponentCard component={component} config={config} />
+            </Grid>
+          );
+        })}
+      </Grid>
+
+      {product.components.length === 0 && (
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            minHeight: 100,
+            border: `1px dashed ${alpha(theme.palette.divider, 0.3)}`,
+            borderRadius: 2,
+            backgroundColor: alpha(theme.palette.background.default, 0.5),
+          }}
+        >
+          <Typography variant="body2" color="text.secondary">
+            No components defined for this product.
+          </Typography>
+        </Box>
+      )}
+    </Box>
+  );
+}
+
+export default ComponentsTab;

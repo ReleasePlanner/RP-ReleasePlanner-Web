@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import type { Plan } from "../../types";
 import { usePlanCard } from "../../hooks";
 import { PlanCardLayout } from "./components/PlanCardLayout";
@@ -8,6 +8,7 @@ import AddPhaseDialog from "../Plan/AddPhaseDialog";
 import PhaseEditDialog from "../Plan/PhaseEditDialog/PhaseEditDialog";
 import { ErrorBoundary } from "../../../../utils/logging/ErrorBoundary";
 import { L, useComponentLogger } from "../../../../utils/logging/simpleLogging";
+import { getAllProducts } from "../../lib/productData";
 
 export type PlanCardProps = {
   plan: Plan;
@@ -53,6 +54,10 @@ export default function PlanCard({ plan }: PlanCardProps) {
   } = usePlanCard(plan);
 
   const { metadata, tasks } = plan;
+  
+  // ⭐ Product selection state for component filtering
+  const [selectedProduct, setSelectedProduct] = useState<string>('');
+  const products = getAllProducts();
 
   // ⭐ Lifecycle logging - Automatic mount/unmount tracking
   useEffect(() => {
@@ -85,6 +90,13 @@ export default function PlanCard({ plan }: PlanCardProps) {
       action: 'add_phase',
       time: true
     });
+  };
+
+  const handleProductChange = (productId: string) => {
+    return L.track(() => {
+      setSelectedProduct(productId);
+      return { planId: plan.id, productId };
+    }, 'product_selected', 'PlanCard');
   };
 
   const openEditOptimized = (phaseId: string) => {
@@ -155,6 +167,9 @@ export default function PlanCard({ plan }: PlanCardProps) {
               startDate={metadata.startDate}
               endDate={metadata.endDate}
               id={metadata.id}
+              selectedProduct={selectedProduct}
+              products={products}
+              onProductChange={handleProductChange}
             />
           </div>
         }

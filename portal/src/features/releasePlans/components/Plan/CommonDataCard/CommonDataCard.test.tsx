@@ -1,6 +1,6 @@
 import { render, screen, fireEvent } from "@testing-library/react";
 import { it, expect } from "vitest";
-import CommonDataCard from "./CommonDataCard";
+import CommonDataCard from "./CommonDataCardMaterial";
 
 it("renders tabs with owner, start date, end date, and id", () => {
   render(

@@ -7,33 +7,8 @@ export const GANTT_DIMENSIONS = {
   TIMELINE_HEIGHT: 76, // 28 + 24 + 24
 } as const;
 
-// Color system - should integrate with MUI theme
-export const GANTT_COLORS = {
-  // Primary colors
-  PRIMARY: "#217346",
-  SECONDARY: "#185ABD",
-
-  // Status colors
-  SUCCESS: "#10b981",
-  WARNING: "#f59e0b",
-  ERROR: "#ef4444",
-
-  // Background colors
-  WEEKEND_BG: "#f3f4f6",
-  HOVER_BG: "#f9fafb",
-  SELECTED_BG: "#e5f3ff",
-
-  // Border colors
-  BORDER_LIGHT: "#e5e7eb",
-  BORDER_MEDIUM: "#d1d5db",
-  BORDER_DARK: "#9ca3af",
-
-  // Text colors
-  TEXT_PRIMARY: "#111827",
-  TEXT_SECONDARY: "#6b7280",
-  TEXT_MUTED: "#9ca3af",
-  TEXT_INVERSE: "#ffffff",
-} as const;
+// Re-export colors to maintain API compatibility
+export { GANTT_COLORS, type GanttColors } from "./colors";
 
 // Z-index hierarchy
 export const Z_INDEX = {
@@ -59,5 +34,4 @@ export const BREAKPOINTS = {
   XL: 1280,
 } as const;
 
-// Theme system
-export * from "./theme";
+// Note: Theme exports are available directly from "./theme" to avoid circular dependencies

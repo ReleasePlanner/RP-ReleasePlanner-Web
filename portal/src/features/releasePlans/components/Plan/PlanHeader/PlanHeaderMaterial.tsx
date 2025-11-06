@@ -11,6 +11,7 @@
  * ✅ Colores del sistema de tema
  */
 
+import React from "react";
 import {
   CardHeader,
   Typography,
@@ -31,13 +32,13 @@ import {
 
 export type PlanStatus = "planned" | "in_progress" | "done" | "paused";
 
-export type PlanHeaderProps = {
+export interface PlanHeaderProps {
   name: string;
   status: PlanStatus;
   description?: string;
   expanded: boolean;
   onToggleExpanded: () => void;
-};
+}
 
 interface StatusConfig {
   label: string;
@@ -84,7 +85,7 @@ const getStatusConfig = (status: PlanStatus, theme: Theme): StatusConfig => {
   return configs[status];
 };
 
-export default function PlanHeader({
+export function PlanHeader({
   name,
   status,
   description,
@@ -210,3 +211,5 @@ export default function PlanHeader({
     />
   );
 }
+
+export default PlanHeader;
