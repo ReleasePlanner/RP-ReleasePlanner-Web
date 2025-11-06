@@ -12,7 +12,7 @@
 import { render, screen, fireEvent } from "@testing-library/react";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
 import { it, expect, describe } from "vitest";
-import CommonDataCard from "./CommonDataCard";
+import CommonDataCard from "./CommonDataCardMaterial";
 
 const theme = createTheme();
 
