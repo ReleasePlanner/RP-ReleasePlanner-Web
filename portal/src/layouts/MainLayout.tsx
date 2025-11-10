@@ -38,10 +38,16 @@ export function MainLayout({ children }: PropsWithChildren) {
       <Divider />
       <Box className="p-4 space-y-2">
         <Link
-          className="block text-sm hover:text-primary-600"
+          className="block text-sm font-medium text-slate-700 hover:text-primary-600 hover:font-semibold transition-colors"
           to="/release-planner"
         >
           Release Planner
+        </Link>
+        <Link
+          className="block text-sm font-medium text-slate-700 hover:text-primary-600 hover:font-semibold transition-colors"
+          to="/product-maintenance"
+        >
+          Products
         </Link>
       </Box>
     </Box>
