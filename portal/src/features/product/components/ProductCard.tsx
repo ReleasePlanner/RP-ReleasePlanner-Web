@@ -53,6 +53,7 @@ export function ProductCard({
           startIcon={<AddIcon />}
           sx={{ mt: 2 }}
           onClick={() => onAddComponent(product)}
+          title="Add new component"
         >
           Add Component
         </Button>

@@ -16,6 +16,7 @@ import {
   useTheme,
   Box,
   IconButton,
+  Tooltip,
 } from "@mui/material";
 import { Edit as EditIcon, Delete as DeleteIcon } from "@mui/icons-material";
 import { type ComponentVersion, type ComponentTypeValue } from "../types";
@@ -95,21 +96,23 @@ export function ComponentsTable({
                       justifyContent: "flex-end",
                     }}
                   >
-                    <IconButton
-                      size="small"
-                      onClick={() => onEditComponent(component)}
-                      title="Edit component"
-                    >
-                      <EditIcon fontSize="small" />
-                    </IconButton>
-                    <IconButton
-                      size="small"
-                      color="error"
-                      onClick={() => onDeleteComponent(component.id)}
-                      title="Delete component"
-                    >
-                      <DeleteIcon fontSize="small" />
-                    </IconButton>
+                    <Tooltip title="Edit component">
+                      <IconButton
+                        size="small"
+                        onClick={() => onEditComponent(component)}
+                      >
+                        <EditIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip title="Delete component">
+                      <IconButton
+                        size="small"
+                        color="error"
+                        onClick={() => onDeleteComponent(component.id)}
+                      >
+                        <DeleteIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
                   </Box>
                 </TableCell>
               </TableRow>

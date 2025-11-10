@@ -8,6 +8,7 @@ import {
   Divider,
   Drawer,
   IconButton,
+  Tooltip,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
@@ -27,13 +28,15 @@ export function MainLayout({ children }: PropsWithChildren) {
     <Box role="navigation" sx={{ width: drawerWidth }} className="h-full">
       <Box className="p-4 flex items-center justify-between">
         <span className="font-semibold text-primary-700">Navigation</span>
-        <IconButton
-          aria-label="Hide left sidebar"
-          size="small"
-          onClick={() => dispatch(toggleLeftSidebar())}
-        >
-          <CloseIcon fontSize="small" />
-        </IconButton>
+        <Tooltip title="Hide sidebar" placement="right">
+          <IconButton
+            aria-label="Hide left sidebar"
+            size="small"
+            onClick={() => dispatch(toggleLeftSidebar())}
+          >
+            <CloseIcon fontSize="small" />
+          </IconButton>
+        </Tooltip>
       </Box>
       <Divider />
       <Box className="p-4 space-y-2">
@@ -57,13 +60,15 @@ export function MainLayout({ children }: PropsWithChildren) {
     <Box role="complementary" sx={{ width: drawerWidth }} className="h-full">
       <Box className="p-4 flex items-center justify-between">
         <span className="font-semibold text-primary-700">Context</span>
-        <IconButton
-          aria-label="Hide right sidebar"
-          size="small"
-          onClick={() => dispatch(toggleRightSidebar())}
-        >
-          <CloseIcon fontSize="small" />
-        </IconButton>
+        <Tooltip title="Hide sidebar" placement="right">
+          <IconButton
+            aria-label="Hide right sidebar"
+            size="small"
+            onClick={() => dispatch(toggleRightSidebar())}
+          >
+            <CloseIcon fontSize="small" />
+          </IconButton>
+        </Tooltip>
       </Box>
       <Divider />
       <Box className="p-4 text-sm text-gray-600">
