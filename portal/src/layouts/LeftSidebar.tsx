@@ -1,9 +1,4 @@
-import {
-  Box,
-  Divider,
-  Drawer,
-  IconButton,
-} from "@mui/material";
+import { Box, Divider, Drawer, IconButton } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import { Link } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
@@ -29,10 +24,16 @@ export function LeftSidebar() {
       </Box>
       <Divider />
       <Box className="p-4 space-y-2">
-        <Link className="block text-sm hover:text-primary-600" to="/release-planner">
+        <Link
+          className="block text-sm font-medium text-slate-700 hover:text-primary-600 hover:font-semibold transition-colors"
+          to="/release-planner"
+        >
           Release Planner
         </Link>
-        <Link className="block text-sm hover:text-primary-600" to="/product-maintenance">
+        <Link
+          className="block text-sm font-medium text-slate-700 hover:text-primary-600 hover:font-semibold transition-colors"
+          to="/product-maintenance"
+        >
           Products
         </Link>
       </Box>
