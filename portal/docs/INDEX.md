@@ -258,15 +258,41 @@ docs/                            ← NUEVO directorio
 
 ---
 
-## 🔗 Enlaces Rápidos
+## � Features Implementadas
 
-| Recurso          | Link                                     |
-| ---------------- | ---------------------------------------- |
-| **Source Code**  | `src/builders/componentConfigBuilder.ts` |
-| **Local Docs**   | `src/builders/README.md`                 |
-| **Ejemplos**     | `docs/BUILDER_QUICK_START.md`            |
-| **Arquitectura** | `docs/BUILDER_ARCHITECTURE.md`           |
-| **FAQs**         | `docs/BUILDERS_FAQ.md`                   |
+### Product Maintenance
+
+**[PRODUCT_MAINTENANCE.md](./PRODUCT_MAINTENANCE.md)** - Gestión de Productos y Versiones
+
+**Características:**
+
+- Administración completa de productos
+- Seguimiento de versiones de componentes
+- Tipos de componentes: Web, Services, Mobile
+- Tracking: Versión actual vs anterior
+- Interface intuitiva con MUI + Tailwind
+
+**Ruta:** `/product-maintenance`
+
+**Archivos:**
+
+- `src/features/productMaintenance/types.ts` - Definiciones de tipos
+- `src/features/productMaintenance/constants.ts` - Configuración
+- `src/features/productMaintenance/ProductMaintenancePage.tsx` - Página principal
+- `src/features/productMaintenance/index.ts` - Barrel export
+
+---
+
+## �🔗 Enlaces Rápidos
+
+| Recurso                 | Link                                     |
+| ----------------------- | ---------------------------------------- |
+| **Source Code**         | `src/builders/componentConfigBuilder.ts` |
+| **Local Docs**          | `src/builders/README.md`                 |
+| **Ejemplos**            | `docs/BUILDER_QUICK_START.md`            |
+| **Arquitectura**        | `docs/BUILDER_ARCHITECTURE.md`           |
+| **FAQs**                | `docs/BUILDERS_FAQ.md`                   |
+| **Product Maintenance** | `docs/PRODUCT_MAINTENANCE.md`            |
 
 ---
 

@@ -36,8 +36,8 @@ import {
   type Product,
   type ComponentVersion,
   type ComponentTypeValue,
-} from "./types";
-import { COMPONENT_TYPE_LABELS } from "./constants";
+} from "@/features/productMaintenance/types";
+import { COMPONENT_TYPE_LABELS } from "@/features/productMaintenance/constants";
 
 /**
  * Mock data for products
@@ -92,7 +92,7 @@ interface EditingProduct {
   component?: ComponentVersion;
 }
 
-export function ProductMaintenancePage() {
+export function ProductMaintenance() {
   const theme = useTheme();
   const [products, setProducts] = useState<Product[]>(MOCK_PRODUCTS);
   const [editingProduct, setEditingProduct] = useState<EditingProduct | null>(
