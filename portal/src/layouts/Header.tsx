@@ -46,29 +46,34 @@ export function Header() {
         sx={{
           display: "flex",
           alignItems: "center",
+          justifyContent: "center",
           px: { xs: 1, sm: 2, md: 3 },
           minHeight: { xs: 56, sm: 64 },
+          position: "relative",
         }}
       >
         {/* Left Section - Navigation Toggle */}
-        <Box sx={{ display: "flex", alignItems: "center" }}>
+        <Box
+          sx={{
+            position: "absolute",
+            left: { xs: 8, sm: 16, md: 24 },
+            display: "flex",
+            alignItems: "center",
+          }}
+        >
           <HeaderNavButton />
         </Box>
-
-        {/* Spacer - expands to push everything else to the right */}
-        <Box sx={{ flex: 1 }} />
 
         {/* Center Section - Title */}
         <Box sx={{ display: "flex", justifyContent: "center" }}>
           <HeaderTitle />
         </Box>
 
-        {/* Another Spacer to push actions to far right */}
-        <Box sx={{ flex: 1 }} />
-
         {/* Right Section - Actions */}
         <Box
           sx={{
+            position: "absolute",
+            right: { xs: 8, sm: 16, md: 24 },
             display: "flex",
             alignItems: "center",
             gap: { xs: 0.5, sm: 1 },
