@@ -39,7 +39,9 @@ export function ProductCard({
 
         <ComponentsTable
           components={product.components}
-          onEditComponent={(component: ComponentVersion) => onEditComponent(product, component)}
+          onEditComponent={(component: ComponentVersion) =>
+            onEditComponent(product, component)
+          }
           onDeleteComponent={(componentId: string) =>
             onDeleteComponent(product.id, componentId)
           }

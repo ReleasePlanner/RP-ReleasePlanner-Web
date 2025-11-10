@@ -38,16 +38,19 @@ src/
 ## 🧩 Componentes Extraídos
 
 ### 1️⃣ ProductCard
+
 - **Responsabilidad:** Mostrar un producto y sus componentes
 - **Props:** product, handlers de edit/delete/add
 - **Reutilizable:** ✅ Sí
 
 ### 2️⃣ ComponentsTable
+
 - **Responsabilidad:** Renderizar tabla de componentes
 - **Props:** components, handlers de edit/delete
 - **Reutilizable:** ✅ Sí
 
 ### 3️⃣ ComponentEditDialog
+
 - **Responsabilidad:** Diálogo para editar/crear componentes
 - **Props:** Estado del diálogo, handlers, datos
 - **Reutilizable:** ✅ Sí
@@ -56,38 +59,44 @@ src/
 
 ## 📈 Métricas
 
-| Métrica | Antes | Después | Mejora |
-|---------|-------|---------|--------|
-| Archivos | 1 | 8 | +700% organización |
-| Líneas por archivo | 434 | 50-180 | -80% promedio |
-| Componentes reutilizables | 0 | 3 | +300% |
-| Testabilidad | Baja | Alta | ✅ |
-| Mantenibilidad | Media | Alta | ✅ |
+| Métrica                   | Antes | Después | Mejora             |
+| ------------------------- | ----- | ------- | ------------------ |
+| Archivos                  | 1     | 8       | +700% organización |
+| Líneas por archivo        | 434   | 50-180  | -80% promedio      |
+| Componentes reutilizables | 0     | 3       | +300%              |
+| Testabilidad              | Baja  | Alta    | ✅                 |
+| Mantenibilidad            | Media | Alta    | ✅                 |
 
 ---
 
 ## 🚀 Cómo Usar
 
 ### Importar Página
+
 ```typescript
 import { ProductMaintenancePage } from "@/pages/productMaintenancePage";
 
 // En rutas
-<Route path="product-maintenance" element={<ProductMaintenancePage />} />
+<Route path="product-maintenance" element={<ProductMaintenancePage />} />;
 ```
 
 ### Importar Componentes Individuales
+
 ```typescript
-import { 
-  ProductCard, 
-  ComponentsTable, 
-  ComponentEditDialog 
+import {
+  ProductCard,
+  ComponentsTable,
+  ComponentEditDialog,
 } from "@/features/productMaintenance/components";
 ```
 
 ### Importar Tipos y Constantes
+
 ```typescript
-import type { Product, ComponentVersion } from "@/features/productMaintenance/types";
+import type {
+  Product,
+  ComponentVersion,
+} from "@/features/productMaintenance/types";
 import { COMPONENT_TYPE_LABELS } from "@/features/productMaintenance/constants";
 ```
 
@@ -114,12 +123,14 @@ productMaintenancePage (Orquestador)
 ## ✨ Ventajas
 
 ### Para Desarrolladores
+
 - 🎯 Código más enfocado y legible
 - 🧪 Componentes fáciles de testear
 - 🔄 Reutilización de componentes
 - 📝 Documentación clara
 
 ### Para el Proyecto
+
 - 🏗️ Mejor mantenibilidad
 - 📦 Escalabilidad mejorada
 - 🐛 Debugging más sencillo
@@ -156,6 +167,7 @@ productMaintenancePage (Orquestador)
 ## 🤝 Contacto / Preguntas
 
 Para preguntas sobre la refactorización, consulta:
+
 1. `REFACTOR_PRODUCT_MAINTENANCE.md` - Detalles técnicos
 2. `PRODUCT_MAINTENANCE.md` - Funcionalidad
 3. Código fuente comentado en `src/features/productMaintenance/`

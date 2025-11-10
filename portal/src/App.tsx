@@ -9,7 +9,10 @@ export default function App() {
       <Route element={<MainLayout />}>
         <Route index element={<ReleasePlanner />} />
         <Route path="release-planner" element={<ReleasePlanner />} />
-        <Route path="product-maintenance" element={<ProductMaintenancePage />} />
+        <Route
+          path="product-maintenance"
+          element={<ProductMaintenancePage />}
+        />
       </Route>
     </Routes>
   );

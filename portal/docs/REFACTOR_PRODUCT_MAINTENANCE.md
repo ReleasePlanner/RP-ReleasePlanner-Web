@@ -22,9 +22,11 @@ src/
 ### 🔄 Componentes Extraídos
 
 #### 1. **ProductCard** (`components/ProductCard.tsx`)
+
 Muestra un producto individual con sus componentes.
 
 **Props:**
+
 ```typescript
 interface ProductCardProps {
   product: Product;
@@ -35,6 +37,7 @@ interface ProductCardProps {
 ```
 
 **Responsabilidades:**
+
 - Mostrar nombre e ID del producto
 - Renderizar tabla de componentes
 - Proporcionar botón para agregar componentes
@@ -43,9 +46,11 @@ interface ProductCardProps {
 ---
 
 #### 2. **ComponentsTable** (`components/ComponentsTable.tsx`)
+
 Tabla que muestra componentes con acciones.
 
 **Props:**
+
 ```typescript
 interface ComponentsTableProps {
   components: ComponentVersion[];
@@ -55,6 +60,7 @@ interface ComponentsTableProps {
 ```
 
 **Responsabilidades:**
+
 - Renderizar tabla con columnas: Componente, Versión Actual, Versión Anterior
 - Mostrar botones de editar/eliminar con iconos
 - Mostrar estado vacío cuando no hay componentes
@@ -63,9 +69,11 @@ interface ComponentsTableProps {
 ---
 
 #### 3. **ComponentEditDialog** (`components/ComponentEditDialog.tsx`)
+
 Diálogo para editar/crear componentes.
 
 **Props:**
+
 ```typescript
 interface ComponentEditDialogProps {
   open: boolean;
@@ -79,6 +87,7 @@ interface ComponentEditDialogProps {
 ```
 
 **Responsabilidades:**
+
 - Mostrar formulario para editar tipo de componente
 - Campos para versión actual y anterior
 - Cambiar título según sea crear o editar
@@ -89,12 +98,14 @@ interface ComponentEditDialogProps {
 ### 📄 Página Principal (`pages/productMaintenancePage.tsx`)
 
 **Responsabilidades principales:**
+
 - ✅ Gestión de estado (productos, diálogos, componentes en edición)
 - ✅ Orquestación de componentes
 - ✅ Manejo de eventos (agregar, editar, eliminar)
 - ✅ Mock data
 
 **Funciones clave:**
+
 - `handleAddProduct()` - Crear nuevo producto
 - `handleEditComponent()` - Abrir diálogo de edición
 - `handleDeleteComponent()` - Eliminar componente
@@ -106,13 +117,13 @@ interface ComponentEditDialogProps {
 
 ### 🎯 Beneficios de la Refactorización
 
-| Antes | Después |
-|-------|---------|
-| 1 archivo monolítico (~434 líneas) | 5 archivos especializados |
-| Difícil de testear | Componentes testables independientemente |
-| Responsabilidades mixtas | Separación de responsabilidades clara |
-| Difícil de mantener | Código mantenible y escalable |
-| Reutilización limitada | Componentes reutilizables |
+| Antes                              | Después                                  |
+| ---------------------------------- | ---------------------------------------- |
+| 1 archivo monolítico (~434 líneas) | 5 archivos especializados                |
+| Difícil de testear                 | Componentes testables independientemente |
+| Responsabilidades mixtas           | Separación de responsabilidades clara    |
+| Difícil de mantener                | Código mantenible y escalable            |
+| Reutilización limitada             | Componentes reutilizables                |
 
 ---
 
@@ -147,8 +158,14 @@ productMaintenancePage
 
 ```typescript
 // De features
-import { ProductCard, ComponentEditDialog } from "@/features/productMaintenance/components";
-import type { Product, ComponentVersion } from "@/features/productMaintenance/types";
+import {
+  ProductCard,
+  ComponentEditDialog,
+} from "@/features/productMaintenance/components";
+import type {
+  Product,
+  ComponentVersion,
+} from "@/features/productMaintenance/types";
 
 // De MUI
 import { Box, Button, Typography } from "@mui/material";
@@ -195,13 +212,13 @@ import { Add as AddIcon } from "@mui/icons-material";
 
 ### 📊 Estadísticas
 
-| Métrica | Valor |
-|---------|-------|
-| Archivos creados | 4 componentes |
-| Líneas de código (página) | ~180 líneas |
-| Líneas por componente | 50-100 líneas |
-| TypeScript errors | 0 |
-| Componentes reutilizables | 3 |
+| Métrica                   | Valor         |
+| ------------------------- | ------------- |
+| Archivos creados          | 4 componentes |
+| Líneas de código (página) | ~180 líneas   |
+| Líneas por componente     | 50-100 líneas |
+| TypeScript errors         | 0             |
+| Componentes reutilizables | 3             |
 
 ---
 
