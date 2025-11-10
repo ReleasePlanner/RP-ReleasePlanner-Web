@@ -1,25 +1,24 @@
 /**
- * Feature Maintenance Page
+ * Feature Maintenance Page - Refactored
  *
- * Main page for managing features across products
+ * Simplified page using extracted components and custom hooks
+ * Better separation of concerns and reusability
  */
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { Box, Button, Typography } from "@mui/material";
 import { Add as AddIcon } from "@mui/icons-material";
-import type {
-  Feature,
-  ProductWithFeatures,
-  FeatureStatus,
-} from "@/features/feature/types";
+import type { Feature, ProductWithFeatures } from "@/features/feature/types";
 import {
-  FeatureCard,
+  ProductSelector,
+  ProductFeaturesList,
   FeatureEditDialog,
-  FeatureToolbar,
   type ViewMode,
   type SortBy,
   FEATURE_CATEGORIES,
   PRODUCT_OWNERS,
+  useFeatures,
+  generateFeatureId,
 } from "@/features/feature";
 
 /**
@@ -73,73 +72,54 @@ const MOCK_PRODUCTS: ProductWithFeatures[] = [
   },
 ];
 
-interface EditingFeature {
-  product: ProductWithFeatures;
+interface EditingState {
+  productId: string;
   feature?: Feature;
 }
 
+/**
+ * FeatureMaintenancePage Component
+ *
+ * Main page for managing features across products.
+ * Uses custom hooks and extracted components for clean architecture.
+ *
+ * Features:
+ * - Product selection
+ * - Feature filtering and sorting
+ * - Create, edit, delete operations
+ * - View mode toggle (grid/list)
+ *
+ * @example
+ * ```tsx
+ * <FeatureMaintenancePage />
+ * ```
+ */
 export function FeatureMaintenancePage() {
-  const [products, setProducts] =
-    useState<ProductWithFeatures[]>(MOCK_PRODUCTS);
-  const [editingFeature, setEditingFeature] = useState<EditingFeature | null>(
-    null
-  );
-  const [openDialog, setOpenDialog] = useState(false);
-  const [selectedProduct, setSelectedProduct] =
-    useState<ProductWithFeatures | null>(null);
+  // State management
+  const {
+    products,
+    selectedProductId,
+    setSelectedProductId,
+    selectedProduct,
+    addFeatureToProduct,
+    updateFeatureInProduct,
+    deleteFeatureFromProduct,
+  } = useFeatures(MOCK_PRODUCTS);
+
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [sortBy, setSortBy] = useState<SortBy>("name");
   const [searchQuery, setSearchQuery] = useState("");
+  const [editingState, setEditingState] = useState<EditingState | null>(null);
+  const [openDialog, setOpenDialog] = useState(false);
 
-  // Filter and sort products
-  const filteredAndSortedProducts = useMemo(() => {
-    let result = [...products];
-
-    // Filter by search query (search in product name and feature names)
-    if (searchQuery.trim()) {
-      result = result.map((p) => ({
-        ...p,
-        features: p.features.filter((f) =>
-          f.name.toLowerCase().includes(searchQuery.toLowerCase())
-        ),
-      }));
-    }
-
-    // Sort
-    if (sortBy === "name") {
-      result.forEach((p) => {
-        p.features.sort((a, b) => a.name.localeCompare(b.name));
-      });
-    } else if (sortBy === "status") {
-      const statusOrder: Record<FeatureStatus, number> = {
-        completed: 0,
-        "in-progress": 1,
-        planned: 2,
-        "on-hold": 3,
-      };
-      result.forEach((p) => {
-        p.features.sort(
-          (a, b) => statusOrder[a.status] - statusOrder[b.status]
-        );
-      });
-    } else if (sortBy === "date") {
-      result.forEach((p) => {
-        p.features.sort((a, b) => b.id.localeCompare(a.id));
-      });
-    }
-
-    return result;
-  }, [products, searchQuery, sortBy]);
-
+  // Handlers
   const handleAddFeature = () => {
-    // For simplicity, just show first product dialog
-    if (products.length === 0) return;
-    const product = products[0];
-    setSelectedProduct(product);
-    setEditingFeature({
-      product,
+    if (!selectedProductId) return;
+
+    setEditingState({
+      productId: selectedProductId,
       feature: {
-        id: `feat-${Date.now()}`,
+        id: generateFeatureId(),
         name: "",
         description: "",
         category: FEATURE_CATEGORIES[0],
@@ -147,85 +127,46 @@ export function FeatureMaintenancePage() {
         createdBy: PRODUCT_OWNERS[0],
         technicalDescription: "",
         businessDescription: "",
-        productId: product.id,
+        productId: selectedProductId,
       },
     });
     setOpenDialog(true);
   };
 
-  const handleEditFeature = (
-    product: ProductWithFeatures,
-    feature: Feature
-  ) => {
-    setSelectedProduct(product);
-    setEditingFeature({ product, feature });
-    setOpenDialog(true);
-  };
+  const handleEditFeature = (feature: Feature) => {
+    if (!selectedProductId) return;
 
-  const handleDeleteFeature = (productId: string, featureId: string) => {
-    setProducts((prev) =>
-      prev.map((p) =>
-        p.id === productId
-          ? {
-              ...p,
-              features: p.features.filter((f) => f.id !== featureId),
-            }
-          : p
-      )
-    );
-  };
-
-  const handleAddFeatureToProduct = (product: ProductWithFeatures) => {
-    setSelectedProduct(product);
-    setEditingFeature({
-      product,
-      feature: {
-        id: `feat-${Date.now()}`,
-        name: "",
-        description: "",
-        category: FEATURE_CATEGORIES[0],
-        status: "planned",
-        createdBy: PRODUCT_OWNERS[0],
-        technicalDescription: "",
-        businessDescription: "",
-        productId: product.id,
-      },
+    setEditingState({
+      productId: selectedProductId,
+      feature,
     });
     setOpenDialog(true);
   };
 
-  const handleSave = () => {
-    if (!editingFeature || !editingFeature.feature) return;
+  const handleDeleteFeature = (featureId: string) => {
+    if (!selectedProductId) return;
+    deleteFeatureFromProduct(selectedProductId, featureId);
+  };
 
-    setProducts((prev) =>
-      prev.map((p) =>
-        p.id === selectedProduct?.id
-          ? {
-              ...p,
-              features: p.features.some(
-                (f) => f.id === editingFeature.feature?.id
-              )
-                ? p.features.map((f) =>
-                    f.id === editingFeature.feature?.id
-                      ? editingFeature.feature!
-                      : f
-                  )
-                : [...p.features, editingFeature.feature],
-            }
-          : p
-      )
-    );
+  const handleSaveFeature = () => {
+    if (!editingState || !editingState.feature) return;
+
+    const feature = editingState.feature;
+    const isNew = !selectedProduct?.features.some((f) => f.id === feature.id);
+
+    if (isNew) {
+      addFeatureToProduct(editingState.productId, feature);
+    } else {
+      updateFeatureInProduct(editingState.productId, feature.id, feature);
+    }
 
     handleCloseDialog();
   };
 
   const handleCloseDialog = () => {
     setOpenDialog(false);
-    setEditingFeature(null);
-    setSelectedProduct(null);
+    setEditingState(null);
   };
-
-  const isEditing = editingFeature?.feature !== undefined;
 
   return (
     <Box
@@ -239,7 +180,7 @@ export function FeatureMaintenancePage() {
       }}
     >
       {/* Header */}
-      <Box sx={{ mb: { xs: 1.5, md: 2 } }}>
+      <Box sx={{ mb: { xs: 2, md: 3 } }}>
         <Typography
           variant="h4"
           sx={{
@@ -248,73 +189,75 @@ export function FeatureMaintenancePage() {
             fontSize: { xs: "1.5rem", md: "2rem" },
           }}
         >
-          Features
+          Features Management
         </Typography>
         <Typography variant="body2" color="text.secondary">
-          Manage product features and their details
+          Manage product features with full CRUD operations and filtering
         </Typography>
       </Box>
 
-      {/* Toolbar with controls */}
-      <Box
-        sx={{
-          display: "flex",
-          gap: 2,
-          mb: 3,
-          alignItems: "center",
-          flexWrap: "wrap",
-        }}
-      >
-        <FeatureToolbar
-          viewMode={viewMode}
-          onViewModeChange={setViewMode}
-          sortBy={sortBy}
-          onSortChange={setSortBy}
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
-        />
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={handleAddFeature}
-          sx={{ ml: "auto" }}
-        >
-          Add Feature
-        </Button>
-      </Box>
+      {/* Content */}
+      <Box sx={{ display: "grid", gridTemplateColumns: { md: "280px 1fr" }, gap: 3, flex: 1 }}>
+        {/* Sidebar: Product Selector */}
+        <Box sx={{ display: { xs: "none", md: "block" } }}>
+          <ProductSelector
+            products={products}
+            selectedProductId={selectedProductId}
+            onSelectProduct={setSelectedProductId}
+          />
+        </Box>
 
-      {/* Products Grid/List */}
-      <Box
-        sx={{
-          display: "grid",
-          gridTemplateColumns:
-            viewMode === "grid" ? { xs: "1fr", md: "1fr 1fr" } : "1fr",
-          gap: 3,
-        }}
-      >
-        {filteredAndSortedProducts.map((product) => (
-          <FeatureCard
-            key={product.id}
-            product={product}
+        {/* Main: Features List */}
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+          {/* Mobile Product Selector */}
+          <Box sx={{ display: { xs: "block", md: "none" } }}>
+            <ProductSelector
+              products={products}
+              selectedProductId={selectedProductId}
+              onSelectProduct={setSelectedProductId}
+            />
+          </Box>
+
+          {/* Toolbar with Add Button */}
+          <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
+            <Box sx={{ flex: 1 }} />
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={handleAddFeature}
+              disabled={!selectedProductId}
+            >
+              Add Feature
+            </Button>
+          </Box>
+
+          {/* Features List */}
+          <ProductFeaturesList
+            product={selectedProduct}
+            viewMode={viewMode}
+            onViewModeChange={setViewMode}
+            sortBy={sortBy}
+            onSortChange={setSortBy}
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
             onEditFeature={handleEditFeature}
             onDeleteFeature={handleDeleteFeature}
-            onAddFeature={handleAddFeatureToProduct}
           />
-        ))}
+        </Box>
       </Box>
 
       {/* Edit Dialog */}
       <FeatureEditDialog
         open={openDialog}
-        editing={isEditing}
-        feature={editingFeature?.feature || null}
+        editing={editingState?.feature !== undefined}
+        feature={editingState?.feature || null}
         selectedProductName={selectedProduct?.name || null}
         onClose={handleCloseDialog}
-        onSave={handleSave}
+        onSave={handleSaveFeature}
         onFeatureChange={(feature: Feature) => {
-          if (editingFeature) {
-            setEditingFeature({
-              ...editingFeature,
+          if (editingState) {
+            setEditingState({
+              ...editingState,
               feature,
             });
           }

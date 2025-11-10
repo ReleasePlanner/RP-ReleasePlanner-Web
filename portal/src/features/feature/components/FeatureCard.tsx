@@ -4,11 +4,11 @@ import {
   CardContent,
   CardHeader,
   IconButton,
+  Typography,
   useTheme,
 } from "@mui/material";
 import { Add as AddIcon } from "@mui/icons-material";
 import type { Feature, ProductWithFeatures } from "../types";
-import { FeaturesTable } from "./FeaturesTable";
 
 /**
  * Props for FeatureCard component
@@ -21,11 +21,12 @@ interface FeatureCardProps {
 }
 
 /**
- * FeatureCard Component
+ * FeatureCard Component (Legacy)
  *
- * Displays a product card with expandable features table.
- * Shows feature count and allows inline editing/deletion.
+ * Displays a product card with features.
+ * Kept for backward compatibility. Use ProductFeaturesList for new code.
  *
+ * @deprecated Use ProductFeaturesList instead
  * @example
  * ```tsx
  * <FeatureCard
@@ -74,13 +75,26 @@ export function FeatureCard({
 
       {/* Content */}
       <CardContent sx={{ flex: 1, pb: 1 }}>
-        <FeaturesTable
-          features={product.features}
-          onEditFeature={(feature: Feature) => onEditFeature(product, feature)}
-          onDeleteFeature={(featureId: string) =>
-            onDeleteFeature(product.id, featureId)
-          }
-        />
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+          {product.features.length === 0 ? (
+            <Typography variant="caption" color="text.secondary">
+              No features yet
+            </Typography>
+          ) : (
+            product.features.slice(0, 3).map((feature) => (
+              <Box key={feature.id} sx={{ fontSize: "0.875rem" }}>
+                <Typography variant="caption" sx={{ fontWeight: 600 }}>
+                  {feature.name}
+                </Typography>
+              </Box>
+            ))
+          )}
+          {product.features.length > 3 && (
+            <Typography variant="caption" color="text.secondary">
+              +{product.features.length - 3} more...
+            </Typography>
+          )}
+        </Box>
       </CardContent>
 
       {/* Actions */}
