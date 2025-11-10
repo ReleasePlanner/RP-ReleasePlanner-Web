@@ -32,6 +32,9 @@ export function LeftSidebar() {
         <Link className="block text-sm hover:text-primary-600" to="/release-planner">
           Release Planner
         </Link>
+        <Link className="block text-sm hover:text-primary-600" to="/product-maintenance">
+          Products
+        </Link>
       </Box>
     </Box>
   );
