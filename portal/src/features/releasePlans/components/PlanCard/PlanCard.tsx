@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import type { Plan } from "../../types";
 import { usePlanCard } from "../../hooks";
 import { PlanCardLayout } from "./components/PlanCardLayout";
-import { CommonDataCard } from "../Plan/CommonDataCard";
+import PlanLeftPane from "../Plan/PlanLeftPane/PlanLeftPane";
 import GanttChart from "../GanttChart/GanttChart";
 import AddPhaseDialog from "../Plan/AddPhaseDialog";
 import PhaseEditDialog from "../Plan/PhaseEditDialog/PhaseEditDialog";
@@ -198,17 +198,18 @@ export default function PlanCard({ plan }: PlanCardProps) {
         leftPercent={leftPercent}
         onLeftPercentChange={handleLeftPercentChangeOptimized}
         left={
-          <div className="grid grid-cols-1 gap-4">
-            <CommonDataCard
-              owner={metadata.owner}
-              startDate={metadata.startDate}
-              endDate={metadata.endDate}
-              id={metadata.id}
-              selectedProduct={selectedProduct}
-              products={products}
-              onProductChange={handleProductChange}
-            />
-          </div>
+          <PlanLeftPane
+            owner={metadata.owner}
+            startDate={metadata.startDate}
+            endDate={metadata.endDate}
+            id={metadata.id}
+            phases={metadata.phases || []}
+            onAddPhase={() => setPhaseOpen(true)}
+            onEditPhase={openEditOptimized}
+            selectedProduct={selectedProduct}
+            products={products}
+            onProductChange={handleProductChange}
+          />
         }
         right={
           <GanttChart

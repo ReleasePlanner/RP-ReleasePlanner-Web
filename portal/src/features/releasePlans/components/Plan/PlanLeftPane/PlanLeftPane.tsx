@@ -10,6 +10,7 @@ import {
 import { CommonDataCard } from "../CommonDataCard";
 import PhasesList from "../PhasesList/PhasesList";
 import type { PlanPhase } from "../../../types";
+import type { Product } from "../CommonDataCard/types";
 
 export type PlanLeftPaneProps = {
   owner: string;
@@ -19,6 +20,9 @@ export type PlanLeftPaneProps = {
   phases: PlanPhase[];
   onAddPhase: () => void;
   onEditPhase: (id: string) => void;
+  selectedProduct: string;
+  products: Product[];
+  onProductChange: (productId: string) => void;
 };
 
 interface TabPanelProps {
@@ -58,11 +62,17 @@ export default function PlanLeftPane({
   phases,
   onAddPhase,
   onEditPhase,
+  selectedProduct,
+  products,
+  onProductChange,
 }: PlanLeftPaneProps) {
   const [tabValue, setTabValue] = useState(0);
 
+  console.log("PlanLeftPane rendering with tabs, current tab:", tabValue);
+
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
+    console.log("Tab changed to:", newValue);
   };
 
   return (
@@ -121,6 +131,9 @@ export default function PlanLeftPane({
             startDate={startDate}
             endDate={endDate}
             id={id}
+            selectedProduct={selectedProduct}
+            products={products}
+            onProductChange={onProductChange}
           />
           <PhasesList phases={phases} onAdd={onAddPhase} onEdit={onEditPhase} />
         </div>
