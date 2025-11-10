@@ -81,7 +81,9 @@ export function CalendarDayEditDialog({
         )}
       </DialogTitle>
 
-      <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2, pt: 2 }}>
+      <DialogContent
+        sx={{ display: "flex", flexDirection: "column", gap: 2, pt: 2 }}
+      >
         {/* Name */}
         <TextField
           label="Day Name"
@@ -165,7 +167,11 @@ export function CalendarDayEditDialog({
             }
             label="Recurring annually"
           />
-          <Typography variant="caption" color="text.secondary" sx={{ display: "block", ml: 4 }}>
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{ display: "block", ml: 4 }}
+          >
             Check if this day repeats every year
           </Typography>
         </Box>

@@ -2,7 +2,14 @@
  * Calendar Feature Barrel Export
  */
 
-export type { Calendar, CalendarDay, CalendarState, ViewMode, FilterType, SortBy } from "./types";
+export type {
+  Calendar,
+  CalendarDay,
+  CalendarState,
+  ViewMode,
+  FilterType,
+  SortBy,
+} from "./types";
 export {
   DAY_TYPES,
   CALENDAR_SORT_OPTIONS,
