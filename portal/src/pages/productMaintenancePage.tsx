@@ -203,7 +203,15 @@ export function ProductMaintenancePage() {
       </Box>
 
       {/* Toolbar with controls */}
-      <Box sx={{ display: "flex", gap: 2, mb: 3, alignItems: "center", flexWrap: "wrap" }}>
+      <Box
+        sx={{
+          display: "flex",
+          gap: 2,
+          mb: 3,
+          alignItems: "center",
+          flexWrap: "wrap",
+        }}
+      >
         <ProductToolbar
           viewMode={viewMode}
           onViewModeChange={setViewMode}
@@ -227,9 +235,7 @@ export function ProductMaintenancePage() {
         sx={{
           display: "grid",
           gridTemplateColumns:
-            viewMode === "grid"
-              ? { xs: "1fr", md: "1fr 1fr" }
-              : "1fr",
+            viewMode === "grid" ? { xs: "1fr", md: "1fr 1fr" } : "1fr",
           gap: 3,
         }}
       >
