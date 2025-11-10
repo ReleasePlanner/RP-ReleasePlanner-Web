@@ -2,24 +2,46 @@
  * Left Drawer Navigation Content
  *
  * Displays the navigation menu with links to main sections.
- * Used in responsive left sidebar drawer.
+ * Features:
+ * - Minimalist, elegant design with icons
+ * - Active route indicator
+ * - Smooth transitions and micro-interactions
+ * - Material UI 7 compliant
+ * - Full accessibility support
  */
 
 import {
   Box,
-  Divider,
-  Link,
+  Button,
   Tooltip,
   IconButton,
   Typography,
   useTheme,
+  alpha,
+  useMediaQuery,
 } from "@mui/material";
-import { Link as RouterLink } from "react-router-dom";
-import CloseIcon from "@mui/icons-material/Close";
+import { useLocation, Link as RouterLink } from "react-router-dom";
+import {
+  Close as CloseIcon,
+  Dashboard as DashboardIcon,
+  Inventory as ProductsIcon,
+  Extension as FeaturesIcon,
+  CalendarMonth as CalendarsIcon,
+} from "@mui/icons-material";
 import { useAppDispatch } from "../../store/hooks";
 import { toggleLeftSidebar } from "../../store/store";
 
 export const DRAWER_WIDTH = 260;
+
+/**
+ * Navigation item definition
+ */
+interface NavItem {
+  label: string;
+  path: string;
+  icon: React.ReactNode;
+  description?: string;
+}
 
 /**
  * Props for LeftDrawerContent component
@@ -33,12 +55,44 @@ interface LeftDrawerContentProps {
 }
 
 /**
+ * Navigation items with icons and paths
+ */
+const NAV_ITEMS: NavItem[] = [
+  {
+    label: "Release Planner",
+    path: "/release-planner",
+    icon: <DashboardIcon sx={{ fontSize: 20 }} />,
+    description: "Manage releases and timelines",
+  },
+  {
+    label: "Products",
+    path: "/product-maintenance",
+    icon: <ProductsIcon sx={{ fontSize: 20 }} />,
+    description: "Manage your products",
+  },
+  {
+    label: "Features",
+    path: "/features",
+    icon: <FeaturesIcon sx={{ fontSize: 20 }} />,
+    description: "Track features by product",
+  },
+  {
+    label: "Calendars",
+    path: "/calendars",
+    icon: <CalendarsIcon sx={{ fontSize: 20 }} />,
+    description: "Manage holidays and special days",
+  },
+];
+
+/**
  * LeftDrawerContent Component
  *
- * Renders the navigation drawer content including:
- * - Header with title and close button
- * - Navigation links (Release Planner, Products)
- * - Proper MUI styling and responsiveness
+ * Minimalist navigation drawer with:
+ * - Elegant icon-based menu items
+ * - Active route indicator with smooth transitions
+ * - Clean spacing and typography hierarchy
+ * - Responsive design for all breakpoints
+ * - Accessibility: ARIA labels, keyboard navigation, tooltips
  *
  * @example
  * ```tsx
@@ -48,117 +102,187 @@ interface LeftDrawerContentProps {
 export function LeftDrawerContent({ onClose }: LeftDrawerContentProps) {
   const dispatch = useAppDispatch();
   const theme = useTheme();
+  const location = useLocation();
+  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
   const handleClose = onClose || (() => dispatch(toggleLeftSidebar()));
 
+  /**
+   * Check if current route is active
+   */
+  const isActive = (path: string): boolean => {
+    return location.pathname === path;
+  };
+
   return (
-    <Box role="navigation" sx={{ width: DRAWER_WIDTH, height: "100%" }}>
-      {/* Header Section */}
+    <Box
+      role="navigation"
+      aria-label="Main navigation"
+      sx={{
+        width: DRAWER_WIDTH,
+        height: "100%",
+        display: "flex",
+        flexDirection: "column",
+        backgroundColor: theme.palette.background.paper,
+      }}
+    >
+      {/* Header Section - Minimalist */}
       <Box
         sx={{
           p: 2,
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
+          borderBottom: `1px solid ${theme.palette.divider}`,
         }}
       >
-        <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-          Navigation
+        <Typography
+          variant="caption"
+          component="span"
+          sx={{
+            fontWeight: 600,
+            textTransform: "uppercase",
+            letterSpacing: "0.08em",
+            color: theme.palette.text.secondary,
+            fontSize: "0.7rem",
+          }}
+        >
+          Menu
         </Typography>
-        <Tooltip title="Hide sidebar" placement="right">
-          <IconButton
-            aria-label="Hide left sidebar"
-            size="small"
-            onClick={handleClose}
-          >
-            <CloseIcon fontSize="small" />
-          </IconButton>
-        </Tooltip>
+
+        {/* Close button - Only on mobile */}
+        {isMobile && (
+          <Tooltip title="Close navigation" placement="left">
+            <IconButton
+              aria-label="Close navigation menu"
+              size="small"
+              onClick={handleClose}
+              sx={{
+                color: theme.palette.text.secondary,
+                "&:hover": {
+                  backgroundColor: alpha(theme.palette.primary.main, 0.08),
+                  color: theme.palette.primary.main,
+                },
+              }}
+            >
+              <CloseIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+        )}
       </Box>
 
-      <Divider />
-
-      {/* Navigation Links */}
+      {/* Navigation Links - Elegant Design */}
       <Box
+        component="nav"
         sx={{
-          p: 2,
+          flex: 1,
+          p: 1.5,
           display: "flex",
           flexDirection: "column",
-          gap: 1,
+          gap: 0.5,
+          overflow: "auto",
         }}
       >
-        <Link
-          component={RouterLink}
-          to="/release-planner"
-          underline="none"
+        {NAV_ITEMS.map((item) => {
+          const active = isActive(item.path);
+          return (
+            <Tooltip
+              key={item.path}
+              title={item.description}
+              placement="right"
+              arrow
+            >
+              <Button
+                component={RouterLink}
+                to={item.path}
+                fullWidth
+                startIcon={item.icon}
+                sx={{
+                  justifyContent: "flex-start",
+                  textTransform: "none",
+                  fontSize: "0.938rem",
+                  fontWeight: active ? 600 : 500,
+                  padding: "10px 12px",
+                  borderRadius: "8px",
+                  transition: theme.transitions.create(
+                    ["background-color", "color", "box-shadow"],
+                    { duration: theme.transitions.duration.shorter }
+                  ),
+                  color: active
+                    ? theme.palette.primary.main
+                    : theme.palette.text.primary,
+                  backgroundColor: active
+                    ? alpha(theme.palette.primary.main, 0.08)
+                    : "transparent",
+                  border: active
+                    ? `1px solid ${alpha(theme.palette.primary.main, 0.3)}`
+                    : `1px solid transparent`,
+                  position: "relative",
+                  overflow: "hidden",
+
+                  // Active indicator - left border
+                  "&::before": active
+                    ? {
+                        content: '""',
+                        position: "absolute",
+                        left: 0,
+                        top: 0,
+                        bottom: 0,
+                        width: "3px",
+                        backgroundColor: theme.palette.primary.main,
+                      }
+                    : undefined,
+
+                  // Hover state
+                  "&:hover": {
+                    backgroundColor: active
+                      ? alpha(theme.palette.primary.main, 0.12)
+                      : alpha(theme.palette.primary.main, 0.05),
+                    color: active
+                      ? theme.palette.primary.main
+                      : theme.palette.text.primary,
+                  },
+
+                  // Focus visible state
+                  "&:focus-visible": {
+                    outline: `2px solid ${theme.palette.primary.main}`,
+                    outlineOffset: "-2px",
+                  },
+
+                  // Icon color consistency
+                  "& .MuiButton-startIcon": {
+                    color: "inherit",
+                    marginRight: "12px",
+                  },
+                }}
+              >
+                {item.label}
+              </Button>
+            </Tooltip>
+          );
+        })}
+      </Box>
+
+      {/* Footer - Optional branding or info */}
+      <Box
+        sx={{
+          p: 1.5,
+          borderTop: `1px solid ${theme.palette.divider}`,
+          backgroundColor: alpha(theme.palette.primary.main, 0.02),
+        }}
+      >
+        <Typography
+          variant="caption"
+          display="block"
           sx={{
-            display: "block",
-            fontSize: "0.875rem",
+            color: theme.palette.text.secondary,
+            textAlign: "center",
+            fontSize: "0.75rem",
             fontWeight: 500,
-            color: theme.palette.text.primary,
-            transition: theme.transitions.create(["color", "fontWeight"]),
-            "&:hover": {
-              color: theme.palette.primary.main,
-              fontWeight: 600,
-            },
           }}
         >
-          Release Planner
-        </Link>
-        <Link
-          component={RouterLink}
-          to="/product-maintenance"
-          underline="none"
-          sx={{
-            display: "block",
-            fontSize: "0.875rem",
-            fontWeight: 500,
-            color: theme.palette.text.primary,
-            transition: theme.transitions.create(["color", "fontWeight"]),
-            "&:hover": {
-              color: theme.palette.primary.main,
-              fontWeight: 600,
-            },
-          }}
-        >
-          Products
-        </Link>
-        <Link
-          component={RouterLink}
-          to="/features"
-          underline="none"
-          sx={{
-            display: "block",
-            fontSize: "0.875rem",
-            fontWeight: 500,
-            color: theme.palette.text.primary,
-            transition: theme.transitions.create(["color", "fontWeight"]),
-            "&:hover": {
-              color: theme.palette.primary.main,
-              fontWeight: 600,
-            },
-          }}
-        >
-          Features
-        </Link>
-        <Link
-          component={RouterLink}
-          to="/calendars"
-          underline="none"
-          sx={{
-            display: "block",
-            fontSize: "0.875rem",
-            fontWeight: 500,
-            color: theme.palette.text.primary,
-            transition: theme.transitions.create(["color", "fontWeight"]),
-            "&:hover": {
-              color: theme.palette.primary.main,
-              fontWeight: 600,
-            },
-          }}
-        >
-          Calendars
-        </Link>
+          Release Planner v1.0
+        </Typography>
       </Box>
     </Box>
   );

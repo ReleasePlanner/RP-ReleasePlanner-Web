@@ -1,11 +1,26 @@
 /**
  * Header Actions Component
  *
- * Manages the action buttons in the header (Add Release FAB/Button, Settings).
+ * Manages the action buttons in the header (Add Release button, Settings).
+ * Features:
+ * - Minimalist, elegant design
+ * - Responsive layout (FAB on desktop, icon button on mobile)
+ * - Smooth transitions and micro-interactions
+ * - Material UI 7 compliant
  */
 
-import { Box, Fab, IconButton, Tooltip, useTheme, alpha } from "@mui/material";
-import { Add as AddIcon, MoreVert as MoreVertIcon } from "@mui/icons-material";
+import {
+  Box,
+  Fab,
+  IconButton,
+  Tooltip,
+  useTheme,
+  alpha,
+} from "@mui/material";
+import {
+  Add as AddIcon,
+  Settings as SettingsIcon,
+} from "@mui/icons-material";
 import { useAppDispatch } from "../../store/hooks";
 import { toggleRightSidebar } from "../../store/store";
 import { addPlan } from "../../features/releasePlans/slice";
@@ -15,10 +30,16 @@ import type { Plan } from "../../features/releasePlans/types";
  * HeaderActions Component
  *
  * Renders header action buttons including:
- * - FAB button for creating release plans (sm+)
- * - Icon button for creating plans (mobile)
+ * - Add Release FAB (sm+) / IconButton (mobile)
  * - Settings/right sidebar toggle button
- * - Proper responsiveness and theme integration
+ * - Responsive design with smooth transitions
+ * - Accessibility: ARIA labels, keyboard navigation, tooltips
+ *
+ * Features:
+ * - Elegant hover and focus states
+ * - Color-coded secondary action (Add Release)
+ * - Settings icon for secondary panel access
+ * - Proper spacing and alignment
  *
  * @example
  * ```tsx
@@ -29,6 +50,9 @@ export function HeaderActions() {
   const dispatch = useAppDispatch();
   const theme = useTheme();
 
+  /**
+   * Handle adding a new release plan
+   */
   const handleAddRelease = () => {
     const now = new Date();
     const year = now.getFullYear();
@@ -50,9 +74,15 @@ export function HeaderActions() {
   };
 
   return (
-    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+    <Box
+      sx={{
+        display: "flex",
+        alignItems: "center",
+        gap: { xs: 0.5, sm: 1 },
+      }}
+    >
       {/* Add Release FAB - Hidden on mobile */}
-      <Tooltip title="Create new release plan" placement="bottom">
+      <Tooltip title="Create new release plan" placement="bottom" arrow>
         <Fab
           color="secondary"
           size="small"
@@ -64,15 +94,29 @@ export function HeaderActions() {
             height: 40,
             width: 40,
             boxShadow: theme.shadows[2],
-            transition: theme.transitions.create(["transform", "box-shadow"], {
-              duration: theme.transitions.duration.short,
-            }),
+            transition: theme.transitions.create(
+              ["transform", "box-shadow", "background-color"],
+              {
+                duration: theme.transitions.duration.shorter,
+              }
+            ),
+
+            // Hover state
             "&:hover": {
-              transform: "scale(1.05)",
+              transform: "scale(1.08)",
               boxShadow: theme.shadows[4],
+              backgroundColor: theme.palette.secondary.dark,
             },
+
+            // Active state
             "&:active": {
-              transform: "scale(0.98)",
+              transform: "scale(0.95)",
+            },
+
+            // Focus visible state
+            "&:focus-visible": {
+              outline: `2px solid ${theme.palette.secondary.main}`,
+              outlineOffset: "2px",
             },
           }}
         >
@@ -81,21 +125,36 @@ export function HeaderActions() {
       </Tooltip>
 
       {/* Add Release Button - Mobile Only */}
-      <Tooltip title="Create new release plan" placement="bottom">
+      <Tooltip title="Create new release plan" placement="bottom" arrow>
         <IconButton
           color="inherit"
           aria-label="Create new release plan"
           onClick={handleAddRelease}
           sx={{
             display: { xs: "flex", sm: "none" },
-            transition: theme.transitions.create(["background-color"], {
-              duration: theme.transitions.duration.short,
-            }),
+            transition: theme.transitions.create(
+              ["background-color", "transform"],
+              {
+                duration: theme.transitions.duration.shorter,
+              }
+            ),
+
+            // Hover state
             "&:hover": {
-              backgroundColor: alpha(theme.palette.common.white, 0.08),
+              backgroundColor: alpha(theme.palette.common.white, 0.1),
+              transform: "scale(1.05)",
             },
+
+            // Focus visible state
             "&:focus-visible": {
-              backgroundColor: alpha(theme.palette.common.white, 0.12),
+              backgroundColor: alpha(theme.palette.common.white, 0.15),
+              outline: `2px solid ${theme.palette.common.white}`,
+              outlineOffset: "-2px",
+            },
+
+            // Active state
+            "&:active": {
+              transform: "scale(0.98)",
             },
           }}
         >
@@ -104,25 +163,41 @@ export function HeaderActions() {
       </Tooltip>
 
       {/* Settings/Right Panel Toggle */}
-      <Tooltip title="Open settings panel" placement="bottom">
+      <Tooltip title="Open settings panel" placement="bottom" arrow>
         <IconButton
           color="inherit"
           edge="end"
           aria-label="Open settings panel"
+          aria-expanded="false"
           onClick={() => dispatch(toggleRightSidebar())}
           sx={{
-            transition: theme.transitions.create(["background-color"], {
-              duration: theme.transitions.duration.short,
-            }),
+            transition: theme.transitions.create(
+              ["background-color", "transform"],
+              {
+                duration: theme.transitions.duration.shorter,
+              }
+            ),
+
+            // Hover state
             "&:hover": {
-              backgroundColor: alpha(theme.palette.common.white, 0.08),
+              backgroundColor: alpha(theme.palette.common.white, 0.1),
+              transform: "scale(1.05)",
             },
+
+            // Focus visible state
             "&:focus-visible": {
-              backgroundColor: alpha(theme.palette.common.white, 0.12),
+              backgroundColor: alpha(theme.palette.common.white, 0.15),
+              outline: `2px solid ${theme.palette.common.white}`,
+              outlineOffset: "-2px",
+            },
+
+            // Active state
+            "&:active": {
+              transform: "scale(0.98)",
             },
           }}
         >
-          <MoreVertIcon />
+          <SettingsIcon />
         </IconButton>
       </Tooltip>
     </Box>

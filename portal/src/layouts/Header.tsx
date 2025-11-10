@@ -1,11 +1,16 @@
-import { AppBar, Toolbar, useTheme } from "@mui/material";
+import { AppBar, Toolbar, useTheme, Box, useMediaQuery } from "@mui/material";
 import { HeaderNavButton, HeaderTitle, HeaderActions } from "./components";
 
 /**
  * Header Component
  *
- * Main application header with navigation and actions.
- * Displays app title, navigation controls, and action buttons.
+ * Main application header with elegant, minimalist design.
+ * Features:
+ * - Clean typography hierarchy
+ * - Optimized spacing for all breakpoints
+ * - Material UI 7 compliant
+ * - Subtle elevation and shadow
+ * - Responsive layout
  *
  * Composed of:
  * - HeaderNavButton: Toggle left sidebar
@@ -19,14 +24,23 @@ import { HeaderNavButton, HeaderTitle, HeaderActions } from "./components";
  */
 export function Header() {
   const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
   return (
     <AppBar
       position="sticky"
       color="primary"
       enableColorOnDark
+      elevation={1}
       sx={{
-        boxShadow: theme.shadows[4],
+        boxShadow: theme.shadows[2],
+        transition: theme.transitions.create(["box-shadow"], {
+          duration: theme.transitions.duration.shorter,
+        }),
+        // Subtle shadow increase on scroll (can be enhanced with scroll listener)
+        "&:hover": {
+          boxShadow: theme.shadows[4],
+        },
       }}
     >
       <Toolbar
@@ -35,11 +49,30 @@ export function Header() {
           alignItems: "center",
           justifyContent: "space-between",
           px: { xs: 1, sm: 2, md: 3 },
+          minHeight: { xs: 56, sm: 64 },
+          gap: { xs: 1, sm: 2 },
         }}
       >
-        <HeaderNavButton />
-        <HeaderTitle />
-        <HeaderActions />
+        {/* Left Section - Navigation Toggle */}
+        <Box sx={{ display: "flex", alignItems: "center" }}>
+          <HeaderNavButton />
+        </Box>
+
+        {/* Center Section - Title */}
+        <Box sx={{ flex: 1, display: "flex", justifyContent: "center" }}>
+          <HeaderTitle />
+        </Box>
+
+        {/* Right Section - Actions */}
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            gap: isMobile ? 0.5 : 1,
+          }}
+        >
+          <HeaderActions />
+        </Box>
       </Toolbar>
     </AppBar>
   );
