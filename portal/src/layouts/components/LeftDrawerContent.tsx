@@ -123,6 +123,24 @@ export function LeftDrawerContent({ onClose }: LeftDrawerContentProps) {
         >
           Products
         </Link>
+        <Link
+          component={RouterLink}
+          to="/features"
+          underline="none"
+          sx={{
+            display: "block",
+            fontSize: "0.875rem",
+            fontWeight: 500,
+            color: theme.palette.text.primary,
+            transition: theme.transitions.create(["color", "fontWeight"]),
+            "&:hover": {
+              color: theme.palette.primary.main,
+              fontWeight: 600,
+            },
+          }}
+        >
+          Features
+        </Link>
       </Box>
     </Box>
   );

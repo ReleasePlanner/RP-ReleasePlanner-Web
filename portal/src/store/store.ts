@@ -32,13 +32,23 @@ const uiSlice = createSlice({
     toggleRightSidebar(state) {
       state.rightSidebarOpen = !state.rightSidebarOpen;
     },
-    setPlanLeftPercent(state, action: PayloadAction<{ planId: string; percent: number }>) {
-      if (!state.planLeftPercentByPlanId) state.planLeftPercentByPlanId = {} as Record<string, number>;
-      state.planLeftPercentByPlanId[action.payload.planId] = action.payload.percent;
+    setPlanLeftPercent(
+      state,
+      action: PayloadAction<{ planId: string; percent: number }>
+    ) {
+      if (!state.planLeftPercentByPlanId)
+        state.planLeftPercentByPlanId = {} as Record<string, number>;
+      state.planLeftPercentByPlanId[action.payload.planId] =
+        action.payload.percent;
     },
-    setPlanExpanded(state, action: PayloadAction<{ planId: string; expanded: boolean }>) {
-      if (!state.planExpandedByPlanId) state.planExpandedByPlanId = {} as Record<string, boolean>;
-      state.planExpandedByPlanId[action.payload.planId] = action.payload.expanded;
+    setPlanExpanded(
+      state,
+      action: PayloadAction<{ planId: string; expanded: boolean }>
+    ) {
+      if (!state.planExpandedByPlanId)
+        state.planExpandedByPlanId = {} as Record<string, boolean>;
+      state.planExpandedByPlanId[action.payload.planId] =
+        action.payload.expanded;
     },
   },
 });
