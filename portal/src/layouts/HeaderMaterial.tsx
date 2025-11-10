@@ -38,14 +38,43 @@ export function HeaderMaterial() {
     >
       <Toolbar
         sx={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
           minHeight: { xs: 56, md: 64 },
           px: { xs: 1.5, sm: 2, md: 3, lg: 4 },
-          gap: 1,
+          position: "relative",
         }}
       >
-        <HeaderNavButton />
-        <HeaderTitle />
-        <HeaderActions />
+        {/* Left Section - Navigation Toggle */}
+        <div
+          style={{
+            position: "absolute",
+            left: "12px",
+            display: "flex",
+            alignItems: "center",
+          }}
+        >
+          <HeaderNavButton />
+        </div>
+
+        {/* Center Section - Title */}
+        <div style={{ display: "flex", justifyContent: "center" }}>
+          <HeaderTitle />
+        </div>
+
+        {/* Right Section - Actions */}
+        <div
+          style={{
+            position: "absolute",
+            right: "12px",
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+          }}
+        >
+          <HeaderActions />
+        </div>
       </Toolbar>
     </AppBar>
   );
