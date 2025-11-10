@@ -26,11 +26,15 @@ Complete documentation for Release Planner Web Portal.
    - Micro-interactions, accessibility enhancements
 2. **[NAVIGATION_VISUAL_SUMMARY.md](NAVIGATION_VISUAL_SUMMARY.md)** - Visual before/after comparison
 3. **[NAVIGATION_COMPLETION_SUMMARY.md](NAVIGATION_COMPLETION_SUMMARY.md)** - Completion summary
-4. **[SIDEBAR_AUTOCLOSE_FIX.md](SIDEBAR_AUTOCLOSE_FIX.md)** - Auto-close functionality
+4. **[SIDEBAR_AUTOCLOSE_FIX.md](SIDEBAR_AUTOCLOSE_FIX.md)** - Auto-close functionality (v1)
    - Mobile drawer auto-close on item click, backdrop click, ESC
    - Desktop persistent drawer behavior
+5. **[BUGFIX_SIDEBAR_HEADER_IMPROVEMENTS.md](BUGFIX_SIDEBAR_HEADER_IMPROVEMENTS.md)** - Bug fixes (v2)
+   - Fixed sidebar auto-close with useNavigate
+   - Fixed header layout alignment
+   - Fixed color consistency
 
-### �️ Layout & Components
+### 🏗️ Layout & Components
 
 1. **[LAYOUT_REFACTORIZATION_PLAN.md](LAYOUT_REFACTORIZATION_PLAN.md)** - Refactoring plan
 2. **[LAYOUT_REFACTORIZATION_COMPLETE.md](LAYOUT_REFACTORIZATION_COMPLETE.md)** - Completion
@@ -123,20 +127,21 @@ Follow the pattern from `CALENDAR_FEATURE_SUMMARY.md`:
 
 ## 📊 Document Overview
 
-| Document                         | Focus                  | Status      |
-| -------------------------------- | ---------------------- | ----------- |
-| DESIGN_AUDIT_REPORT.md           | Design compliance      | ✅ Complete |
-| DESIGN_STANDARDS.md              | Design guidelines      | ✅ Complete |
-| UX_STANDARDS_REPORT.md           | UX implementation      | ✅ Complete |
-| NAVIGATION_MENU_ENHANCEMENT.md   | Navigation redesign    | ✅ Complete |
-| NAVIGATION_VISUAL_SUMMARY.md     | Navigation visuals     | ✅ Complete |
-| NAVIGATION_COMPLETION_SUMMARY.md | Navigation summary     | ✅ Complete |
-| SIDEBAR_AUTOCLOSE_FIX.md         | Sidebar auto-close     | ✅ Complete |
-| CALENDAR_FEATURE_SUMMARY.md      | Feature implementation | ✅ Complete |
-| CALENDAR_TOOLBAR_ENHANCEMENT.md  | Toolbar controls       | ✅ Complete |
-| LAYOUT*REFACTORIZATION*\*        | Layout refactoring     | ✅ Complete |
-| BUILDER_ARCHITECTURE.md          | Architecture pattern   | ✅ Complete |
-| BUILD*OPTIMIZATION*\*            | Performance            | ✅ Complete |
+| Document                              | Focus                   | Status      |
+| ------------------------------------- | ----------------------- | ----------- |
+| DESIGN_AUDIT_REPORT.md                | Design compliance       | ✅ Complete |
+| DESIGN_STANDARDS.md                   | Design guidelines       | ✅ Complete |
+| UX_STANDARDS_REPORT.md                | UX implementation       | ✅ Complete |
+| NAVIGATION_MENU_ENHANCEMENT.md        | Navigation redesign     | ✅ Complete |
+| NAVIGATION_VISUAL_SUMMARY.md          | Navigation visuals      | ✅ Complete |
+| NAVIGATION_COMPLETION_SUMMARY.md      | Navigation summary      | ✅ Complete |
+| SIDEBAR_AUTOCLOSE_FIX.md              | Sidebar auto-close (v1) | ✅ Complete |
+| BUGFIX_SIDEBAR_HEADER_IMPROVEMENTS.md | Bug fixes (v2)          | ✅ Complete |
+| CALENDAR_FEATURE_SUMMARY.md           | Feature implementation  | ✅ Complete |
+| CALENDAR_TOOLBAR_ENHANCEMENT.md       | Toolbar controls        | ✅ Complete |
+| LAYOUT*REFACTORIZATION*\*             | Layout refactoring      | ✅ Complete |
+| BUILDER_ARCHITECTURE.md               | Architecture pattern    | ✅ Complete |
+| BUILD*OPTIMIZATION*\*                 | Performance             | ✅ Complete |
 
 ---
 
@@ -163,8 +168,8 @@ A: See the Navigation enhancement documentation with icons and active indicators
 → See: `NAVIGATION_MENU_ENHANCEMENT.md`
 
 **Q: How do I implement auto-close for drawers?**
-A: Check the Sidebar auto-close fix for mobile/desktop behavior
-→ See: `SIDEBAR_AUTOCLOSE_FIX.md`
+A: Check the Sidebar auto-close fix for mobile/desktop behavior and bug fixes
+→ See: `SIDEBAR_AUTOCLOSE_FIX.md`, `BUGFIX_SIDEBAR_HEADER_IMPROVEMENTS.md`
 
 **Q: What's the project architecture?**
 A: Feature-based modules with hooks and utils
