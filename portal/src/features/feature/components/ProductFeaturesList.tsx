@@ -59,7 +59,11 @@ export function ProductFeaturesList({
   }, [product, searchQuery, sortBy]);
 
   if (!product) {
-    return <Box sx={{ p: 3, textAlign: "center" }}>Select a product to view features</Box>;
+    return (
+      <Box sx={{ p: 3, textAlign: "center" }}>
+        Select a product to view features
+      </Box>
+    );
   }
 
   return (

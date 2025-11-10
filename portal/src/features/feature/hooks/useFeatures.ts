@@ -14,14 +14,17 @@ export function useProductFeatures(initialProduct: ProductWithFeatures) {
     }));
   }, []);
 
-  const updateFeature = useCallback((featureId: string, updatedFeature: Feature) => {
-    setProduct((prev) => ({
-      ...prev,
-      features: prev.features.map((f) =>
-        f.id === featureId ? updatedFeature : f
-      ),
-    }));
-  }, []);
+  const updateFeature = useCallback(
+    (featureId: string, updatedFeature: Feature) => {
+      setProduct((prev) => ({
+        ...prev,
+        features: prev.features.map((f) =>
+          f.id === featureId ? updatedFeature : f
+        ),
+      }));
+    },
+    []
+  );
 
   const deleteFeature = useCallback((featureId: string) => {
     setProduct((prev) => ({
@@ -54,9 +57,7 @@ export function useFeatures(initialProducts: ProductWithFeatures[]) {
     (productId: string, feature: Feature) => {
       setProducts((prev) =>
         prev.map((p) =>
-          p.id === productId
-            ? { ...p, features: [...p.features, feature] }
-            : p
+          p.id === productId ? { ...p, features: [...p.features, feature] } : p
         )
       );
     },

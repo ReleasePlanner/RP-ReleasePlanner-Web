@@ -8,15 +8,13 @@ import {
   useTheme,
 } from "@mui/material";
 import { Add as AddIcon } from "@mui/icons-material";
-import type { Feature, ProductWithFeatures } from "../types";
+import type { ProductWithFeatures } from "../types";
 
 /**
  * Props for FeatureCard component
  */
 interface FeatureCardProps {
   product: ProductWithFeatures;
-  onEditFeature: (product: ProductWithFeatures, feature: Feature) => void;
-  onDeleteFeature: (productId: string, featureId: string) => void;
   onAddFeature: (product: ProductWithFeatures) => void;
 }
 
@@ -31,16 +29,12 @@ interface FeatureCardProps {
  * ```tsx
  * <FeatureCard
  *   product={product}
- *   onEditFeature={handleEdit}
- *   onDeleteFeature={handleDelete}
  *   onAddFeature={handleAdd}
  * />
  * ```
  */
 export function FeatureCard({
   product,
-  onEditFeature,
-  onDeleteFeature,
   onAddFeature,
 }: FeatureCardProps) {
   const theme = useTheme();

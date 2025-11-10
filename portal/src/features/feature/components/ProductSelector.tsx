@@ -1,4 +1,11 @@
-import { Box, FormControl, InputLabel, MenuItem, Select, Typography } from "@mui/material";
+import {
+  Box,
+  FormControl,
+  InputLabel,
+  MenuItem,
+  Select,
+  Typography,
+} from "@mui/material";
 import type { ProductWithFeatures } from "../types";
 
 /**

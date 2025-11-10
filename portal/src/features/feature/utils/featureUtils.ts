@@ -21,10 +21,7 @@ export function filterFeaturesBySearch(
 /**
  * Sort features by the specified criteria
  */
-export function sortFeatures(
-  features: Feature[],
-  sortBy: SortBy
-): Feature[] {
+export function sortFeatures(features: Feature[], sortBy: SortBy): Feature[] {
   const sorted = [...features];
 
   switch (sortBy) {
@@ -38,9 +35,7 @@ export function sortFeatures(
         planned: 2,
         "on-hold": 3,
       };
-      sorted.sort(
-        (a, b) => statusOrder[a.status] - statusOrder[b.status]
-      );
+      sorted.sort((a, b) => statusOrder[a.status] - statusOrder[b.status]);
       break;
     }
     case "date":

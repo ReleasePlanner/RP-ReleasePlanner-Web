@@ -10,4 +10,3 @@ export { FeatureEditDialog } from "./FeatureEditDialog";
 export { FeatureToolbar, type ViewMode, type SortBy } from "./FeatureToolbar";
 export { ProductSelector } from "./ProductSelector";
 export { ProductFeaturesList } from "./ProductFeaturesList";
-
