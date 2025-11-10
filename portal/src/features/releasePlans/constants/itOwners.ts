@@ -30,7 +30,6 @@ export const IT_OWNERS: ITOwner[] = [
   {
     id: "it-owner-3",
     name: "Carol Davis",
-    email: "carol.davis@company.com",
     department: "DevOps",
   },
   {

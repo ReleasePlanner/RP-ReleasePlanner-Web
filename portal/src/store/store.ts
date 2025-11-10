@@ -1,6 +1,8 @@
 import { configureStore, createSlice } from "@reduxjs/toolkit";
 import type { PayloadAction } from "@reduxjs/toolkit";
 import { releasePlansReducer } from "../features/releasePlans/slice";
+import { productsReducer } from "../state/productsSlice";
+import { itOwnersReducer } from "../state/itOwnersSlice";
 
 type UiState = {
   leftSidebarOpen: boolean;
@@ -72,6 +74,8 @@ export const store = configureStore({
   reducer: {
     ui: uiSlice.reducer,
     releasePlans: releasePlansReducer,
+    products: productsReducer,
+    itOwners: itOwnersReducer,
   },
 });
 

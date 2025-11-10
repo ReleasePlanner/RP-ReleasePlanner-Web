@@ -19,8 +19,7 @@ import {
   Tooltip,
 } from "@mui/material";
 import { Edit as EditIcon, Delete as DeleteIcon } from "@mui/icons-material";
-import { type ComponentVersion, type ComponentTypeValue } from "../types";
-import { COMPONENT_TYPE_LABELS } from "../constants";
+import { type ComponentVersion } from "@/features/releasePlans/components/Plan/CommonDataCard/types";
 
 interface ComponentsTableProps {
   components: ComponentVersion[];
@@ -41,8 +40,8 @@ export function ComponentsTable({
         <TableHead sx={{ backgroundColor: theme.palette.action.hover }}>
           <TableRow>
             <TableCell sx={{ fontWeight: 600 }}>Component</TableCell>
-            <TableCell sx={{ fontWeight: 600 }}>Current</TableCell>
-            <TableCell sx={{ fontWeight: 600 }}>Previous</TableCell>
+            <TableCell sx={{ fontWeight: 600 }}>Version</TableCell>
+            <TableCell sx={{ fontWeight: 600 }}>Type</TableCell>
             <TableCell sx={{ fontWeight: 600 }} align="right">
               Actions
             </TableCell>
@@ -61,13 +60,7 @@ export function ComponentsTable({
             components.map((component) => (
               <TableRow key={component.id}>
                 <TableCell>
-                  <Typography variant="body2">
-                    {
-                      COMPONENT_TYPE_LABELS[
-                        component.type as ComponentTypeValue
-                      ]
-                    }
-                  </Typography>
+                  <Typography variant="body2">{component.name}</Typography>
                 </TableCell>
                 <TableCell>
                   <Typography
@@ -77,7 +70,7 @@ export function ComponentsTable({
                       color: theme.palette.success.main,
                     }}
                   >
-                    {component.currentVersion}
+                    {component.version || "N/A"}
                   </Typography>
                 </TableCell>
                 <TableCell>
@@ -85,7 +78,7 @@ export function ComponentsTable({
                     variant="body2"
                     sx={{ color: theme.palette.text.secondary }}
                   >
-                    {component.previousVersion}
+                    {component.type}
                   </Typography>
                 </TableCell>
                 <TableCell align="right">

@@ -13,7 +13,7 @@ import {
   Alert,
   Button,
 } from "@mui/material";
-import { type ComponentVersion, type ComponentTypeValue } from "../types";
+import { type ComponentVersion } from "@/features/releasePlans/components/Plan/CommonDataCard/types";
 
 interface ComponentEditDialogProps {
   open: boolean;
@@ -47,34 +47,41 @@ export function ComponentEditDialog({
         )}
 
         <TextField
+          label="Component Name"
+          fullWidth
+          value={component.name}
+          onChange={(e) => {
+            onComponentChange({
+              ...component,
+              name: e.target.value,
+            });
+          }}
+          placeholder="e.g., Web Portal"
+          sx={{ mb: 2 }}
+        />
+
+        <TextField
           label="Component Type"
-          select
           fullWidth
           value={component.type}
           onChange={(e) => {
             onComponentChange({
               ...component,
-              type: e.target.value as ComponentTypeValue,
+              type: e.target.value,
             });
           }}
-          SelectProps={{
-            native: true,
-          }}
+          placeholder="e.g., web, mobile, service"
           sx={{ mb: 2 }}
-        >
-          <option value="web">Web</option>
-          <option value="services">Services</option>
-          <option value="mobile">Mobile</option>
-        </TextField>
+        />
 
         <TextField
-          label="Current Version"
+          label="Version"
           fullWidth
-          value={component.currentVersion}
+          value={component.version || ""}
           onChange={(e) => {
             onComponentChange({
               ...component,
-              currentVersion: e.target.value,
+              version: e.target.value,
             });
           }}
           placeholder="e.g., 1.0.0"
@@ -82,21 +89,27 @@ export function ComponentEditDialog({
         />
 
         <TextField
-          label="Previous Version"
+          label="Description"
           fullWidth
-          value={component.previousVersion}
+          multiline
+          rows={3}
+          value={component.description || ""}
           onChange={(e) => {
             onComponentChange({
               ...component,
-              previousVersion: e.target.value,
+              description: e.target.value,
             });
           }}
-          placeholder="e.g., 0.9.0"
+          placeholder="Brief description..."
         />
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose}>Cancel</Button>
-        <Button onClick={onSave} variant="contained">
+        <Button
+          onClick={onSave}
+          variant="contained"
+          disabled={!component.name || !component.type}
+        >
           Save
         </Button>
       </DialogActions>

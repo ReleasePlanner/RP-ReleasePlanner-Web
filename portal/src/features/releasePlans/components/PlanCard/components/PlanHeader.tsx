@@ -1,13 +1,28 @@
-import { Typography, IconButton, Chip, Box, Select, MenuItem, FormControl, InputLabel, alpha, useTheme } from "@mui/material";
-import { ExpandMore, ExpandLess, CalendarMonth, AccessTime } from "@mui/icons-material";
+import {
+  Typography,
+  IconButton,
+  Chip,
+  Box,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  alpha,
+  useTheme,
+} from "@mui/material";
+import {
+  ExpandMore,
+  ExpandLess,
+  CalendarMonth,
+  AccessTime,
+} from "@mui/icons-material";
 import type { SelectChangeEvent } from "@mui/material";
 import {
   LOCAL_PLAN_STATUS_LABELS,
   LOCAL_PLAN_STATUS_COLORS,
 } from "@/constants";
 import type { PlanStatus } from "../../../types";
-import { getAllProducts } from "../../../lib/productData";
-import { IT_OWNERS } from "../../../constants/itOwners";
+import { useAppSelector } from "@/store/hooks";
 
 export type PlanHeaderProps = {
   id: string;
@@ -43,7 +58,10 @@ export function PlanHeader({
   onITOwnerChange,
 }: PlanHeaderProps) {
   const theme = useTheme();
-  const products = getAllProducts();
+
+  // Get products and IT owners from Redux store
+  const products = useAppSelector((state) => state.products.products);
+  const itOwners = useAppSelector((state) => state.itOwners.itOwners);
 
   // Calculate duration in days
   const calculateDuration = (start: string, end: string): number => {
@@ -80,7 +98,9 @@ export function PlanHeader({
       }}
     >
       {/* First Row: ID, Name, Status, Expand Button */}
-      <Box sx={{ display: "flex", alignItems: "center", gap: 2, flexWrap: "wrap" }}>
+      <Box
+        sx={{ display: "flex", alignItems: "center", gap: 2, flexWrap: "wrap" }}
+      >
         {/* Plan ID */}
         <Chip
           label={`ID: ${id}`}
@@ -139,10 +159,14 @@ export function PlanHeader({
       </Box>
 
       {/* Second Row: Date Range and Duration */}
-      <Box sx={{ display: "flex", alignItems: "center", gap: 3, flexWrap: "wrap" }}>
+      <Box
+        sx={{ display: "flex", alignItems: "center", gap: 3, flexWrap: "wrap" }}
+      >
         {/* Date Range */}
         <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
-          <CalendarMonth sx={{ fontSize: 16, color: theme.palette.text.secondary }} />
+          <CalendarMonth
+            sx={{ fontSize: 16, color: theme.palette.text.secondary }}
+          />
           <Typography
             variant="body2"
             sx={{
@@ -157,7 +181,9 @@ export function PlanHeader({
 
         {/* Duration */}
         <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
-          <AccessTime sx={{ fontSize: 16, color: theme.palette.text.secondary }} />
+          <AccessTime
+            sx={{ fontSize: 16, color: theme.palette.text.secondary }}
+          />
           <Typography
             variant="body2"
             sx={{
@@ -172,7 +198,9 @@ export function PlanHeader({
       </Box>
 
       {/* Third Row: Product and IT Owner Selectors */}
-      <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap", alignItems: "center" }}>
+      <Box
+        sx={{ display: "flex", gap: 2, flexWrap: "wrap", alignItems: "center" }}
+      >
         {/* Product Selector */}
         <FormControl
           size="small"
@@ -241,7 +269,7 @@ export function PlanHeader({
             <MenuItem value="">
               <em>None</em>
             </MenuItem>
-            {IT_OWNERS.map((owner) => (
+            {itOwners.map((owner) => (
               <MenuItem key={owner.id} value={owner.id}>
                 {owner.name}
               </MenuItem>

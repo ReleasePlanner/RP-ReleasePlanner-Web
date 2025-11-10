@@ -4,6 +4,7 @@ import ReleasePlanner from "./pages/ReleasePlanner";
 import { ProductMaintenancePage } from "./pages/productMaintenancePage";
 import { FeatureMaintenancePage } from "./pages/featureMaintenancePage";
 import { CalendarMaintenancePage } from "./pages/calendarMaintenancePage";
+import { ITOwnerMaintenancePage } from "./pages/itOwnerMaintenancePage";
 
 export default function App() {
   return (
@@ -17,6 +18,7 @@ export default function App() {
         />
         <Route path="features" element={<FeatureMaintenancePage />} />
         <Route path="calendars" element={<CalendarMaintenancePage />} />
+        <Route path="it-owners" element={<ITOwnerMaintenancePage />} />
       </Route>
     </Routes>
   );

@@ -14,7 +14,10 @@ import {
   useTheme,
 } from "@mui/material";
 import { Add as AddIcon } from "@mui/icons-material";
-import { type Product, type ComponentVersion } from "../types";
+import {
+  type Product,
+  type ComponentVersion,
+} from "@/features/releasePlans/components/Plan/CommonDataCard/types";
 import { ComponentsTable } from "./index";
 
 interface ProductCardProps {

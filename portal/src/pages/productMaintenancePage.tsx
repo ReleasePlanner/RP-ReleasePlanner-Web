@@ -8,59 +8,16 @@ import { useMemo, useState } from "react";
 import { Box, Button } from "@mui/material";
 import { Add as AddIcon } from "@mui/icons-material";
 import { PageLayout, PageToolbar, type ViewMode } from "@/components";
-import { type Product, type ComponentVersion } from "@/features/product/types";
+import {
+  type Product,
+  type ComponentVersion,
+} from "@/features/releasePlans/components/Plan/CommonDataCard/types";
 import {
   ProductCard,
   ComponentEditDialog,
 } from "@/features/product/components";
-
-/**
- * Mock data for products
- */
-const MOCK_PRODUCTS: Product[] = [
-  {
-    id: "prod-1",
-    name: "Release Planner",
-    components: [
-      {
-        id: "comp-1",
-        type: "web",
-        currentVersion: "2.1.0",
-        previousVersion: "2.0.5",
-      },
-      {
-        id: "comp-2",
-        type: "services",
-        currentVersion: "1.5.0",
-        previousVersion: "1.4.8",
-      },
-    ],
-  },
-  {
-    id: "prod-2",
-    name: "Analytics Platform",
-    components: [
-      {
-        id: "comp-3",
-        type: "web",
-        currentVersion: "3.0.0",
-        previousVersion: "2.9.5",
-      },
-      {
-        id: "comp-4",
-        type: "mobile",
-        currentVersion: "1.2.0",
-        previousVersion: "1.1.9",
-      },
-      {
-        id: "comp-5",
-        type: "services",
-        currentVersion: "2.0.0",
-        previousVersion: "1.9.2",
-      },
-    ],
-  },
-];
+import { useAppSelector, useAppDispatch } from "@/store/hooks";
+import { updateProduct } from "@/state/productsSlice";
 
 interface EditingProduct {
   product: Product;
@@ -68,7 +25,9 @@ interface EditingProduct {
 }
 
 export function ProductMaintenancePage() {
-  const [products, setProducts] = useState<Product[]>(MOCK_PRODUCTS);
+  const dispatch = useAppDispatch();
+  const products = useAppSelector((state) => state.products.products);
+
   const [editingProduct, setEditingProduct] = useState<EditingProduct | null>(
     null
   );
@@ -102,7 +61,12 @@ export function ProductMaintenancePage() {
 
   const handleAddProduct = () => {
     setEditingProduct({
-      product: { id: `prod-${Date.now()}`, name: "", components: [] },
+      product: {
+        id: `prod-${Date.now()}`,
+        name: "",
+        components: [],
+        features: [],
+      },
     });
     setOpenDialog(true);
   };
@@ -117,16 +81,15 @@ export function ProductMaintenancePage() {
   };
 
   const handleDeleteComponent = (productId: string, componentId: string) => {
-    setProducts((prev) =>
-      prev.map((p) =>
-        p.id === productId
-          ? {
-              ...p,
-              components: p.components.filter((c) => c.id !== componentId),
-            }
-          : p
-      )
-    );
+    const product = products.find((p) => p.id === productId);
+    if (product) {
+      dispatch(
+        updateProduct({
+          ...product,
+          components: product.components.filter((c) => c.id !== componentId),
+        })
+      );
+    }
   };
 
   const handleAddComponent = (product: Product) => {
@@ -135,9 +98,8 @@ export function ProductMaintenancePage() {
       product,
       component: {
         id: `comp-${Date.now()}`,
+        name: "",
         type: "web",
-        currentVersion: "",
-        previousVersion: "",
       },
     });
     setOpenDialog(true);
@@ -146,20 +108,17 @@ export function ProductMaintenancePage() {
   const handleSave = () => {
     if (!editingProduct || !editingProduct.component) return;
 
-    setProducts((prev) =>
-      prev.map((p) =>
-        p.id === selectedProduct?.id
-          ? {
-              ...p,
-              components: p.components.map((c) =>
-                c.id === editingProduct.component?.id
-                  ? editingProduct.component
-                  : c
-              ),
-            }
-          : p
-      )
-    );
+    const product = products.find((p) => p.id === selectedProduct?.id);
+    if (product) {
+      dispatch(
+        updateProduct({
+          ...product,
+          components: product.components.map((c) =>
+            c.id === editingProduct.component?.id ? editingProduct.component : c
+          ),
+        })
+      );
+    }
 
     handleCloseDialog();
   };
