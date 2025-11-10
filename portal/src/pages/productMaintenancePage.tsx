@@ -4,13 +4,16 @@
  * Main page for managing products and their components
  */
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Box, Button, Typography } from "@mui/material";
 import { Add as AddIcon } from "@mui/icons-material";
 import { type Product, type ComponentVersion } from "@/features/product/types";
 import {
   ProductCard,
   ComponentEditDialog,
+  ProductToolbar,
+  type ViewMode,
+  type SortBy,
 } from "@/features/product/components";
 
 /**
@@ -73,6 +76,31 @@ export function ProductMaintenancePage() {
   );
   const [openDialog, setOpenDialog] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [viewMode, setViewMode] = useState<ViewMode>("grid");
+  const [sortBy, setSortBy] = useState<SortBy>("name");
+  const [searchQuery, setSearchQuery] = useState("");
+
+  // Filter and sort products
+  const filteredAndSortedProducts = useMemo(() => {
+    let result = [...products];
+
+    // Filter by search query
+    if (searchQuery.trim()) {
+      result = result.filter((p) =>
+        p.name.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+
+    // Sort
+    if (sortBy === "name") {
+      result.sort((a, b) => a.name.localeCompare(b.name));
+    } else if (sortBy === "date") {
+      // For demo, sort by ID (would be by actual date in real app)
+      result.sort((a, b) => b.id.localeCompare(a.id));
+    }
+
+    return result;
+  }, [products, searchQuery, sortBy]);
 
   const handleAddProduct = () => {
     setEditingProduct({
@@ -173,25 +201,39 @@ export function ProductMaintenancePage() {
           Manage products and their component versions
         </Typography>
       </Box>
-      {/* Action Buttons */}
-      <Box sx={{ mb: 3, display: "flex", gap: 2 }}>
+
+      {/* Toolbar with controls */}
+      <Box sx={{ display: "flex", gap: 2, mb: 3, alignItems: "center", flexWrap: "wrap" }}>
+        <ProductToolbar
+          viewMode={viewMode}
+          onViewModeChange={setViewMode}
+          sortBy={sortBy}
+          onSortChange={setSortBy}
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+        />
         <Button
           variant="contained"
           startIcon={<AddIcon />}
           onClick={handleAddProduct}
+          sx={{ ml: "auto" }}
         >
           Add Product
         </Button>
       </Box>
-      {/* Products Grid */}
+
+      {/* Products Grid/List */}
       <Box
         sx={{
           display: "grid",
-          gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
+          gridTemplateColumns:
+            viewMode === "grid"
+              ? { xs: "1fr", md: "1fr 1fr" }
+              : "1fr",
           gap: 3,
         }}
       >
-        {products.map((product) => (
+        {filteredAndSortedProducts.map((product) => (
           <ProductCard
             key={product.id}
             product={product}
