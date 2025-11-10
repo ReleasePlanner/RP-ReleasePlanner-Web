@@ -7,14 +7,11 @@
 import { useState } from "react";
 import { Box, Button, Typography } from "@mui/material";
 import { Add as AddIcon } from "@mui/icons-material";
-import {
-  type Product,
-  type ComponentVersion,
-} from "@/features/productMaintenance/types";
+import { type Product, type ComponentVersion } from "@/features/product/types";
 import {
   ProductCard,
   ComponentEditDialog,
-} from "@/features/productMaintenance/components";
+} from "@/features/product/components";
 
 /**
  * Mock data for products
