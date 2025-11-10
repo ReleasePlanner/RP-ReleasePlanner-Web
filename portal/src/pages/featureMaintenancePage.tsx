@@ -79,7 +79,8 @@ interface EditingFeature {
 }
 
 export function FeatureMaintenancePage() {
-  const [products, setProducts] = useState<ProductWithFeatures[]>(MOCK_PRODUCTS);
+  const [products, setProducts] =
+    useState<ProductWithFeatures[]>(MOCK_PRODUCTS);
   const [editingFeature, setEditingFeature] = useState<EditingFeature | null>(
     null
   );
@@ -152,7 +153,10 @@ export function FeatureMaintenancePage() {
     setOpenDialog(true);
   };
 
-  const handleEditFeature = (product: ProductWithFeatures, feature: Feature) => {
+  const handleEditFeature = (
+    product: ProductWithFeatures,
+    feature: Feature
+  ) => {
     setSelectedProduct(product);
     setEditingFeature({ product, feature });
     setOpenDialog(true);
@@ -284,9 +288,7 @@ export function FeatureMaintenancePage() {
         sx={{
           display: "grid",
           gridTemplateColumns:
-            viewMode === "grid"
-              ? { xs: "1fr", md: "1fr 1fr" }
-              : "1fr",
+            viewMode === "grid" ? { xs: "1fr", md: "1fr 1fr" } : "1fr",
           gap: 3,
         }}
       >

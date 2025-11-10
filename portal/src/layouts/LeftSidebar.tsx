@@ -41,6 +41,7 @@ export function LeftSidebar() {
   const navLinks = [
     { to: "/release-planner", label: "Release Planner" },
     { to: "/product-maintenance", label: "Products" },
+    { to: "/features", label: "Features" },
   ];
 
   const leftDrawerContent = (

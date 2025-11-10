@@ -12,8 +12,17 @@ import {
   MenuItem,
   Typography,
 } from "@mui/material";
-import type { Feature, FeatureStatus, FeatureCategory, ProductOwner } from "../types";
-import { FEATURE_CATEGORIES, PRODUCT_OWNERS, STATUS_LABELS } from "../constants";
+import type {
+  Feature,
+  FeatureStatus,
+  FeatureCategory,
+  ProductOwner,
+} from "../types";
+import {
+  FEATURE_CATEGORIES,
+  PRODUCT_OWNERS,
+  STATUS_LABELS,
+} from "../constants";
 
 /**
  * Props for FeatureEditDialog component
@@ -92,7 +101,9 @@ export function FeatureEditDialog({
         )}
       </DialogTitle>
 
-      <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2, pt: 2 }}>
+      <DialogContent
+        sx={{ display: "flex", flexDirection: "column", gap: 2, pt: 2 }}
+      >
         {/* Name */}
         <TextField
           label="Feature Name"
@@ -119,7 +130,9 @@ export function FeatureEditDialog({
             value={formData.category.id}
             label="Category"
             onChange={(e) => {
-              const category = FEATURE_CATEGORIES.find((c) => c.id === e.target.value);
+              const category = FEATURE_CATEGORIES.find(
+                (c) => c.id === e.target.value
+              );
               if (category) handleChange("category", category);
             }}
           >
@@ -137,7 +150,9 @@ export function FeatureEditDialog({
           <Select
             value={formData.status}
             label="Status"
-            onChange={(e) => handleChange("status", e.target.value as FeatureStatus)}
+            onChange={(e) =>
+              handleChange("status", e.target.value as FeatureStatus)
+            }
           >
             {(Object.keys(STATUS_LABELS) as FeatureStatus[]).map((status) => (
               <MenuItem key={status} value={status}>

@@ -2,6 +2,7 @@ import { Routes, Route } from "react-router-dom";
 import { MainLayout } from "./layouts/MainLayout";
 import ReleasePlanner from "./pages/ReleasePlanner";
 import { ProductMaintenancePage } from "./pages/productMaintenancePage";
+import { FeatureMaintenancePage } from "./pages/featureMaintenancePage";
 
 export default function App() {
   return (
@@ -13,6 +14,7 @@ export default function App() {
           path="product-maintenance"
           element={<ProductMaintenancePage />}
         />
+        <Route path="features" element={<FeatureMaintenancePage />} />
       </Route>
     </Routes>
   );
