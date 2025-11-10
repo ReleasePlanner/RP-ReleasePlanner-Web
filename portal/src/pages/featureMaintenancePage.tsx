@@ -1,13 +1,13 @@
 /**
- * Feature Maintenance Page - Refactored
+ * Feature Maintenance Page
  *
- * Simplified page using extracted components and custom hooks
- * Better separation of concerns and reusability
+ * Elegant, Material UI compliant page for managing features across products
  */
 
 import { useState } from "react";
-import { Box, Button, Typography } from "@mui/material";
+import { Box, Button } from "@mui/material";
 import { Add as AddIcon } from "@mui/icons-material";
+import { PageLayout } from "@/components";
 import type { Feature, ProductWithFeatures } from "@/features/feature/types";
 import {
   ProductSelector,
@@ -169,35 +169,38 @@ export function FeatureMaintenancePage() {
   };
 
   return (
-    <Box
-      sx={{
-        display: "flex",
-        flexDirection: "column",
-        height: "100%",
-        width: "100%",
-        py: 0,
-        px: 0,
-      }}
-    >
-      {/* Header */}
-      <Box sx={{ mb: { xs: 2, md: 3 } }}>
-        <Typography
-          variant="h4"
+    <PageLayout
+      title="Features Management"
+      description="Manage product features with full CRUD operations and filtering"
+      actions={
+        <Button
+          variant="contained"
+          startIcon={<AddIcon />}
+          onClick={handleAddFeature}
+          disabled={!selectedProductId}
           sx={{
-            mb: 1,
+            textTransform: "none",
             fontWeight: 600,
-            fontSize: { xs: "1.5rem", md: "2rem" },
+            px: 3,
+            boxShadow: 2,
+            "&:hover": {
+              boxShadow: 4,
+            },
           }}
         >
-          Features Management
-        </Typography>
-        <Typography variant="body2" color="text.secondary">
-          Manage product features with full CRUD operations and filtering
-        </Typography>
-      </Box>
-
-      {/* Content */}
-      <Box sx={{ display: "grid", gridTemplateColumns: { md: "280px 1fr" }, gap: 3, flex: 1 }}>
+          Add Feature
+        </Button>
+      }
+    >
+      {/* Content Grid */}
+      <Box
+        sx={{
+          display: "grid",
+          gridTemplateColumns: { xs: "1fr", md: "280px 1fr" },
+          gap: 3,
+          height: "100%",
+        }}
+      >
         {/* Sidebar: Product Selector */}
         <Box sx={{ display: { xs: "none", md: "block" } }}>
           <ProductSelector
@@ -208,7 +211,7 @@ export function FeatureMaintenancePage() {
         </Box>
 
         {/* Main: Features List */}
-        <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
           {/* Mobile Product Selector */}
           <Box sx={{ display: { xs: "block", md: "none" } }}>
             <ProductSelector
@@ -216,19 +219,6 @@ export function FeatureMaintenancePage() {
               selectedProductId={selectedProductId}
               onSelectProduct={setSelectedProductId}
             />
-          </Box>
-
-          {/* Toolbar with Add Button */}
-          <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
-            <Box sx={{ flex: 1 }} />
-            <Button
-              variant="contained"
-              startIcon={<AddIcon />}
-              onClick={handleAddFeature}
-              disabled={!selectedProductId}
-            >
-              Add Feature
-            </Button>
           </Box>
 
           {/* Features List */}
@@ -263,6 +253,6 @@ export function FeatureMaintenancePage() {
           }
         }}
       />
-    </Box>
+    </PageLayout>
   );
 }

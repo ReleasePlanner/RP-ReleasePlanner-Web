@@ -1,11 +1,13 @@
 /**
- * Calendar Maintenance Page
+ * Calendar Maintenance Page - Elegant, Material UI compliant page
  *
  * Main page for managing calendars, holidays, and special days
  */
 
 import { useState } from "react";
-import { Box, Typography } from "@mui/material";
+import { Box, Button } from "@mui/material";
+import AddIcon from "@mui/icons-material/Add";
+import { PageLayout } from "@/components";
 import type {
   CalendarDay,
   ViewMode,
@@ -100,40 +102,36 @@ export function CalendarMaintenancePage() {
   };
 
   return (
-    <Box
-      sx={{
-        display: "flex",
-        flexDirection: "column",
-        height: "100%",
-        width: "100%",
-        py: 0,
-        px: 0,
-      }}
-    >
-      {/* Header */}
-      <Box sx={{ mb: { xs: 2, md: 3 } }}>
-        <Typography
-          variant="h4"
+    <PageLayout
+      title="Calendar Management"
+      description="Manage holidays and special days across multiple calendars"
+      actions={
+        <Button
+          variant="contained"
+          startIcon={<AddIcon />}
+          onClick={handleAddDay}
+          disabled={!selectedCalendarId}
           sx={{
-            mb: 1,
+            textTransform: "none",
             fontWeight: 600,
-            fontSize: { xs: "1.5rem", md: "2rem" },
+            px: 3,
+            boxShadow: 2,
+            "&:hover": {
+              boxShadow: 4,
+            },
           }}
         >
-          Calendar Management
-        </Typography>
-        <Typography variant="body2" color="text.secondary">
-          Manage holidays and special days across multiple calendars
-        </Typography>
-      </Box>
-
-      {/* Content */}
+          Add Holiday/Day
+        </Button>
+      }
+    >
+      {/* Content Grid */}
       <Box
         sx={{
           display: "grid",
-          gridTemplateColumns: { md: "280px 1fr" },
+          gridTemplateColumns: { xs: "1fr", md: "280px 1fr" },
           gap: 3,
-          flex: 1,
+          height: "100%",
         }}
       >
         {/* Sidebar: Calendar Selector */}
@@ -146,7 +144,7 @@ export function CalendarMaintenancePage() {
         </Box>
 
         {/* Main: Days List */}
-        <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
           {/* Mobile Calendar Selector */}
           <Box sx={{ display: { xs: "block", md: "none" } }}>
             <CalendarSelector
@@ -191,6 +189,6 @@ export function CalendarMaintenancePage() {
           }
         }}
       />
-    </Box>
+    </PageLayout>
   );
 }
