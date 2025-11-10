@@ -24,23 +24,16 @@ export default function ResizableSplit({
 
   // Handle double click to collapse/expand
   const onDoubleClick = useCallback(() => {
-    // Cycle through: normal -> collapsed (20%) -> expanded (80%) -> normal
-    if (leftPercent <= 25) {
-      // Currently collapsed, expand to maximum
-      if (previousPercent !== null) {
-        onLeftPercentChange(80);
-      } else {
-        onLeftPercentChange(80);
-      }
-    } else if (leftPercent >= 75) {
-      // Currently expanded, restore previous or go to default 50%
+    // Toggle between collapsed (0%) and previous size or default 50%
+    if (leftPercent <= 5) {
+      // Currently collapsed, restore to previous size or default 50%
       const targetPercent = previousPercent !== null ? previousPercent : 50;
       onLeftPercentChange(targetPercent);
       setPreviousPercent(null);
     } else {
-      // Currently normal, collapse to minimum
+      // Currently visible, collapse to 0% (hide left panel completely)
       setPreviousPercent(leftPercent);
-      onLeftPercentChange(20);
+      onLeftPercentChange(0);
     }
   }, [leftPercent, previousPercent, onLeftPercentChange]);
 
@@ -50,7 +43,7 @@ export default function ResizableSplit({
       const rect = containerRef.current.getBoundingClientRect();
       const x = e.clientX - rect.left;
       const percent = (x / rect.width) * 100;
-      const clamped = Math.max(20, Math.min(80, percent));
+      const clamped = Math.max(0, Math.min(100, percent));
       onLeftPercentChange(clamped);
     }
     function onUp() {
@@ -68,10 +61,10 @@ export default function ResizableSplit({
     (e: React.KeyboardEvent) => {
       if (e.key === "ArrowLeft") {
         e.preventDefault();
-        onLeftPercentChange(Math.max(20, leftPercent - 2));
+        onLeftPercentChange(Math.max(0, leftPercent - 2));
       } else if (e.key === "ArrowRight") {
         e.preventDefault();
-        onLeftPercentChange(Math.min(80, leftPercent + 2));
+        onLeftPercentChange(Math.min(100, leftPercent + 2));
       }
     },
     [leftPercent, onLeftPercentChange]
@@ -82,18 +75,20 @@ export default function ResizableSplit({
       ref={containerRef}
       className="grid grid-cols-1 md:flex gap-4 items-start"
     >
-      <div
-        className="space-y-3 md:shrink-0"
-        style={{ flexBasis: `${leftPercent}%` }}
-      >
-        {left}
-      </div>
+      {leftPercent > 0 && (
+        <div
+          className="space-y-3 md:shrink-0"
+          style={{ flexBasis: `${leftPercent}%` }}
+        >
+          {left}
+        </div>
+      )}
       <div
         role="separator"
         aria-orientation="vertical"
         tabIndex={0}
-        aria-valuemin={20}
-        aria-valuemax={80}
+        aria-valuemin={0}
+        aria-valuemax={100}
         aria-valuenow={Math.round(leftPercent)}
         onMouseDown={onMouseDown}
         onDoubleClick={onDoubleClick}
