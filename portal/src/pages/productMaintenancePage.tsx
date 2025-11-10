@@ -153,12 +153,12 @@ export function ProductMaintenancePage() {
         flexDirection: "column",
         height: "100%",
         width: "100%",
-        p: { xs: 2, sm: 3, md: 4 },
-        pt: 0,
+        py: 0,
+        px: 0,
       }}
     >
       {/* Header */}
-      <Box sx={{ mb: { xs: 2, md: 3 } }}>
+      <Box sx={{ mb: { xs: 1.5, md: 2 } }}>
         <Typography
           variant="h4"
           sx={{
@@ -173,7 +173,6 @@ export function ProductMaintenancePage() {
           Manage products and their component versions
         </Typography>
       </Box>
-
       {/* Action Buttons */}
       <Box sx={{ mb: 3, display: "flex", gap: 2 }}>
         <Button
@@ -184,7 +183,6 @@ export function ProductMaintenancePage() {
           Add Product
         </Button>
       </Box>
-
       {/* Products Grid */}
       <Box
         sx={{
@@ -203,7 +201,6 @@ export function ProductMaintenancePage() {
           />
         ))}
       </Box>
-
       {/* Edit Dialog */}
       <ComponentEditDialog
         open={openDialog}
