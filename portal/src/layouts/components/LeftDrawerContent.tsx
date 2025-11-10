@@ -27,6 +27,7 @@ import {
   Inventory as ProductsIcon,
   Extension as FeaturesIcon,
   CalendarMonth as CalendarsIcon,
+  Person as PersonIcon,
 } from "@mui/icons-material";
 import { useAppDispatch } from "../../store/hooks";
 import { toggleLeftSidebar } from "../../store/store";
@@ -81,6 +82,12 @@ const NAV_ITEMS: NavItem[] = [
     path: "/calendars",
     icon: <CalendarsIcon sx={{ fontSize: 20 }} />,
     description: "Manage holidays and special days",
+  },
+  {
+    label: "IT Owners",
+    path: "/it-owners",
+    icon: <PersonIcon sx={{ fontSize: 20 }} />,
+    description: "Manage IT Owners",
   },
 ];
 

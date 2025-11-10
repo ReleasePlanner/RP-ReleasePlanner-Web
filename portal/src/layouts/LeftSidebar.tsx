@@ -46,6 +46,8 @@ export function LeftSidebar() {
     { to: "/it-owners", label: "IT Owners" },
   ];
 
+  console.log("LeftSidebar navLinks:", navLinks);
+
   const leftDrawerContent = (
     <Box
       role="navigation"
