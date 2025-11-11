@@ -63,7 +63,7 @@ export function ITOwnerCard({ owner, onEdit, onDelete }: ITOwnerCardProps) {
                 },
               }}
             >
-              <EditIcon fontSize="small" />
+              <EditIcon sx={{ fontSize: { xs: 18, sm: 20 } }} />
             </IconButton>
             <IconButton
               size="small"
@@ -75,7 +75,7 @@ export function ITOwnerCard({ owner, onEdit, onDelete }: ITOwnerCardProps) {
                 },
               }}
             >
-              <DeleteIcon fontSize="small" />
+              <DeleteIcon sx={{ fontSize: { xs: 18, sm: 20 } }} />
             </IconButton>
           </Box>
         </Box>

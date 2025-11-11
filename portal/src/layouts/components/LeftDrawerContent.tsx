@@ -62,31 +62,31 @@ const NAV_ITEMS: NavItem[] = [
   {
     label: "Release Planner",
     path: "/release-planner",
-    icon: <DashboardIcon sx={{ fontSize: 20 }} />,
+    icon: <DashboardIcon sx={{ fontSize: { xs: 18, sm: 20 } }} />,
     description: "Manage releases and timelines",
   },
   {
     label: "Products",
     path: "/product-maintenance",
-    icon: <ProductsIcon sx={{ fontSize: 20 }} />,
+    icon: <ProductsIcon sx={{ fontSize: { xs: 18, sm: 20 } }} />,
     description: "Manage your products",
   },
   {
     label: "Features",
     path: "/features",
-    icon: <FeaturesIcon sx={{ fontSize: 20 }} />,
+    icon: <FeaturesIcon sx={{ fontSize: { xs: 18, sm: 20 } }} />,
     description: "Track features by product",
   },
   {
     label: "Calendars",
     path: "/calendars",
-    icon: <CalendarsIcon sx={{ fontSize: 20 }} />,
+    icon: <CalendarsIcon sx={{ fontSize: { xs: 18, sm: 20 } }} />,
     description: "Manage holidays and special days",
   },
   {
     label: "IT Owners",
     path: "/it-owners",
-    icon: <PersonIcon sx={{ fontSize: 20 }} />,
+    icon: <PersonIcon sx={{ fontSize: { xs: 18, sm: 20 } }} />,
     description: "Manage IT Owners",
   },
 ];

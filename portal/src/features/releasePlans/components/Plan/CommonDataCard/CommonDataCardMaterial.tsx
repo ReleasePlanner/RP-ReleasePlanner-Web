@@ -204,28 +204,28 @@ export function CommonDataCard({
         {/* Datos organizados verticalmente con mejor jerarquía */}
         <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
           <DataItem
-            icon={<PersonOutline fontSize="small" />}
+            icon={<PersonOutline sx={{ fontSize: { xs: 18, sm: 20 } }} />}
             label="Owner"
             value={owner}
             color="primary"
           />
 
           <DataItem
-            icon={<CalendarToday fontSize="small" />}
+            icon={<CalendarToday sx={{ fontSize: { xs: 18, sm: 20 } }} />}
             label="Start Date"
             value={formatDate(startDate)}
             color="secondary"
           />
 
           <DataItem
-            icon={<Schedule fontSize="small" />}
+            icon={<Schedule sx={{ fontSize: { xs: 18, sm: 20 } }} />}
             label="End Date"
             value={formatDate(endDate)}
             color="secondary"
           />
 
           <DataItem
-            icon={<FolderOpen fontSize="small" />}
+            icon={<FolderOpen sx={{ fontSize: { xs: 18, sm: 20 } }} />}
             label="Duration"
             value={calculateDuration()}
             color="success"

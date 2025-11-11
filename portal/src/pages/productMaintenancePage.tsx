@@ -155,7 +155,7 @@ export function ProductMaintenancePage() {
       actions={
         <Button
           variant="contained"
-          startIcon={<AddIcon />}
+          startIcon={<AddIcon sx={{ fontSize: { xs: 18, sm: 20 } }} />}
           onClick={handleAddProduct}
           sx={{
             textTransform: "none",

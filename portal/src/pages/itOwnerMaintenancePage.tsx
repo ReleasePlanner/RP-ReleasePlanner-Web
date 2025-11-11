@@ -112,7 +112,7 @@ export function ITOwnerMaintenancePage() {
       actions={
         <Button
           variant="contained"
-          startIcon={<AddIcon />}
+          startIcon={<AddIcon sx={{ fontSize: { xs: 18, sm: 20 } }} />}
           onClick={handleAddOwner}
           sx={{
             textTransform: "none",

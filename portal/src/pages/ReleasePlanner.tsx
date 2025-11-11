@@ -102,7 +102,7 @@ export default function ReleasePlanner() {
               width: 40,
             }}
           >
-            <AddIcon sx={{ fontSize: 20 }} />
+            <AddIcon sx={{ fontSize: { xs: 18, sm: 20 } }} />
           </Fab>
         </Tooltip>
       </Stack>

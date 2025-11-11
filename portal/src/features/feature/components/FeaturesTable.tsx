@@ -112,7 +112,7 @@ export function FeaturesTable({
                   onClick={() => onEditFeature(feature)}
                   title="Edit feature"
                 >
-                  <EditIcon fontSize="small" />
+                  <EditIcon sx={{ fontSize: { xs: 18, sm: 20 } }} />
                 </IconButton>
                 <IconButton
                   size="small"
@@ -120,7 +120,7 @@ export function FeaturesTable({
                   onClick={() => onDeleteFeature(feature.id)}
                   title="Delete feature"
                 >
-                  <DeleteIcon fontSize="small" />
+                  <DeleteIcon sx={{ fontSize: { xs: 18, sm: 20 } }} />
                 </IconButton>
               </TableCell>
             </TableRow>

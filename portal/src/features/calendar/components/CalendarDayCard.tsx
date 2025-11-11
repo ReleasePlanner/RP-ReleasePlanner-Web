@@ -108,7 +108,7 @@ export function CalendarDayCard({
           onClick={() => onEdit(day)}
           title="Edit day"
         >
-          <EditIcon fontSize="small" />
+          <EditIcon sx={{ fontSize: { xs: 18, sm: 20 } }} />
         </IconButton>
         <IconButton
           size="small"
@@ -116,7 +116,7 @@ export function CalendarDayCard({
           onClick={() => onDelete(day.id)}
           title="Delete day"
         >
-          <DeleteIcon fontSize="small" />
+          <DeleteIcon sx={{ fontSize: { xs: 18, sm: 20 } }} />
         </IconButton>
       </Box>
     </Card>

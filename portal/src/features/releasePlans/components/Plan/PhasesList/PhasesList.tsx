@@ -58,7 +58,7 @@ export default function PhasesList({
                 onClick={onAdd}
                 sx={{ boxShadow: 1, width: 24, height: 24, minHeight: 24 }}
               >
-                <AddOutlinedIcon sx={{ fontSize: 14 }} />
+                <AddOutlinedIcon sx={{ fontSize: { xs: 12, sm: 14 } }} />
               </Fab>
             </div>
           </div>

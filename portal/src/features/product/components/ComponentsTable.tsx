@@ -94,7 +94,7 @@ export function ComponentsTable({
                         size="small"
                         onClick={() => onEditComponent(component)}
                       >
-                        <EditIcon fontSize="small" />
+                        <EditIcon sx={{ fontSize: { xs: 18, sm: 20 } }} />
                       </IconButton>
                     </Tooltip>
                     <Tooltip title="Delete component">
@@ -103,7 +103,7 @@ export function ComponentsTable({
                         color="error"
                         onClick={() => onDeleteComponent(component.id)}
                       >
-                        <DeleteIcon fontSize="small" />
+                        <DeleteIcon sx={{ fontSize: { xs: 18, sm: 20 } }} />
                       </IconButton>
                     </Tooltip>
                   </Box>

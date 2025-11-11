@@ -165,7 +165,10 @@ export function PlanHeader({
         {/* Date Range */}
         <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
           <CalendarMonth
-            sx={{ fontSize: 16, color: theme.palette.text.secondary }}
+            sx={{
+              fontSize: { xs: 14, sm: 16 },
+              color: theme.palette.text.secondary,
+            }}
           />
           <Typography
             variant="body2"
@@ -182,7 +185,10 @@ export function PlanHeader({
         {/* Duration */}
         <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
           <AccessTime
-            sx={{ fontSize: 16, color: theme.palette.text.secondary }}
+            sx={{
+              fontSize: { xs: 14, sm: 16 },
+              color: theme.palette.text.secondary,
+            }}
           />
           <Typography
             variant="body2"
