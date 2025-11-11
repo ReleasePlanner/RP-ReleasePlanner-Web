@@ -57,10 +57,7 @@ export default function PhaseListItem({
         }}
         sx={{ my: 0, py: 0, pr: 0.5, minWidth: 0, flex: "1 1 0%" }}
       />
-      <Box
-        className="flex items-center gap-1 flex-shrink-0"
-        sx={{ ml: 1, pr: 1 }}
-      >
+      <Box className="flex items-center gap-1 shrink-0" sx={{ ml: 1, pr: 1 }}>
         <IconButton
           size="small"
           aria-label="View phase"

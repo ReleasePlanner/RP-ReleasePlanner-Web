@@ -1,6 +1,7 @@
 import { configureStore, createSlice } from "@reduxjs/toolkit";
 import type { PayloadAction } from "@reduxjs/toolkit";
 import { releasePlansReducer } from "../features/releasePlans/slice";
+import { basePhasesReducer } from "../features/releasePlans/basePhasesSlice";
 import { productsReducer } from "../state/productsSlice";
 import { itOwnersReducer } from "../state/itOwnersSlice";
 import { calendarsReducer } from "../state/calendarsSlice";
@@ -79,6 +80,7 @@ export const store = configureStore({
     products: productsReducer,
     itOwners: itOwnersReducer,
     calendars: calendarsReducer,
+    basePhases: basePhasesReducer,
     features: featuresReducer,
   },
 });

@@ -9,9 +9,7 @@ import {
   useTheme,
 } from "@mui/material";
 import {
-  Circle as CircleIcon,
   CheckCircle as CheckCircleIcon,
-  Cancel as CancelIcon,
   Pause as PauseIcon,
   PlayArrow as PlayArrowIcon,
   Schedule as ScheduleIcon,
@@ -32,12 +30,10 @@ export interface StatusSelectorProps {
 
 // Icon mapping for each status
 const STATUS_ICONS: Record<string, React.ReactElement> = {
-  [LocalPlanStatus.PENDING]: <ScheduleIcon />,
-  [LocalPlanStatus.PLANNING]: <CircleIcon />,
+  [LocalPlanStatus.PLANNED]: <ScheduleIcon />,
   [LocalPlanStatus.IN_PROGRESS]: <PlayArrowIcon />,
-  [LocalPlanStatus.ON_HOLD]: <PauseIcon />,
-  [LocalPlanStatus.CANCELED]: <CancelIcon />,
-  [LocalPlanStatus.CLOSED]: <CheckCircleIcon />,
+  [LocalPlanStatus.DONE]: <CheckCircleIcon />,
+  [LocalPlanStatus.PAUSED]: <PauseIcon />,
 };
 
 /**
@@ -92,11 +88,7 @@ export function StatusSelector({
                 ]
               }
               size="small"
-              color={
-                colorKey === "default" || colorKey === "info"
-                  ? "primary"
-                  : colorKey
-              }
+              color={colorKey === "default" ? "primary" : colorKey}
               sx={{
                 height: 26,
                 minWidth: 140,
@@ -246,12 +238,10 @@ export function StatusSelector({
 // Helper function to provide descriptions for each status
 function getStatusDescription(status: string): string {
   const descriptions: Record<string, string> = {
-    [LocalPlanStatus.PENDING]: "Awaiting approval or start",
-    [LocalPlanStatus.PLANNING]: "Currently being planned",
-    [LocalPlanStatus.IN_PROGRESS]: "Active development",
-    [LocalPlanStatus.ON_HOLD]: "Temporarily paused",
-    [LocalPlanStatus.CANCELED]: "Will not be completed",
-    [LocalPlanStatus.CLOSED]: "Successfully completed",
+    [LocalPlanStatus.PLANNED]: "Planned",
+    [LocalPlanStatus.IN_PROGRESS]: "In progress",
+    [LocalPlanStatus.DONE]: "Completed",
+    [LocalPlanStatus.PAUSED]: "Paused",
   };
   return descriptions[status] || "";
 }
