@@ -44,7 +44,17 @@ export function PlanCardLayout({
       <Divider />
 
       <Collapse in={expanded} timeout="auto" unmountOnExit>
-        <CardContent className="p-0">
+        <CardContent
+          sx={{
+            p: 0,
+            height: "600px",
+            minHeight: "400px",
+            maxHeight: "800px",
+            "&:last-child": {
+              pb: 0,
+            },
+          }}
+        >
           <PlanContent
             leftPercent={leftPercent}
             onLeftPercentChange={onLeftPercentChange}

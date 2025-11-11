@@ -73,12 +73,23 @@ export default function ResizableSplit({
   return (
     <div
       ref={containerRef}
-      className="grid grid-cols-1 md:flex gap-4 items-start"
+      style={{
+        display: "flex",
+        width: "100%",
+        height: "100%",
+        gap: "8px",
+        minHeight: 0,
+      }}
     >
       {leftPercent > 0 && (
         <div
-          className="space-y-3 md:shrink-0"
-          style={{ flexBasis: `${leftPercent}%` }}
+          style={{
+            width: `${leftPercent}%`,
+            minWidth: 0,
+            display: "flex",
+            flexDirection: "column",
+            overflow: "hidden",
+          }}
         >
           {left}
         </div>
@@ -93,11 +104,29 @@ export default function ResizableSplit({
         onMouseDown={onMouseDown}
         onDoubleClick={onDoubleClick}
         onKeyDown={onKeyDown}
-        className="hidden md:block w-1 cursor-col-resize bg-gray-200 hover:bg-gray-300 rounded select-none"
-        style={{ height: "100%", minHeight: 120 }}
+        style={{
+          width: "4px",
+          cursor: "col-resize",
+          backgroundColor: "#e0e0e0",
+          borderRadius: "2px",
+          flexShrink: 0,
+          transition: "background-color 0.2s",
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.backgroundColor = "#bdbdbd";
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.backgroundColor = "#e0e0e0";
+        }}
         title="Drag to resize or double-click to collapse/expand"
       />
-      <div className="min-w-0" style={{ flexBasis: `${100 - leftPercent}%` }}>
+      <div
+        style={{
+          width: `${100 - leftPercent}%`,
+          minWidth: 0,
+          overflow: "auto",
+        }}
+      >
         {right}
       </div>
     </div>

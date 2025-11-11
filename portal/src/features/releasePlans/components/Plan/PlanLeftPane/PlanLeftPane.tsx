@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Box, Tabs, Tab, Paper } from "@mui/material";
+import { Box, Tabs, Tab, Stack } from "@mui/material";
 import {
   Info as InfoIcon,
   Extension as ExtensionIcon,
@@ -42,7 +42,16 @@ function TabPanel(props: TabPanelProps) {
       aria-labelledby={`plan-tab-${index}`}
       {...other}
     >
-      {value === index && <Box sx={{ p: 2 }}>{children}</Box>}
+      {value === index && (
+        <Box
+          sx={{
+            height: "100%",
+            overflow: "auto",
+          }}
+        >
+          {children}
+        </Box>
+      )}
     </div>
   );
 }
@@ -76,96 +85,166 @@ export default function PlanLeftPane({
   };
 
   return (
-    <Paper elevation={0} sx={{ border: 1, borderColor: "divider" }}>
-      <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
+    <Box
+      sx={{
+        display: "flex",
+        flexDirection: "column",
+        height: "100%",
+        bgcolor: "background.paper",
+        borderRadius: 1,
+        overflow: "hidden",
+        border: 1,
+        borderColor: "divider",
+      }}
+    >
+      {/* Tabs Header - Fixed */}
+      <Box
+        sx={{
+          borderBottom: 1,
+          borderColor: "divider",
+          bgcolor: "background.paper",
+          flexShrink: 0,
+        }}
+      >
         <Tabs
           value={tabValue}
           onChange={handleTabChange}
           aria-label="Plan information tabs"
           variant="scrollable"
           scrollButtons="auto"
+          allowScrollButtonsMobile
+          sx={{
+            minHeight: 48,
+            "& .MuiTab-root": {
+              minHeight: 48,
+              py: 1,
+              px: 2,
+              textTransform: "none",
+              fontWeight: 500,
+              fontSize: "0.875rem",
+              color: "text.secondary",
+              "&.Mui-selected": {
+                color: "primary.main",
+              },
+            },
+            "& .MuiTabs-indicator": {
+              height: 3,
+            },
+          }}
         >
           <Tab
-            icon={<InfoIcon fontSize="small" />}
+            icon={<InfoIcon sx={{ fontSize: 18 }} />}
             iconPosition="start"
-            label="Common Data"
+            label="Data"
             {...a11yProps(0)}
-            sx={{ minHeight: 48, textTransform: "none", fontWeight: 500 }}
           />
           <Tab
-            icon={<ExtensionIcon fontSize="small" />}
+            icon={<ExtensionIcon sx={{ fontSize: 18 }} />}
             iconPosition="start"
             label="Features"
             {...a11yProps(1)}
-            sx={{ minHeight: 48, textTransform: "none", fontWeight: 500 }}
           />
           <Tab
-            icon={<InventoryIcon fontSize="small" />}
+            icon={<InventoryIcon sx={{ fontSize: 18 }} />}
             iconPosition="start"
             label="Components"
             {...a11yProps(2)}
-            sx={{ minHeight: 48, textTransform: "none", fontWeight: 500 }}
           />
           <Tab
-            icon={<CalendarIcon fontSize="small" />}
+            icon={<CalendarIcon sx={{ fontSize: 18 }} />}
             iconPosition="start"
             label="Calendars"
             {...a11yProps(3)}
-            sx={{ minHeight: 48, textTransform: "none", fontWeight: 500 }}
           />
           <Tab
-            icon={<LinkIcon fontSize="small" />}
+            icon={<LinkIcon sx={{ fontSize: 18 }} />}
             iconPosition="start"
             label="References"
             {...a11yProps(4)}
-            sx={{ minHeight: 48, textTransform: "none", fontWeight: 500 }}
           />
         </Tabs>
       </Box>
 
-      {/* Tab 1: Common Data */}
-      <TabPanel value={tabValue} index={0}>
-        <div className="grid grid-cols-1 gap-4">
-          <CommonDataCard
-            owner={owner}
-            startDate={startDate}
-            endDate={endDate}
-            id={id}
-            selectedProduct={selectedProduct}
-            products={products}
-            onProductChange={onProductChange}
-          />
-          <PhasesList phases={phases} onAdd={onAddPhase} onEdit={onEditPhase} />
-        </div>
-      </TabPanel>
+      {/* Tab Content - Scrollable */}
+      <Box
+        sx={{
+          flexGrow: 1,
+          overflow: "auto",
+          minHeight: 0,
+        }}
+      >
+        {/* Tab 1: Common Data */}
+        <TabPanel value={tabValue} index={0}>
+          <Stack spacing={2} sx={{ p: 2 }}>
+            <CommonDataCard
+              owner={owner}
+              startDate={startDate}
+              endDate={endDate}
+              id={id}
+              selectedProduct={selectedProduct}
+              products={products}
+              onProductChange={onProductChange}
+            />
+            <PhasesList
+              phases={phases}
+              onAdd={onAddPhase}
+              onEdit={onEditPhase}
+            />
+          </Stack>
+        </TabPanel>
 
-      {/* Tab 2: Features */}
-      <TabPanel value={tabValue} index={1}>
-        <Box sx={{ p: 2, textAlign: "center", color: "text.secondary" }}>
-          Features content will be displayed here
-        </Box>
-      </TabPanel>
+        {/* Tab 2: Features */}
+        <TabPanel value={tabValue} index={1}>
+          <Box
+            sx={{
+              p: 3,
+              textAlign: "center",
+              color: "text.secondary",
+            }}
+          >
+            Features content will be displayed here
+          </Box>
+        </TabPanel>
 
-      {/* Tab 3: Components */}
-      <TabPanel value={tabValue} index={2}>
-        <Box sx={{ p: 2, textAlign: "center", color: "text.secondary" }}>
-          Components content will be displayed here
-        </Box>
-      </TabPanel>
+        {/* Tab 3: Components */}
+        <TabPanel value={tabValue} index={2}>
+          <Box
+            sx={{
+              p: 3,
+              textAlign: "center",
+              color: "text.secondary",
+            }}
+          >
+            Components content will be displayed here
+          </Box>
+        </TabPanel>
 
-      {/* Tab 4: Calendars */}
-      <TabPanel value={tabValue} index={3}>
-        <Box sx={{ p: 2, textAlign: "center", color: "text.secondary" }}>
-          Calendars content will be displayed here
-        </Box>
-      </TabPanel>
+        {/* Tab 4: Calendars */}
+        <TabPanel value={tabValue} index={3}>
+          <Box
+            sx={{
+              p: 3,
+              textAlign: "center",
+              color: "text.secondary",
+            }}
+          >
+            Calendars content will be displayed here
+          </Box>
+        </TabPanel>
 
-      {/* Tab 5: References */}
-      <TabPanel value={tabValue} index={4}>
-        <Box sx={{ p: 2, textAlign: "center", color: "text.secondary" }}>
-          References content will be displayed here
-        </Box>
-      </TabPanel>
-    </Paper>
+        {/* Tab 5: References */}
+        <TabPanel value={tabValue} index={4}>
+          <Box
+            sx={{
+              p: 3,
+              textAlign: "center",
+              color: "text.secondary",
+            }}
+          >
+            References content will be displayed here
+          </Box>
+        </TabPanel>
+      </Box>
+    </Box>
   );
 }
