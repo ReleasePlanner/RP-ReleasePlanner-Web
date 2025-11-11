@@ -19,7 +19,7 @@ type MiniPhaseTimelineProps = {
 export default function MiniPhaseTimeline({
   phase,
   calendarStart,
-  calendarEnd: _calendarEnd,
+  calendarEnd: any,
   pxPerDay = 6,
   height = 10,
   onRangeChange,

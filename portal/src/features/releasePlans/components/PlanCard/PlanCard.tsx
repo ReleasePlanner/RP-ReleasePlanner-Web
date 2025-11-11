@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { Plan } from "../../types";
+import type { Plan, PlanStatus } from "../../types";
 import { usePlanCard } from "../../hooks";
 import { PlanCardLayout } from "./components/PlanCardLayout";
 import PlanLeftPane from "../Plan/PlanLeftPane/PlanLeftPane";
@@ -8,25 +8,17 @@ import AddPhaseDialog from "../Plan/AddPhaseDialog";
 import PhaseEditDialog from "../Plan/PhaseEditDialog/PhaseEditDialog";
 import { ErrorBoundary } from "../../../../utils/logging/ErrorBoundary";
 import { L, useComponentLogger } from "../../../../utils/logging/simpleLogging";
-import { useAppSelector } from "@/store/hooks";
+import { useAppDispatch } from "@/store/hooks";
+import { updatePlan } from "../../slice";
+import type { PlanComponent } from "../../types";
+import { MilestoneEditDialog } from "../Plan/MilestoneEditDialog";
+import type { PlanMilestone } from "../../types";
+import type { PlanReference } from "../../types";
 
 export type PlanCardProps = {
   plan: Plan;
 };
 
-/**
- * ⭐ FINAL VERSION - PlanCard with Clean Architecture + Optimized Logging
- *
- * BENEFITS:
- * ✅ Clean Architecture - Separates logic (usePlanCard) from UI
- * ✅ Composition Pattern - Specialized components (PlanCardLayout, etc.)
- * ✅ Optimized Logging - 90% less boilerplate
- * ✅ Error Boundary - Automatic error recovery
- * ✅ Performance Monitoring - Automatic timing
- * ✅ User Action Tracking - Automatic interaction logging
- * ✅ Single Responsibility - Each component has one job
- * ✅ Testable & Maintainable - Easy to test and extend
- */
 export default function PlanCard({ plan }: PlanCardProps) {
   // ⭐ Optimized logging system - ONE line replaces all manual logging
   const log = useComponentLogger("PlanCard");
@@ -53,11 +45,79 @@ export default function PlanCard({ plan }: PlanCardProps) {
     setEditColor,
   } = usePlanCard(plan);
 
+  const dispatch = useAppDispatch();
   const { metadata, tasks } = plan;
 
-  // ⭐ Product selection state for component filtering
-  const [selectedProduct, setSelectedProduct] = useState<string>("");
-  const products = useAppSelector((state) => state.products.products);
+  const [milestoneDialogOpen, setMilestoneDialogOpen] = useState(false);
+  const [selectedMilestoneDate, setSelectedMilestoneDate] = useState<
+    string | null
+  >(null);
+  const [editingMilestone, setEditingMilestone] =
+    useState<PlanMilestone | null>(null);
+
+  const handleMilestoneAdd = (milestone: PlanMilestone) => {
+    setSelectedMilestoneDate(milestone.date);
+    setEditingMilestone(null);
+    setMilestoneDialogOpen(true);
+  };
+
+  const handleMilestoneUpdate = (milestone: PlanMilestone) => {
+    setSelectedMilestoneDate(milestone.date);
+    setEditingMilestone(milestone);
+    setMilestoneDialogOpen(true);
+  };
+
+  const handleMilestoneDelete = (milestoneId: string) => {
+    const updatedMilestones =
+      metadata.milestones?.filter((m) => m.id !== milestoneId) || [];
+    dispatch(
+      updatePlan({
+        ...plan,
+        metadata: {
+          ...metadata,
+          milestones: updatedMilestones,
+        },
+      })
+    );
+  };
+
+  const handleMilestoneSave = (milestone: PlanMilestone) => {
+    const existingMilestones = metadata.milestones || [];
+    const existingIndex = existingMilestones.findIndex(
+      (m) => m.id === milestone.id
+    );
+
+    const updatedMilestones =
+      existingIndex >= 0
+        ? existingMilestones.map((m, idx) =>
+            idx === existingIndex ? milestone : m
+          )
+        : [...existingMilestones, milestone];
+
+    dispatch(
+      updatePlan({
+        ...plan,
+        metadata: {
+          ...metadata,
+          milestones: updatedMilestones,
+        },
+      })
+    );
+  };
+
+  const handleReferencesChange = (newReferences: PlanReference[]) => {
+    dispatch(
+      updatePlan({
+        ...plan,
+        metadata: {
+          ...metadata,
+          references: newReferences,
+        },
+      })
+    );
+  };
+
+  // Products are now loaded directly in PlanLeftPane from Redux store
 
   // ⭐ Lifecycle logging - Automatic mount/unmount tracking
   useEffect(() => {
@@ -111,11 +171,80 @@ export default function PlanCard({ plan }: PlanCardProps) {
   const handleProductChange = (productId: string) => {
     return L.track(
       () => {
-        setSelectedProduct(productId);
+        // Update plan metadata
+        dispatch(
+          updatePlan({
+            ...plan,
+            metadata: {
+              ...metadata,
+              productId: productId || undefined,
+            },
+          })
+        );
         return { planId: plan.id, productId };
       },
       "product_selected",
       "PlanCard"
+    );
+  };
+
+  const handleDescriptionChange = (description: string) => {
+    dispatch(
+      updatePlan({
+        ...plan,
+        metadata: {
+          ...metadata,
+          description: description || undefined,
+        },
+      })
+    );
+  };
+
+  const handleStatusChange = (status: PlanStatus) => {
+    dispatch(
+      updatePlan({
+        ...plan,
+        metadata: {
+          ...metadata,
+          status,
+        },
+      })
+    );
+  };
+
+  const handleITOwnerChange = (itOwnerId: string) => {
+    dispatch(
+      updatePlan({
+        ...plan,
+        metadata: {
+          ...metadata,
+          itOwner: itOwnerId || undefined,
+        },
+      })
+    );
+  };
+
+  const handleStartDateChange = (date: string) => {
+    dispatch(
+      updatePlan({
+        ...plan,
+        metadata: {
+          ...metadata,
+          startDate: date,
+        },
+      })
+    );
+  };
+
+  const handleEndDateChange = (date: string) => {
+    dispatch(
+      updatePlan({
+        ...plan,
+        metadata: {
+          ...metadata,
+          endDate: date,
+        },
+      })
     );
   };
 
@@ -169,6 +298,42 @@ export default function PlanCard({ plan }: PlanCardProps) {
     );
   };
 
+  const handleFeatureIdsChange = (newFeatureIds: string[]) => {
+    dispatch(
+      updatePlan({
+        ...plan,
+        metadata: {
+          ...metadata,
+          featureIds: newFeatureIds,
+        },
+      })
+    );
+  };
+
+  const handleComponentsChange = (newComponents: PlanComponent[]) => {
+    dispatch(
+      updatePlan({
+        ...plan,
+        metadata: {
+          ...metadata,
+          components: newComponents,
+        },
+      })
+    );
+  };
+
+  const handleCalendarIdsChange = (newCalendarIds: string[]) => {
+    dispatch(
+      updatePlan({
+        ...plan,
+        metadata: {
+          ...metadata,
+          calendarIds: newCalendarIds,
+        },
+      })
+    );
+  };
+
   // ⭐ Error Boundary with automatic error logging and recovery UI
   const handleError = (error: Error) => {
     log.error("PlanCard crashed", error);
@@ -203,9 +368,24 @@ export default function PlanCard({ plan }: PlanCardProps) {
             startDate={metadata.startDate}
             endDate={metadata.endDate}
             id={metadata.id}
-            selectedProduct={selectedProduct}
-            products={products}
+            description={metadata.description}
+            status={metadata.status}
+            productId={metadata.productId}
+            itOwner={metadata.itOwner}
+            featureIds={metadata.featureIds}
             onProductChange={handleProductChange}
+            onDescriptionChange={handleDescriptionChange}
+            onStatusChange={handleStatusChange}
+            onITOwnerChange={handleITOwnerChange}
+            onStartDateChange={handleStartDateChange}
+            onEndDateChange={handleEndDateChange}
+            onFeatureIdsChange={handleFeatureIdsChange}
+            components={metadata.components}
+            onComponentsChange={handleComponentsChange}
+            calendarIds={metadata.calendarIds}
+            onCalendarIdsChange={handleCalendarIdsChange}
+            references={metadata.references}
+            onReferencesChange={handleReferencesChange}
           />
         }
         right={
@@ -214,6 +394,10 @@ export default function PlanCard({ plan }: PlanCardProps) {
             endDate={metadata.endDate}
             tasks={tasks}
             phases={metadata.phases}
+            calendarIds={metadata.calendarIds}
+            milestones={metadata.milestones}
+            onMilestoneAdd={handleMilestoneAdd}
+            onMilestoneUpdate={handleMilestoneUpdate}
             hideMainCalendar
             onAddPhase={() => setPhaseOpen(true)}
             onEditPhase={openEditOptimized}
@@ -239,6 +423,20 @@ export default function PlanCard({ plan }: PlanCardProps) {
         onColorChange={setEditColor}
         onCancel={() => setEditOpen(false)}
         onSave={saveEditOptimized}
+      />
+
+      {/* Milestone Edit Dialog */}
+      <MilestoneEditDialog
+        open={milestoneDialogOpen}
+        date={selectedMilestoneDate}
+        milestone={editingMilestone}
+        onClose={() => {
+          setMilestoneDialogOpen(false);
+          setSelectedMilestoneDate(null);
+          setEditingMilestone(null);
+        }}
+        onSave={handleMilestoneSave}
+        onDelete={handleMilestoneDelete}
       />
     </ErrorBoundary>
   );

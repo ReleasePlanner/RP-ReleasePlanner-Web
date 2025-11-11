@@ -9,6 +9,7 @@ export type PlanCardLayoutProps = {
   leftPercent: number;
   onToggleExpanded: () => void;
   onLeftPercentChange: (percent: number) => void;
+  onNameChange?: (name: string) => void;
   left: React.ReactNode;
   right: React.ReactNode;
 };
@@ -23,6 +24,7 @@ export function PlanCardLayout({
   leftPercent,
   onToggleExpanded,
   onLeftPercentChange,
+  onNameChange,
   left,
   right,
 }: PlanCardLayoutProps) {
@@ -44,14 +46,9 @@ export function PlanCardLayout({
       <PlanHeader
         id={plan.metadata.id}
         name={plan.metadata.name}
-        status={plan.metadata.status}
-        startDate={plan.metadata.startDate}
-        endDate={plan.metadata.endDate}
-        productId={plan.metadata.productId}
-        itOwner={plan.metadata.itOwner}
-        description={plan.metadata.description}
         expanded={expanded}
         onToggleExpanded={onToggleExpanded}
+        onNameChange={onNameChange}
       />
 
       <Divider sx={{ borderColor: "rgba(0,0,0,0.06)" }} />

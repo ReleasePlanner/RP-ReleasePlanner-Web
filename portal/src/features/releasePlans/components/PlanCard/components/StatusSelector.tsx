@@ -8,12 +8,10 @@ import {
   alpha,
   useTheme,
 } from "@mui/material";
-import {
-  CheckCircle as CheckCircleIcon,
-  Pause as PauseIcon,
-  PlayArrow as PlayArrowIcon,
-  Schedule as ScheduleIcon,
-} from "@mui/icons-material";
+import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
+import PauseCircleOutlineIcon from "@mui/icons-material/PauseCircleOutline";
+import PlayCircleOutlineIcon from "@mui/icons-material/PlayCircleOutline";
+import ScheduleIcon from "@mui/icons-material/Schedule";
 import type { SelectChangeEvent } from "@mui/material";
 import {
   LocalPlanStatus,
@@ -30,10 +28,12 @@ export interface StatusSelectorProps {
 
 // Icon mapping for each status
 const STATUS_ICONS: Record<string, React.ReactElement> = {
-  [LocalPlanStatus.PLANNED]: <ScheduleIcon />,
-  [LocalPlanStatus.IN_PROGRESS]: <PlayArrowIcon />,
-  [LocalPlanStatus.DONE]: <CheckCircleIcon />,
-  [LocalPlanStatus.PAUSED]: <PauseIcon />,
+  [LocalPlanStatus.PLANNED]: <ScheduleIcon sx={{ fontSize: 18 }} />,
+  [LocalPlanStatus.IN_PROGRESS]: (
+    <PlayCircleOutlineIcon sx={{ fontSize: 18 }} />
+  ),
+  [LocalPlanStatus.DONE]: <CheckCircleOutlineIcon sx={{ fontSize: 18 }} />,
+  [LocalPlanStatus.PAUSED]: <PauseCircleOutlineIcon sx={{ fontSize: 18 }} />,
 };
 
 /**
@@ -91,18 +91,16 @@ export function StatusSelector({
               color={colorKey === "default" ? "primary" : colorKey}
               sx={{
                 height: 26,
-                minWidth: 140,
+                minWidth: 120,
                 fontSize: "0.75rem",
                 fontWeight: 600,
                 letterSpacing: "0.3px",
                 cursor: "pointer",
                 px: 2,
+                background: "none",
+                boxShadow: "none",
                 "& .MuiChip-icon": {
-                  fontSize: 16,
-                },
-                boxShadow: () => {
-                  const color = getStatusColor(selected);
-                  return `0 1px 3px ${alpha(color, 0.3)}`;
+                  fontSize: 18,
                 },
               }}
             />
@@ -177,12 +175,8 @@ export function StatusSelector({
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  width: 32,
-                  height: 32,
-                  borderRadius: 1,
-                  bgcolor: alpha(color, 0.1),
-                  color: color,
-                  transition: "all 0.2s ease-in-out",
+                  width: 24,
+                  height: 24,
                 }}
               >
                 {STATUS_ICONS[value]}

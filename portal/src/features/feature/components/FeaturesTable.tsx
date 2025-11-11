@@ -5,13 +5,12 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Chip,
   IconButton,
   useTheme,
 } from "@mui/material";
 import { Edit as EditIcon, Delete as DeleteIcon } from "@mui/icons-material";
 import type { Feature } from "../types";
-import { STATUS_LABELS, STATUS_COLORS } from "../constants";
+import { STATUS_LABELS } from "../constants";
 
 /**
  * Props for FeaturesTable component
@@ -97,18 +96,10 @@ export function FeaturesTable({
                 <span title={feature.description}>{feature.name}</span>
               </TableCell>
               <TableCell>{feature.category.name}</TableCell>
-              <TableCell>
-                <Chip
-                  label={STATUS_LABELS[feature.status]}
-                  size="small"
-                  color={STATUS_COLORS[feature.status]}
-                  variant="outlined"
-                />
-              </TableCell>
+              <TableCell>{STATUS_LABELS[feature.status]}</TableCell>
               <TableCell align="right">
                 <IconButton
                   size="small"
-                  color="primary"
                   onClick={() => onEditFeature(feature)}
                   title="Edit feature"
                 >
@@ -116,7 +107,6 @@ export function FeaturesTable({
                 </IconButton>
                 <IconButton
                   size="small"
-                  color="error"
                   onClick={() => onDeleteFeature(feature.id)}
                   title="Delete feature"
                 >

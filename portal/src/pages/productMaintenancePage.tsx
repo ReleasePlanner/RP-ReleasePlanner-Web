@@ -1,23 +1,18 @@
-/**
- * Product Maintenance Page
- *
- * Elegant, Material UI compliant page for managing products and their components
- */
-
 import { useMemo, useState } from "react";
-import { Box, Button } from "@mui/material";
+import { Box, Button, Typography, useTheme, alpha } from "@mui/material";
 import { Add as AddIcon } from "@mui/icons-material";
 import { PageLayout, PageToolbar, type ViewMode } from "@/components";
-import {
-  type Product,
-  type ComponentVersion,
-} from "@/features/releasePlans/components/Plan/CommonDataCard/types";
+import type {
+  Product,
+  ComponentVersion,
+} from "@/features/releasePlans/components/Plan/CommonDataCard";
 import {
   ProductCard,
   ComponentEditDialog,
 } from "@/features/product/components";
+import { ProductEditDialog } from "@/features/product/components/ProductEditDialog";
 import { useAppSelector, useAppDispatch } from "@/store/hooks";
-import { updateProduct } from "@/state/productsSlice";
+import { addProduct, updateProduct } from "@/state/productsSlice";
 
 interface EditingProduct {
   product: Product;
@@ -25,6 +20,7 @@ interface EditingProduct {
 }
 
 export function ProductMaintenancePage() {
+  const theme = useTheme();
   const dispatch = useAppDispatch();
   const products = useAppSelector((state) => state.products.products);
 
@@ -32,6 +28,7 @@ export function ProductMaintenancePage() {
     null
   );
   const [openDialog, setOpenDialog] = useState(false);
+  const [openProductDialog, setOpenProductDialog] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [sortBy, setSortBy] = useState("name");
@@ -41,18 +38,15 @@ export function ProductMaintenancePage() {
   const filteredAndSortedProducts = useMemo(() => {
     let result = [...products];
 
-    // Filter by search query
     if (searchQuery.trim()) {
       result = result.filter((p) =>
         p.name.toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
 
-    // Sort
     if (sortBy === "name") {
       result.sort((a, b) => a.name.localeCompare(b.name));
     } else if (sortBy === "date") {
-      // For demo, sort by ID (would be by actual date in real app)
       result.sort((a, b) => b.id.localeCompare(a.id));
     }
 
@@ -64,11 +58,13 @@ export function ProductMaintenancePage() {
       product: {
         id: `prod-${Date.now()}`,
         name: "",
+        description: "",
         components: [],
         features: [],
       },
     });
-    setOpenDialog(true);
+    setSelectedProduct(null);
+    setOpenProductDialog(true);
   };
 
   const handleEditComponent = (
@@ -86,7 +82,9 @@ export function ProductMaintenancePage() {
       dispatch(
         updateProduct({
           ...product,
-          components: product.components.filter((c) => c.id !== componentId),
+          components: product.components.filter(
+            (c: ComponentVersion) => c.id !== componentId
+          ),
         })
       );
     }
@@ -100,24 +98,70 @@ export function ProductMaintenancePage() {
         id: `comp-${Date.now()}`,
         name: "",
         type: "web",
+        version: "",
       },
     });
     setOpenDialog(true);
   };
 
-  const handleSave = () => {
+  const handleSaveProduct = (product: Product) => {
+    if (product.name.trim()) {
+      const existingProduct = products.find((p) => p.id === product.id);
+      if (existingProduct) {
+        dispatch(updateProduct(product));
+      } else {
+        dispatch(addProduct(product));
+      }
+    }
+    handleCloseProductDialog();
+  };
+
+  const handleSaveComponent = () => {
     if (!editingProduct || !editingProduct.component) return;
 
-    const product = products.find((p) => p.id === selectedProduct?.id);
-    if (product) {
-      dispatch(
-        updateProduct({
-          ...product,
-          components: product.components.map((c) =>
-            c.id === editingProduct.component?.id ? editingProduct.component : c
-          ),
-        })
+    const product = selectedProduct || editingProduct.product;
+    const existingProduct = products.find((p) => p.id === product.id);
+
+    if (existingProduct) {
+      const componentExists = existingProduct.components.some(
+        (c: ComponentVersion) => c.id === editingProduct.component?.id
       );
+
+      if (componentExists) {
+        const existingComponent = existingProduct.components.find(
+          (c: ComponentVersion) => c.id === editingProduct.component?.id
+        );
+
+        dispatch(
+          updateProduct({
+            ...existingProduct,
+            components: existingProduct.components.map((c: ComponentVersion) =>
+              c.id === editingProduct.component?.id
+                ? {
+                    ...editingProduct.component,
+                    version:
+                      editingProduct.component.version ||
+                      existingComponent?.version,
+                    lastUpdated: new Date().toISOString().split("T")[0],
+                  }
+                : c
+            ),
+          })
+        );
+      } else {
+        dispatch(
+          updateProduct({
+            ...existingProduct,
+            components: [
+              ...existingProduct.components,
+              {
+                ...editingProduct.component,
+                lastUpdated: new Date().toISOString().split("T")[0],
+              },
+            ],
+          })
+        );
+      }
     }
 
     handleCloseDialog();
@@ -125,6 +169,12 @@ export function ProductMaintenancePage() {
 
   const handleCloseDialog = () => {
     setOpenDialog(false);
+    setEditingProduct(null);
+    setSelectedProduct(null);
+  };
+
+  const handleCloseProductDialog = () => {
+    setOpenProductDialog(false);
     setEditingProduct(null);
     setSelectedProduct(null);
   };
@@ -155,15 +205,16 @@ export function ProductMaintenancePage() {
       actions={
         <Button
           variant="contained"
-          startIcon={<AddIcon sx={{ fontSize: { xs: 18, sm: 20 } }} />}
+          startIcon={<AddIcon />}
           onClick={handleAddProduct}
           sx={{
             textTransform: "none",
             fontWeight: 600,
-            px: 3,
-            boxShadow: 2,
+            px: 2.5,
+            py: 1,
+            boxShadow: `0 2px 4px ${alpha(theme.palette.primary.main, 0.2)}`,
             "&:hover": {
-              boxShadow: 4,
+              boxShadow: `0 4px 8px ${alpha(theme.palette.primary.main, 0.3)}`,
             },
           }}
         >
@@ -179,32 +230,60 @@ export function ProductMaintenancePage() {
             viewMode === "grid"
               ? {
                   xs: "1fr",
-                  sm: "repeat(auto-fill, minmax(400px, 1fr))",
+                  sm: "repeat(auto-fill, minmax(380px, 1fr))",
                   lg: "repeat(2, 1fr)",
                 }
               : "1fr",
-          gap: 3,
+          gap: 2.5,
         }}
       >
-        {filteredAndSortedProducts.map((product) => (
-          <ProductCard
-            key={product.id}
-            product={product}
-            onEditComponent={handleEditComponent}
-            onDeleteComponent={handleDeleteComponent}
-            onAddComponent={handleAddComponent}
-          />
-        ))}
+        {filteredAndSortedProducts.length === 0 ? (
+          <Box
+            sx={{
+              gridColumn: "1 / -1",
+              py: 8,
+              textAlign: "center",
+              color: theme.palette.text.disabled,
+            }}
+          >
+            <Typography variant="body2" sx={{ fontSize: "0.875rem" }}>
+              No products found. Create your first product to get started.
+            </Typography>
+          </Box>
+        ) : (
+          filteredAndSortedProducts.map((product) => (
+            <ProductCard
+              key={product.id}
+              product={product}
+              onEditComponent={handleEditComponent}
+              onDeleteComponent={handleDeleteComponent}
+              onAddComponent={handleAddComponent}
+            />
+          ))
+        )}
       </Box>
 
-      {/* Edit Dialog */}
+      {/* Product Edit Dialog */}
+      <ProductEditDialog
+        open={openProductDialog}
+        product={editingProduct?.product || null}
+        onClose={handleCloseProductDialog}
+        onSave={handleSaveProduct}
+        onProductChange={(product) => {
+          if (editingProduct) {
+            setEditingProduct({ product });
+          }
+        }}
+      />
+
+      {/* Component Edit Dialog */}
       <ComponentEditDialog
         open={openDialog}
         editing={isEditing}
         component={editingProduct?.component || null}
         selectedProductName={selectedProduct?.name || null}
         onClose={handleCloseDialog}
-        onSave={handleSave}
+        onSave={handleSaveComponent}
         onComponentChange={(component) => {
           if (editingProduct) {
             setEditingProduct({

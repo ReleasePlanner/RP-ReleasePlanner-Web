@@ -1,23 +1,51 @@
 import { useState } from "react";
-import { Box, Tabs, Tab } from "@mui/material";
 import {
-  Info as InfoIcon,
-  Extension as ExtensionIcon,
-  Inventory as InventoryIcon,
-  CalendarMonth as CalendarIcon,
-  Link as LinkIcon,
-} from "@mui/icons-material";
-import { CommonDataCard } from "../CommonDataCard";
-import type { Product } from "../CommonDataCard/types";
+  Box,
+  Tabs,
+  Tab,
+  TextField,
+  Stack,
+  Typography,
+  useTheme,
+  alpha,
+  Select,
+  MenuItem,
+  Tooltip,
+} from "@mui/material";
+import type { SelectChangeEvent } from "@mui/material";
+import type { PlanStatus } from "../../../types";
+import { IT_OWNERS } from "../../../constants/itOwners";
+import { PlanFeaturesTab } from "../PlanFeaturesTab/PlanFeaturesTab";
+import { useAppSelector } from "@/store/hooks";
+import { PlanComponentsTab } from "../PlanComponentsTab/PlanComponentsTab";
+import type { PlanComponent } from "../../../types";
+import { PlanCalendarsTab } from "../PlanCalendarsTab/PlanCalendarsTab";
+import { PlanReferencesTab } from "../PlanReferencesTab/PlanReferencesTab";
+import type { PlanReference } from "../../../types";
 
 export type PlanLeftPaneProps = {
   owner: string;
   startDate: string;
   endDate: string;
   id: string;
-  selectedProduct: string;
-  products: Product[];
+  description?: string;
+  status: PlanStatus;
+  productId?: string;
+  itOwner?: string;
+  featureIds?: string[]; // Add this
+  components?: PlanComponent[];
+  calendarIds?: string[];
+  references?: PlanReference[];
   onProductChange: (productId: string) => void;
+  onDescriptionChange?: (description: string) => void;
+  onStatusChange?: (status: PlanStatus) => void;
+  onITOwnerChange?: (itOwnerId: string) => void;
+  onStartDateChange?: (date: string) => void;
+  onEndDateChange?: (date: string) => void;
+  onFeatureIdsChange?: (featureIds: string[]) => void; // Add this
+  onComponentsChange?: (components: PlanComponent[]) => void;
+  onCalendarIdsChange?: (calendarIds: string[]) => void;
+  onReferencesChange?: (references: PlanReference[]) => void;
 };
 
 interface TabPanelProps {
@@ -63,18 +91,61 @@ export default function PlanLeftPane({
   startDate,
   endDate,
   id,
-  selectedProduct,
-  products,
+  description,
+  status,
+  productId,
+  itOwner,
+  featureIds = [], // Add this with default
+  components = [], // Add this with default
+  calendarIds = [],
+  references = [],
   onProductChange,
+  onDescriptionChange,
+  onStatusChange,
+  onITOwnerChange,
+  onStartDateChange,
+  onEndDateChange,
+  onFeatureIdsChange, // Add this
+  onComponentsChange, // Add this
+  onCalendarIdsChange,
+  onReferencesChange,
 }: PlanLeftPaneProps) {
+  const theme = useTheme();
   const [tabValue, setTabValue] = useState(0);
 
-  console.log("PlanLeftPane rendering with tabs, current tab:", tabValue);
+  // Load products from Redux store (maintenance data)
+  const products = useAppSelector((state) => state.products.products);
+
+  // Calculate duration in days
+  const calculateDuration = (start: string, end: string): number => {
+    const startTime = new Date(start).getTime();
+    const endTime = new Date(end).getTime();
+    const diffTime = Math.abs(endTime - startTime);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
+  };
+
+  const duration = calculateDuration(startDate, endDate);
+
+  // Format date range
+  const formatDateRange = (start: string, end: string): string => {
+    const startDate = new Date(start);
+    const endDate = new Date(end);
+    const formatter = new Intl.DateTimeFormat("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+    return `${formatter.format(startDate)} - ${formatter.format(endDate)}`;
+  };
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
-    console.log("Tab changed to:", newValue);
   };
+
+  const requiredFieldsFilled = Boolean(
+    owner && startDate && endDate && id && productId
+  );
 
   return (
     <Box
@@ -111,64 +182,58 @@ export default function PlanLeftPane({
           scrollButtons="auto"
           allowScrollButtonsMobile
           sx={{
-            minHeight: 40,
+            minHeight: 48,
             "& .MuiTabs-flexContainer": {
-              gap: 0.5,
+              gap: 0,
             },
             "& .MuiTab-root": {
-              minHeight: 40,
+              minHeight: 48,
               minWidth: "auto",
-              py: 0.75,
-              px: { xs: 1.5, sm: 2 },
+              py: 1.25,
+              px: 2.5,
               textTransform: "none",
               fontWeight: 500,
-              fontSize: { xs: "0.8125rem", sm: "0.875rem" },
-              color: "text.secondary",
-              letterSpacing: "0.01em",
-              "&.Mui-selected": {
-                color: "primary.main",
-                fontWeight: 600,
+              fontSize: "0.875rem",
+              color: theme.palette.text.secondary,
+              letterSpacing: "0.015em",
+              transition: theme.transitions.create(
+                ["color", "background-color"],
+                {
+                  duration: theme.transitions.duration.short,
+                }
+              ),
+              "&:hover": {
+                color: theme.palette.text.primary,
+                backgroundColor: alpha(theme.palette.action.hover, 0.04),
               },
-              "& .MuiTab-iconWrapper": {
-                marginRight: { xs: 0.5, sm: 0.75 },
-                marginBottom: 0,
+              "&.Mui-selected": {
+                color: theme.palette.primary.main,
+                fontWeight: 600,
+                backgroundColor: alpha(theme.palette.primary.main, 0.04),
+              },
+              "&.Mui-disabled": {
+                opacity: 0.4,
               },
             },
             "& .MuiTabs-indicator": {
               height: 2,
+              borderRadius: "2px 2px 0 0",
             },
           }}
         >
+          <Tab label="Common Data" {...a11yProps(0)} />
           <Tab
-            icon={<InfoIcon sx={{ fontSize: { xs: 16, sm: 18 } }} />}
-            iconPosition="start"
-            label="Data"
-            {...a11yProps(0)}
-          />
-          <Tab
-            icon={<ExtensionIcon sx={{ fontSize: { xs: 16, sm: 18 } }} />}
-            iconPosition="start"
             label="Features"
             {...a11yProps(1)}
+            disabled={!requiredFieldsFilled}
           />
           <Tab
-            icon={<InventoryIcon sx={{ fontSize: { xs: 16, sm: 18 } }} />}
-            iconPosition="start"
             label="Components"
             {...a11yProps(2)}
+            disabled={!requiredFieldsFilled}
           />
-          <Tab
-            icon={<CalendarIcon sx={{ fontSize: { xs: 16, sm: 18 } }} />}
-            iconPosition="start"
-            label="Calendars"
-            {...a11yProps(3)}
-          />
-          <Tab
-            icon={<LinkIcon sx={{ fontSize: { xs: 16, sm: 18 } }} />}
-            iconPosition="start"
-            label="References"
-            {...a11yProps(4)}
-          />
+          <Tab label="Calendars" {...a11yProps(3)} />
+          <Tab label="References" {...a11yProps(4)} />
         </Tabs>
       </Box>
 
@@ -183,69 +248,340 @@ export default function PlanLeftPane({
       >
         {/* Tab 1: Common Data */}
         <TabPanel value={tabValue} index={0}>
-          <Box sx={{ p: 2 }}>
-            <CommonDataCard
-              owner={owner}
-              startDate={startDate}
-              endDate={endDate}
-              id={id}
-              selectedProduct={selectedProduct}
-              products={products}
-              onProductChange={onProductChange}
-            />
+          <Box
+            sx={{
+              p: 2,
+              maxWidth: "520px",
+              mx: "auto",
+            }}
+          >
+            <Stack spacing={1.75}>
+              {/* Description */}
+              <Tooltip
+                title="Description of the release plan"
+                arrow
+                placement="top"
+              >
+                <TextField
+                  fullWidth
+                  multiline
+                  rows={2}
+                  value={description || ""}
+                  onChange={(e) => {
+                    if (onDescriptionChange) {
+                      onDescriptionChange(e.target.value);
+                    }
+                  }}
+                  placeholder="Description"
+                  variant="outlined"
+                  size="small"
+                  sx={{
+                    "& .MuiOutlinedInput-root": {
+                      fontSize: "0.875rem",
+                      "& fieldset": {
+                        borderColor: alpha(theme.palette.divider, 0.2),
+                        borderWidth: 1,
+                      },
+                      "&:hover fieldset": {
+                        borderColor: alpha(theme.palette.primary.main, 0.4),
+                      },
+                      "&.Mui-focused fieldset": {
+                        borderColor: theme.palette.primary.main,
+                        borderWidth: 1.5,
+                      },
+                    },
+                  }}
+                />
+              </Tooltip>
+
+              {/* Status */}
+              <Tooltip
+                title="Current status of the release plan"
+                arrow
+                placement="top"
+              >
+                <Select
+                  fullWidth
+                  value={status}
+                  displayEmpty
+                  onChange={(e: SelectChangeEvent) => {
+                    if (onStatusChange) {
+                      onStatusChange(e.target.value as PlanStatus);
+                    }
+                  }}
+                  renderValue={(selected) => {
+                    if (!selected) {
+                      return (
+                        <em style={{ color: theme.palette.text.secondary }}>
+                          Status
+                        </em>
+                      );
+                    }
+                    const labels: Record<PlanStatus, string> = {
+                      planned: "Planned",
+                      in_progress: "In Progress",
+                      done: "Completed",
+                      paused: "Paused",
+                    };
+                    return labels[selected as PlanStatus];
+                  }}
+                  sx={{
+                    fontSize: "0.875rem",
+                    "& .MuiOutlinedInput-notchedOutline": {
+                      borderColor: alpha(theme.palette.divider, 0.2),
+                      borderWidth: 1,
+                    },
+                    "&:hover .MuiOutlinedInput-notchedOutline": {
+                      borderColor: alpha(theme.palette.primary.main, 0.4),
+                    },
+                    "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                      borderColor: theme.palette.primary.main,
+                      borderWidth: 1.5,
+                    },
+                  }}
+                >
+                  <MenuItem value="planned">Planned</MenuItem>
+                  <MenuItem value="in_progress">In Progress</MenuItem>
+                  <MenuItem value="done">Completed</MenuItem>
+                  <MenuItem value="paused">Paused</MenuItem>
+                </Select>
+              </Tooltip>
+
+              {/* Period - Date Range */}
+              <Box>
+                <Stack direction="row" spacing={1}>
+                  <Tooltip
+                    title="Start date of the release plan"
+                    arrow
+                    placement="top"
+                  >
+                    <TextField
+                      type="date"
+                      value={startDate}
+                      onChange={(e) => {
+                        if (onStartDateChange) {
+                          onStartDateChange(e.target.value);
+                        }
+                      }}
+                      variant="outlined"
+                      size="small"
+                      aria-label="Start Date"
+                      sx={{
+                        flex: 1,
+                        "& .MuiOutlinedInput-root": {
+                          fontSize: "0.875rem",
+                          "& fieldset": {
+                            borderColor: alpha(theme.palette.divider, 0.2),
+                            borderWidth: 1,
+                          },
+                          "&:hover fieldset": {
+                            borderColor: alpha(theme.palette.primary.main, 0.4),
+                          },
+                          "&.Mui-focused fieldset": {
+                            borderColor: theme.palette.primary.main,
+                            borderWidth: 1.5,
+                          },
+                        },
+                      }}
+                    />
+                  </Tooltip>
+                  <Tooltip
+                    title="End date of the release plan"
+                    arrow
+                    placement="top"
+                  >
+                    <TextField
+                      type="date"
+                      value={endDate}
+                      onChange={(e) => {
+                        if (onEndDateChange) {
+                          onEndDateChange(e.target.value);
+                        }
+                      }}
+                      variant="outlined"
+                      size="small"
+                      aria-label="End Date"
+                      sx={{
+                        flex: 1,
+                        "& .MuiOutlinedInput-root": {
+                          fontSize: "0.875rem",
+                          "& fieldset": {
+                            borderColor: alpha(theme.palette.divider, 0.2),
+                            borderWidth: 1,
+                          },
+                          "&:hover fieldset": {
+                            borderColor: alpha(theme.palette.primary.main, 0.4),
+                          },
+                          "&.Mui-focused fieldset": {
+                            borderColor: theme.palette.primary.main,
+                            borderWidth: 1.5,
+                          },
+                        },
+                      }}
+                    />
+                  </Tooltip>
+                </Stack>
+                <Tooltip
+                  title={`Duration: ${duration} ${
+                    duration === 1 ? "day" : "days"
+                  }`}
+                  arrow
+                  placement="top"
+                >
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      fontSize: "0.7rem",
+                      color: theme.palette.text.secondary,
+                      mt: 0.75,
+                      display: "block",
+                      fontWeight: 400,
+                      cursor: "help",
+                    }}
+                  >
+                    {formatDateRange(startDate, endDate)} • {duration}{" "}
+                    {duration === 1 ? "day" : "days"}
+                  </Typography>
+                </Tooltip>
+              </Box>
+
+              {/* Product */}
+              <Tooltip
+                title="Product associated with this release plan"
+                arrow
+                placement="top"
+              >
+                <Select
+                  fullWidth
+                  value={productId || ""}
+                  displayEmpty
+                  onChange={(e: SelectChangeEvent) => {
+                    onProductChange(e.target.value);
+                  }}
+                  renderValue={(selected) => {
+                    if (!selected) {
+                      return (
+                        <em style={{ color: theme.palette.text.secondary }}>
+                          Product
+                        </em>
+                      );
+                    }
+                    const product = products.find((p) => p.id === selected);
+                    return product?.name || selected;
+                  }}
+                  sx={{
+                    fontSize: "0.875rem",
+                    "& .MuiOutlinedInput-notchedOutline": {
+                      borderColor: alpha(theme.palette.divider, 0.2),
+                      borderWidth: 1,
+                    },
+                    "&:hover .MuiOutlinedInput-notchedOutline": {
+                      borderColor: alpha(theme.palette.primary.main, 0.4),
+                    },
+                    "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                      borderColor: theme.palette.primary.main,
+                      borderWidth: 1.5,
+                    },
+                  }}
+                >
+                  <MenuItem value="">
+                    <em>None</em>
+                  </MenuItem>
+                  {products.map((product) => (
+                    <MenuItem key={product.id} value={product.id}>
+                      {product.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </Tooltip>
+
+              {/* IT Owner */}
+              <Tooltip
+                title="IT Owner responsible for this release plan"
+                arrow
+                placement="top"
+              >
+                <Select
+                  fullWidth
+                  value={itOwner || ""}
+                  displayEmpty
+                  onChange={(e: SelectChangeEvent) => {
+                    if (onITOwnerChange) {
+                      onITOwnerChange(e.target.value);
+                    }
+                  }}
+                  renderValue={(selected) => {
+                    if (!selected) {
+                      return (
+                        <em style={{ color: theme.palette.text.secondary }}>
+                          IT Owner
+                        </em>
+                      );
+                    }
+                    const owner = IT_OWNERS.find((o) => o.id === selected);
+                    return owner?.name || selected;
+                  }}
+                  sx={{
+                    fontSize: "0.875rem",
+                    "& .MuiOutlinedInput-notchedOutline": {
+                      borderColor: alpha(theme.palette.divider, 0.2),
+                      borderWidth: 1,
+                    },
+                    "&:hover .MuiOutlinedInput-notchedOutline": {
+                      borderColor: alpha(theme.palette.primary.main, 0.4),
+                    },
+                    "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                      borderColor: theme.palette.primary.main,
+                      borderWidth: 1.5,
+                    },
+                  }}
+                >
+                  <MenuItem value="">
+                    <em>None</em>
+                  </MenuItem>
+                  {IT_OWNERS.map((owner) => (
+                    <MenuItem key={owner.id} value={owner.id}>
+                      {owner.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </Tooltip>
+            </Stack>
           </Box>
         </TabPanel>
 
         {/* Tab 2: Features */}
         <TabPanel value={tabValue} index={1}>
-          <Box
-            sx={{
-              p: 3,
-              textAlign: "center",
-              color: "text.secondary",
-            }}
-          >
-            Features content will be displayed here
-          </Box>
+          <PlanFeaturesTab
+            productId={productId}
+            featureIds={featureIds}
+            onFeatureIdsChange={onFeatureIdsChange}
+          />
         </TabPanel>
 
         {/* Tab 3: Components */}
         <TabPanel value={tabValue} index={2}>
-          <Box
-            sx={{
-              p: 3,
-              textAlign: "center",
-              color: "text.secondary",
-            }}
-          >
-            Components content will be displayed here
-          </Box>
+          <PlanComponentsTab
+            productId={productId}
+            components={components}
+            onComponentsChange={onComponentsChange}
+          />
         </TabPanel>
 
         {/* Tab 4: Calendars */}
         <TabPanel value={tabValue} index={3}>
-          <Box
-            sx={{
-              p: 3,
-              textAlign: "center",
-              color: "text.secondary",
-            }}
-          >
-            Calendars content will be displayed here
-          </Box>
+          <PlanCalendarsTab
+            calendarIds={calendarIds}
+            onCalendarIdsChange={onCalendarIdsChange}
+          />
         </TabPanel>
 
         {/* Tab 5: References */}
         <TabPanel value={tabValue} index={4}>
-          <Box
-            sx={{
-              p: 3,
-              textAlign: "center",
-              color: "text.secondary",
-            }}
-          >
-            References content will be displayed here
-          </Box>
+          <PlanReferencesTab
+            references={references}
+            onReferencesChange={onReferencesChange}
+          />
         </TabPanel>
       </Box>
     </Box>

@@ -5,13 +5,14 @@
 import { createSlice } from "@reduxjs/toolkit";
 import type { PayloadAction } from "@reduxjs/toolkit";
 import type { ProductWithFeatures, Feature } from "@/features/feature/types";
+import { MOCK_PRODUCT_FEATURES } from "../features/feature/mockData";
 
 export interface FeaturesState {
   productFeatures: ProductWithFeatures[];
 }
 
 const initialState: FeaturesState = {
-  productFeatures: [],
+  productFeatures: MOCK_PRODUCT_FEATURES,
 };
 
 const featuresSlice = createSlice({

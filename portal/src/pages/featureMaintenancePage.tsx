@@ -4,7 +4,7 @@
  * Elegant, Material UI compliant page for managing features across products
  */
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Box, Button } from "@mui/material";
 import { Add as AddIcon } from "@mui/icons-material";
 import { PageLayout } from "@/components";
@@ -17,60 +17,14 @@ import {
   type SortBy,
   FEATURE_CATEGORIES,
   PRODUCT_OWNERS,
-  useFeatures,
   generateFeatureId,
 } from "@/features/feature";
-
-/**
- * Mock data for products with features
- */
-const MOCK_PRODUCTS: ProductWithFeatures[] = [
-  {
-    id: "prod-1",
-    name: "Release Planner",
-    features: [
-      {
-        id: "feat-1",
-        name: "User Authentication",
-        description: "Implement OAuth 2.0 authentication",
-        category: FEATURE_CATEGORIES[0],
-        status: "completed",
-        createdBy: PRODUCT_OWNERS[0],
-        technicalDescription: "Implement OAuth 2.0 with JWT tokens",
-        businessDescription: "Allow users to securely log in",
-        productId: "prod-1",
-      },
-      {
-        id: "feat-2",
-        name: "Performance Optimization",
-        description: "Optimize database queries",
-        category: FEATURE_CATEGORIES[1],
-        status: "in-progress",
-        createdBy: PRODUCT_OWNERS[1],
-        technicalDescription: "Add database indexing and caching",
-        businessDescription: "Improve app response time",
-        productId: "prod-1",
-      },
-    ],
-  },
-  {
-    id: "prod-2",
-    name: "Analytics Platform",
-    features: [
-      {
-        id: "feat-3",
-        name: "Real-time Dashboard",
-        description: "Display live analytics data",
-        category: FEATURE_CATEGORIES[3],
-        status: "planned",
-        createdBy: PRODUCT_OWNERS[2],
-        technicalDescription: "WebSocket integration for real-time updates",
-        businessDescription: "Monitor metrics in real-time",
-        productId: "prod-2",
-      },
-    ],
-  },
-];
+import { useAppSelector, useAppDispatch } from "@/store/hooks";
+import {
+  addFeature,
+  updateFeature,
+  deleteFeature,
+} from "@/state/featuresSlice";
 
 interface EditingState {
   productId: string;
@@ -81,30 +35,37 @@ interface EditingState {
  * FeatureMaintenancePage Component
  *
  * Main page for managing features across products.
- * Uses custom hooks and extracted components for clean architecture.
- *
- * Features:
- * - Product selection
- * - Feature filtering and sorting
- * - Create, edit, delete operations
- * - View mode toggle (grid/list)
- *
- * @example
- * ```tsx
- * <FeatureMaintenancePage />
- * ```
+ * Features are stored in Redux store and loaded from there.
  */
 export function FeatureMaintenancePage() {
-  // State management
-  const {
-    products,
-    selectedProductId,
-    setSelectedProductId,
-    selectedProduct,
-    addFeatureToProduct,
-    updateFeatureInProduct,
-    deleteFeatureFromProduct,
-  } = useFeatures(MOCK_PRODUCTS);
+  const dispatch = useAppDispatch();
+
+  // Load products from Redux store
+  const products = useAppSelector((state) => state.products.products);
+
+  // Load features from Redux store
+  const productFeatures = useAppSelector(
+    (state) => state.features.productFeatures
+  );
+
+  // Combine products with their features from Redux
+  const productsWithFeatures: ProductWithFeatures[] = useMemo(() => {
+    return products.map((product) => {
+      const featuresData = productFeatures.find((pf) => pf.id === product.id);
+      return {
+        id: product.id,
+        name: product.name,
+        features: featuresData?.features || [],
+      };
+    });
+  }, [products, productFeatures]);
+
+  const [selectedProductId, setSelectedProductId] = useState<string>(
+    productsWithFeatures[0]?.id || ""
+  );
+  const selectedProduct = productsWithFeatures.find(
+    (p) => p.id === selectedProductId
+  );
 
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [sortBy, setSortBy] = useState<SortBy>("name");
@@ -145,7 +106,7 @@ export function FeatureMaintenancePage() {
 
   const handleDeleteFeature = (featureId: string) => {
     if (!selectedProductId) return;
-    deleteFeatureFromProduct(selectedProductId, featureId);
+    dispatch(deleteFeature({ productId: selectedProductId, featureId }));
   };
 
   const handleSaveFeature = () => {
@@ -155,9 +116,9 @@ export function FeatureMaintenancePage() {
     const isNew = !selectedProduct?.features.some((f) => f.id === feature.id);
 
     if (isNew) {
-      addFeatureToProduct(editingState.productId, feature);
+      dispatch(addFeature({ productId: editingState.productId, feature }));
     } else {
-      updateFeatureInProduct(editingState.productId, feature.id, feature);
+      dispatch(updateFeature(feature));
     }
 
     handleCloseDialog();
@@ -204,7 +165,7 @@ export function FeatureMaintenancePage() {
         {/* Sidebar: Product Selector */}
         <Box sx={{ display: { xs: "none", md: "block" } }}>
           <ProductSelector
-            products={products}
+            products={productsWithFeatures}
             selectedProductId={selectedProductId}
             onSelectProduct={setSelectedProductId}
           />
@@ -215,7 +176,7 @@ export function FeatureMaintenancePage() {
           {/* Mobile Product Selector */}
           <Box sx={{ display: { xs: "block", md: "none" } }}>
             <ProductSelector
-              products={products}
+              products={productsWithFeatures}
               selectedProductId={selectedProductId}
               onSelectProduct={setSelectedProductId}
             />

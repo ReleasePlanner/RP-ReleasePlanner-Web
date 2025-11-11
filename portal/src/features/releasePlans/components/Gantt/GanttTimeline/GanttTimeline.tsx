@@ -13,13 +13,16 @@ import {
   DaysRow,
   TIMELINE_DIMENSIONS,
 } from "./index";
+import type { PlanMilestone } from "../../../types";
 
 export type GanttTimelineProps = {
   start: Date;
   totalDays: number;
   pxPerDay: number;
   todayIndex?: number;
+  milestones?: PlanMilestone[]; // Add this
   onJumpToToday?: () => void;
+  onDayClick?: (date: string) => void; // Add this for milestone creation
 };
 
 export default function GanttTimeline({
@@ -27,7 +30,9 @@ export default function GanttTimeline({
   totalDays,
   pxPerDay,
   todayIndex,
+  milestones = [], // Add this
   onJumpToToday,
+  onDayClick, // Add this
 }: GanttTimelineProps) {
   // Use start time (number) in deps so changes to the Date value are detected
   const startTime = start instanceof Date ? start.getTime() : 0;
@@ -43,6 +48,15 @@ export default function GanttTimeline({
   );
   const monthSegments = useMemo(() => buildMonthSegments(days), [days]);
   const weekSegments = useMemo(() => buildWeekSegments(days), [days]);
+
+  // Create a map of dates to milestones for quick lookup
+  const milestonesMap = useMemo(() => {
+    const map = new Map<string, PlanMilestone>();
+    milestones.forEach((milestone) => {
+      map.set(milestone.date, milestone);
+    });
+    return map;
+  }, [milestones]);
 
   const shouldShowTodayMarker =
     typeof todayIndex === "number" &&
@@ -72,7 +86,12 @@ export default function GanttTimeline({
       {/* Timeline rows */}
       <MonthsRow monthSegments={monthSegments} pxPerDay={safePxPerDay} />
       <WeeksRow weekSegments={weekSegments} pxPerDay={safePxPerDay} />
-      <DaysRow days={days} pxPerDay={safePxPerDay} />
+      <DaysRow
+        days={days}
+        pxPerDay={safePxPerDay}
+        milestones={milestonesMap}
+        onDayClick={onDayClick}
+      />
     </div>
   );
 }

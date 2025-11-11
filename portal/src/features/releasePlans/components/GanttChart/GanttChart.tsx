@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useCallback } from "react";
 import { useTheme } from "@mui/material/styles";
+import { Tooltip } from "@mui/material";
 import GanttTimeline from "../Gantt/GanttTimeline/GanttTimeline";
 import { daysBetween, addDays } from "../../lib/date";
 import {
@@ -17,6 +18,9 @@ import type { PlanTask, PlanPhase } from "../../types";
 import PhasesList from "../Plan/PhasesList/PhasesList";
 import { useGanttDragAndDrop } from "./useGanttDragAndDrop";
 import { TodayMarker, Preview, PreviewContainer } from "./GanttChart.styles";
+import { useAppSelector } from "@/store/hooks";
+import type { CalendarDay } from "@/features/calendar/types";
+import type { PlanMilestone } from "../../types";
 
 // header timeline moved to GanttTimeline component
 
@@ -25,6 +29,10 @@ export type GanttChartProps = {
   endDate: string;
   tasks: PlanTask[];
   phases?: PlanPhase[];
+  calendarIds?: string[]; // Add this
+  milestones?: PlanMilestone[]; // Add this
+  onMilestoneAdd?: (milestone: PlanMilestone) => void; // Add this
+  onMilestoneUpdate?: (milestone: PlanMilestone) => void; // Add this
   onPhaseRangeChange?: (
     phaseId: string,
     startDate: string,
@@ -41,6 +49,10 @@ export default function GanttChart({
   endDate: _endDate,
   tasks,
   phases = [],
+  calendarIds = [], // Add this
+  milestones = [], // Add this
+  onMilestoneAdd, // Add this
+  onMilestoneUpdate, // Add this
   onPhaseRangeChange,
   onAddPhase,
   onEditPhase,
@@ -135,6 +147,89 @@ export default function GanttChart({
     );
   }, [start, end, days]);
 
+  // Get calendars from Redux store
+  const allCalendars = useAppSelector((state) => state.calendars.calendars);
+
+  // Get calendars assigned to this plan
+  const planCalendars = useMemo(() => {
+    if (calendarIds.length === 0) return [];
+    return allCalendars.filter((c) => calendarIds.includes(c.id));
+  }, [allCalendars, calendarIds]);
+
+  // Create a map of dates (YYYY-MM-DD) to calendar day information
+  const calendarDaysMap = useMemo(() => {
+    const map = new Map<string, { day: CalendarDay; calendarName: string }[]>();
+
+    planCalendars.forEach((calendar) => {
+      calendar.days.forEach((day) => {
+        const dateKey = day.date; // Already in YYYY-MM-DD format
+
+        // Handle recurring days - check if date falls within the year range
+        if (day.recurring) {
+          const dayDate = new Date(day.date);
+          const dayMonth = dayDate.getMonth();
+          const dayDay = dayDate.getDate();
+
+          // Check if this recurring day falls within the current year
+          const currentYear = yearStart.getFullYear();
+          const recurringDate = new Date(currentYear, dayMonth, dayDay);
+
+          if (recurringDate >= yearStart && recurringDate <= yearEnd) {
+            const recurringDateKey = recurringDate.toISOString().slice(0, 10);
+            if (!map.has(recurringDateKey)) {
+              map.set(recurringDateKey, []);
+            }
+            map.get(recurringDateKey)!.push({
+              day,
+              calendarName: calendar.name,
+            });
+          }
+        } else {
+          // Non-recurring day - use exact date
+          const dayDate = new Date(day.date);
+          if (dayDate >= yearStart && dayDate <= yearEnd) {
+            if (!map.has(dateKey)) {
+              map.set(dateKey, []);
+            }
+            map.get(dateKey)!.push({
+              day,
+              calendarName: calendar.name,
+            });
+          }
+        }
+      });
+    });
+
+    return map;
+  }, [planCalendars, yearStart, yearEnd]);
+
+  const handleDayClick = useCallback(
+    (date: string) => {
+      // Check if there's already a milestone for this date
+      const existingMilestone = milestones.find((m) => m.date === date);
+
+      if (existingMilestone) {
+        // If milestone exists, could open edit dialog or remove it
+        // For now, we'll open edit dialog via a callback
+        if (onMilestoneUpdate) {
+          // This would typically open a dialog, but for simplicity
+          // we'll just trigger the update callback
+        }
+      } else {
+        // Create new milestone
+        if (onMilestoneAdd) {
+          const newMilestone: PlanMilestone = {
+            id: `milestone-${Date.now()}`,
+            date,
+            name: `Milestone ${date}`,
+          };
+          onMilestoneAdd(newMilestone);
+        }
+      }
+    },
+    [milestones, onMilestoneAdd, onMilestoneUpdate]
+  );
+
   // App mode: show a single header (months/weeks/days) and phase-only timeline on the right,
   // with a static phases list on the left
   if (hideMainCalendar) {
@@ -168,6 +263,7 @@ export default function GanttChart({
                 totalDays={totalDays}
                 pxPerDay={pxPerDay}
                 todayIndex={todayIndex}
+                milestones={milestones}
                 onJumpToToday={() => {
                   const el = containerRef.current;
                   if (!el) return;
@@ -177,6 +273,7 @@ export default function GanttChart({
                   const left = Math.max(0, target);
                   safeScrollToX(el, left, "smooth");
                 }}
+                onDayClick={handleDayClick}
               />
               {/* Tracks: phases only */}
               <div
@@ -188,7 +285,13 @@ export default function GanttChart({
                 {/* Weekend shading across tracks */}
                 {days.map((d, i) => {
                   const dow = d.getDay();
-                  return dow === 0 || dow === 6 ? (
+                  const dateKey = d.toISOString().slice(0, 10);
+                  const calendarDays = calendarDaysMap.get(dateKey) || [];
+                  const isWeekend = dow === 0 || dow === 6;
+                  const isCalendarDay = calendarDays.length > 0;
+
+                  // Weekend background
+                  const weekendBg = isWeekend ? (
                     <div
                       key={`wk-${i}`}
                       className="absolute top-0 pointer-events-none bg-gray-100 z-0"
@@ -199,6 +302,78 @@ export default function GanttChart({
                       }}
                     />
                   ) : null;
+
+                  // Calendar day marker (holiday/special day)
+                  const calendarMarker = isCalendarDay ? (
+                    <Tooltip
+                      key={`cal-${i}`}
+                      title={
+                        <div style={{ fontSize: "0.75rem" }}>
+                          <div style={{ fontWeight: 600, marginBottom: "4px" }}>
+                            {calendarDays.length === 1
+                              ? calendarDays[0].day.name
+                              : `${calendarDays.length} days`}
+                          </div>
+                          {calendarDays.map(({ day, calendarName }, idx) => (
+                            <div key={idx} style={{ marginBottom: "2px" }}>
+                              <span style={{ fontWeight: 500 }}>
+                                {day.name}
+                              </span>
+                              {" - "}
+                              <span
+                                style={{ fontSize: "0.7rem", opacity: 0.9 }}
+                              >
+                                {calendarName}
+                              </span>
+                              {day.type === "holiday" && (
+                                <span
+                                  style={{
+                                    marginLeft: "4px",
+                                    fontSize: "0.7rem",
+                                  }}
+                                >
+                                  (Holiday)
+                                </span>
+                              )}
+                              {day.description && (
+                                <div
+                                  style={{
+                                    fontSize: "0.7rem",
+                                    opacity: 0.8,
+                                    marginTop: "2px",
+                                  }}
+                                >
+                                  {day.description}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      }
+                      arrow
+                      placement="top"
+                    >
+                      <div
+                        className="absolute top-0 pointer-events-auto z-5"
+                        style={{
+                          left: i * pxPerDay,
+                          width: pxPerDay,
+                          height: "100%",
+                          backgroundColor: "rgba(128, 128, 128, 0.2)", // Gray overlay
+                          borderLeft: "2px solid rgba(128, 128, 128, 0.5)",
+                          borderRight: "2px solid rgba(128, 128, 128, 0.5)",
+                          cursor: "help",
+                        }}
+                      />
+                    </Tooltip>
+                  ) : null;
+
+                  return (
+                    <div key={`day-container-${i}`}>
+                      {weekendBg}
+                      {calendarMarker}
+                    </div>
+                  );
                 })}
                 {/* Phase lanes */}
                 {phases.map((_, idx) => (
@@ -377,6 +552,7 @@ export default function GanttChart({
               totalDays={totalDays}
               pxPerDay={pxPerDay}
               todayIndex={todayIndex}
+              milestones={milestones}
               onJumpToToday={() => {
                 const el = containerRef.current;
                 if (!el) return;
@@ -386,6 +562,7 @@ export default function GanttChart({
                 const left = Math.max(0, target);
                 safeScrollToX(el, left, "smooth");
               }}
+              onDayClick={handleDayClick}
             />
             {/* Tracks */}
             <div
@@ -413,14 +590,15 @@ export default function GanttChart({
                 />
               ))}
               {/* grid lines */}
-              {/* grid lines */}
-              {days.map((_, i) => (
-                <div
-                  key={i}
-                  className="absolute top-0 border-r border-gray-100"
-                  style={{ left: i * pxPerDay, width: 0, height: "100%" }}
-                />
-              ))}
+              {days.map((_, i) => {
+                return (
+                  <div
+                    key={i}
+                    className="absolute top-0 border-r border-gray-100"
+                    style={{ left: i * pxPerDay, width: 0, height: "100%" }}
+                  />
+                );
+              })}
               {/* Today marker across tracks */}
               {typeof todayIndex === "number" && (
                 <div

@@ -1,304 +1,204 @@
+import { useState } from "react";
 import {
-  Typography,
   IconButton,
-  Chip,
   Box,
-  Select,
-  MenuItem,
-  FormControl,
-  InputLabel,
-  alpha,
+  Chip,
+  Tooltip,
+  TextField,
   useTheme,
+  alpha,
 } from "@mui/material";
-import {
-  ExpandMore,
-  ExpandLess,
-  CalendarMonth,
-  AccessTime,
-} from "@mui/icons-material";
-import type { SelectChangeEvent } from "@mui/material";
-import {
-  LOCAL_PLAN_STATUS_LABELS,
-  LOCAL_PLAN_STATUS_COLORS,
-} from "@/constants";
-import type { PlanStatus } from "../../../types";
-import { useAppSelector } from "@/store/hooks";
+import { ExpandMore, ExpandLess } from "@mui/icons-material";
 
 export type PlanHeaderProps = {
   id: string;
   name: string;
-  status: PlanStatus;
-  startDate: string;
-  endDate: string;
-  productId?: string;
-  itOwner?: string;
-  description?: string;
   expanded: boolean;
   onToggleExpanded: () => void;
-  onProductChange?: (productId: string) => void;
-  onITOwnerChange?: (itOwnerId: string) => void;
+  onNameChange?: (name: string) => void;
 };
 
 /**
  * Header component for PlanCard
- * Displays plan name, status, dates, duration, product and IT owner selectors
+ * Displays Plan ID, editable Plan Name, and expand/collapse button
+ * All other controls are in the Common Data tab
  */
 export function PlanHeader({
   id,
   name,
-  status,
-  startDate,
-  endDate,
-  productId,
-  itOwner,
-  description,
   expanded,
   onToggleExpanded,
-  onProductChange,
-  onITOwnerChange,
+  onNameChange,
 }: PlanHeaderProps) {
   const theme = useTheme();
+  const [isEditing, setIsEditing] = useState(false);
+  const [editValue, setEditValue] = useState(name);
 
-  // Get products and IT owners from Redux store
-  const products = useAppSelector((state) => state.products.products);
-  const itOwners = useAppSelector((state) => state.itOwners.itOwners);
-
-  // Calculate duration in days
-  const calculateDuration = (start: string, end: string): number => {
-    const startTime = new Date(start).getTime();
-    const endTime = new Date(end).getTime();
-    const diffTime = Math.abs(endTime - startTime);
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays;
+  const handleSave = () => {
+    if (editValue.trim() && editValue !== name && onNameChange) {
+      onNameChange(editValue.trim());
+    }
+    setIsEditing(false);
+    setEditValue(name);
   };
 
-  const duration = calculateDuration(startDate, endDate);
-
-  // Format date range
-  const formatDateRange = (start: string, end: string): string => {
-    const startDate = new Date(start);
-    const endDate = new Date(end);
-    const formatter = new Intl.DateTimeFormat("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
-    return `${formatter.format(startDate)} - ${formatter.format(endDate)}`;
+  const handleCancel = () => {
+    setIsEditing(false);
+    setEditValue(name);
   };
 
   return (
     <Box
       sx={{
-        px: 2.5,
-        py: 2.5,
+        px: 2,
+        py: 1.5,
+        borderBottom: `1px solid ${alpha(theme.palette.divider, 0.08)}`,
+        bgcolor: theme.palette.background.paper,
         display: "flex",
-        flexDirection: "column",
-        gap: 2,
-        borderBottom: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
-        bgcolor: alpha(theme.palette.background.paper, 0.7),
-        backdropFilter: "blur(8px)",
+        alignItems: "center",
+        justifyContent: "space-between",
+        position: "sticky",
+        top: 0,
+        zIndex: 2,
+        transition: theme.transitions.create(
+          ["background-color", "border-color"],
+          {
+            duration: theme.transitions.duration.short,
+          }
+        ),
       }}
     >
-      {/* First Row: ID, Name, Status, Expand Button */}
       <Box
-        sx={{ display: "flex", alignItems: "center", gap: 2, flexWrap: "wrap" }}
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          gap: 1.5,
+          flexWrap: "wrap",
+          flex: 1,
+          minWidth: 0,
+        }}
       >
-        {/* Plan ID */}
-        <Chip
-          label={`ID: ${id}`}
-          size="small"
-          variant="outlined"
-          sx={{
-            height: 24,
-            fontSize: "0.75rem",
-            fontWeight: 500,
-            borderColor: alpha(theme.palette.divider, 0.3),
-            color: theme.palette.text.secondary,
-          }}
-        />
+        <Tooltip title="Plan ID" arrow placement="top">
+          <Chip
+            label={id}
+            size="small"
+            variant="outlined"
+            id={`plan-header-id-${id}`}
+            data-testid={`plan-header-id-${id}`}
+            aria-label={`Plan ID: ${id}`}
+            sx={{
+              height: 24,
+              fontSize: "0.6875rem",
+              fontWeight: 600,
+              letterSpacing: "0.02em",
+              borderColor: alpha(theme.palette.divider, 0.4),
+              color: theme.palette.text.secondary,
+              backgroundColor: alpha(theme.palette.grey[500], 0.04),
+              cursor: "help",
+              flexShrink: 0,
+            }}
+          />
+        </Tooltip>
+        {isEditing ? (
+          <TextField
+            value={editValue}
+            onChange={(e) => setEditValue(e.target.value)}
+            onBlur={handleSave}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                handleSave();
+              }
+              if (e.key === "Escape") {
+                handleCancel();
+              }
+            }}
+            variant="standard"
+            size="small"
+            autoFocus
+            sx={{
+              minWidth: 120,
+              maxWidth: "400px",
+              "& .MuiInputBase-root": {
+                fontSize: "1rem",
+                fontWeight: 600,
+                "&:before": {
+                  borderBottom: `2px solid ${theme.palette.primary.main}`,
+                },
+                "&:hover:not(.Mui-disabled):before": {
+                  borderBottom: `2px solid ${theme.palette.primary.main}`,
+                },
+              },
+            }}
+          />
+        ) : (
+          <Tooltip title="Click to edit" arrow placement="top">
+            <Box
+              component="h2"
+              id={`plan-header-name-${id}`}
+              data-testid={`plan-header-name-${id}`}
+              aria-label={`Plan Name: ${name}`}
+              onClick={() => setIsEditing(true)}
+              sx={{
+                fontWeight: 600,
+                fontSize: "1rem",
+                lineHeight: 1.4,
+                color: theme.palette.text.primary,
+                minWidth: 0,
+                maxWidth: "400px",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+                cursor: "pointer",
+                px: 0.5,
+                py: 0.25,
+                borderRadius: 0.5,
+                transition: theme.transitions.create("background-color", {
+                  duration: theme.transitions.duration.short,
+                }),
+                "&:hover": {
+                  backgroundColor: alpha(theme.palette.primary.main, 0.08),
+                },
+              }}
+            >
+              {name}
+            </Box>
+          </Tooltip>
+        )}
+      </Box>
 
-        {/* Plan Name */}
-        <Typography
-          variant="h6"
-          component="h2"
-          sx={{
-            fontWeight: 600,
-            fontSize: "1.125rem",
-            lineHeight: 1.3,
-            color: theme.palette.text.primary,
-            minWidth: 0,
-            flex: 1,
-          }}
-        >
-          {name}
-        </Typography>
-
-        {/* Status Chip */}
-        <Chip
-          label={LOCAL_PLAN_STATUS_LABELS[status]}
-          size="small"
-          color={LOCAL_PLAN_STATUS_COLORS[status]}
-          sx={{
-            height: 24,
-            fontSize: "0.75rem",
-            fontWeight: 500,
-          }}
-        />
-
-        {/* Expand/Collapse Button */}
+      <Tooltip
+        title={expanded ? "Collapse plan" : "Expand plan"}
+        placement="top"
+        arrow
+      >
         <IconButton
           onClick={onToggleExpanded}
           aria-label={expanded ? "Collapse plan" : "Expand plan"}
-          size="small"
+          aria-expanded={expanded}
+          size="medium"
           sx={{
             color: theme.palette.action.active,
-            transition: "transform 0.2s",
+            transition: theme.transitions.create(
+              ["transform", "color", "background-color"],
+              {
+                duration: theme.transitions.duration.short,
+              }
+            ),
             transform: expanded ? "rotate(180deg)" : "rotate(0deg)",
+            "&:hover": {
+              backgroundColor: alpha(theme.palette.primary.main, 0.08),
+              color: theme.palette.primary.main,
+            },
+            "&:focus-visible": {
+              outline: `2px solid ${theme.palette.primary.main}`,
+              outlineOffset: 2,
+            },
           }}
         >
           {expanded ? <ExpandLess /> : <ExpandMore />}
         </IconButton>
-      </Box>
-
-      {/* Second Row: Date Range and Duration */}
-      <Box
-        sx={{ display: "flex", alignItems: "center", gap: 3, flexWrap: "wrap" }}
-      >
-        {/* Date Range */}
-        <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
-          <CalendarMonth
-            sx={{
-              fontSize: { xs: 14, sm: 16 },
-              color: theme.palette.text.secondary,
-            }}
-          />
-          <Typography
-            variant="body2"
-            sx={{
-              fontSize: "0.8125rem",
-              color: theme.palette.text.secondary,
-              fontWeight: 500,
-            }}
-          >
-            {formatDateRange(startDate, endDate)}
-          </Typography>
-        </Box>
-
-        {/* Duration */}
-        <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
-          <AccessTime
-            sx={{
-              fontSize: { xs: 14, sm: 16 },
-              color: theme.palette.text.secondary,
-            }}
-          />
-          <Typography
-            variant="body2"
-            sx={{
-              fontSize: "0.8125rem",
-              color: theme.palette.text.secondary,
-              fontWeight: 500,
-            }}
-          >
-            {duration} days
-          </Typography>
-        </Box>
-      </Box>
-
-      {/* Third Row: Product and IT Owner Selectors */}
-      <Box
-        sx={{ display: "flex", gap: 2, flexWrap: "wrap", alignItems: "center" }}
-      >
-        {/* Product Selector */}
-        <FormControl
-          size="small"
-          sx={{
-            minWidth: 200,
-            flex: { xs: "1 1 100%", sm: "1 1 auto" },
-          }}
-        >
-          <InputLabel id={`product-select-label-${id}`}>Product</InputLabel>
-          <Select
-            labelId={`product-select-label-${id}`}
-            id={`product-select-${id}`}
-            value={productId || ""}
-            label="Product"
-            onChange={(e: SelectChangeEvent) => {
-              if (onProductChange) {
-                onProductChange(e.target.value);
-              }
-            }}
-            sx={{
-              fontSize: "0.875rem",
-              backgroundColor: alpha(theme.palette.background.paper, 0.5),
-              "&:hover": {
-                backgroundColor: alpha(theme.palette.primary.main, 0.04),
-              },
-            }}
-          >
-            <MenuItem value="">
-              <em>None</em>
-            </MenuItem>
-            {products.map((product) => (
-              <MenuItem key={product.id} value={product.id}>
-                {product.name}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-
-        {/* IT Owner Selector */}
-        <FormControl
-          size="small"
-          sx={{
-            minWidth: 200,
-            flex: { xs: "1 1 100%", sm: "1 1 auto" },
-          }}
-        >
-          <InputLabel id={`it-owner-select-label-${id}`}>IT Owner</InputLabel>
-          <Select
-            labelId={`it-owner-select-label-${id}`}
-            id={`it-owner-select-${id}`}
-            value={itOwner || ""}
-            label="IT Owner"
-            onChange={(e: SelectChangeEvent) => {
-              if (onITOwnerChange) {
-                onITOwnerChange(e.target.value);
-              }
-            }}
-            sx={{
-              fontSize: "0.875rem",
-              backgroundColor: alpha(theme.palette.background.paper, 0.5),
-              "&:hover": {
-                backgroundColor: alpha(theme.palette.primary.main, 0.04),
-              },
-            }}
-          >
-            <MenuItem value="">
-              <em>None</em>
-            </MenuItem>
-            {itOwners.map((owner) => (
-              <MenuItem key={owner.id} value={owner.id}>
-                {owner.name}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-      </Box>
-
-      {/* Description (if provided) */}
-      {description && (
-        <Typography
-          variant="body2"
-          color="text.secondary"
-          sx={{
-            fontSize: "0.875rem",
-            lineHeight: 1.4,
-          }}
-        >
-          {description}
-        </Typography>
-      )}
+      </Tooltip>
     </Box>
   );
 }
