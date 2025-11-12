@@ -1,5 +1,15 @@
-import { Button, List, Fab, useTheme } from "@mui/material";
+import { 
+  Button, 
+  List, 
+  IconButton, 
+  Tooltip, 
+  useTheme, 
+  alpha,
+  Box,
+  Paper,
+} from "@mui/material";
 import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
+import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
 import type { PlanPhase } from "../../../types";
 import PhaseListItem from "../PhaseListItem/PhaseListItem";
 import MiniPhaseTimeline from "../MiniPhaseTimeline/MiniPhaseTimeline";
@@ -31,96 +41,181 @@ export default function PhasesList({
   onPhaseRangeChange,
 }: PhasesListProps) {
   const theme = useTheme();
-  const backgroundColor = theme.palette.mode === "dark" 
-    ? theme.palette.background.paper 
-    : "#ffffff";
+  const isDark = theme.palette.mode === "dark";
   
   return (
-    <div>
-      {/* Align first phase with the first calendar row below header, compensating toolbar height (TRACK_HEIGHT + LANE_GAP) */}
-      <div
-        style={{
-          paddingTop: Math.max(
+    <Box sx={{ position: "relative" }}>
+      {/* Spacer to align first phase with timeline */}
+      <Box
+        sx={{
+          height: Math.max(
             0,
             (_headerOffsetTopPx ?? 0) - (TRACK_HEIGHT + LANE_GAP)
           ),
         }}
       />
-      <List dense disablePadding>
-        {/* Add button row inside the list, aligned to the right within the title column */}
-        <div
-          className="relative"
-          style={{ 
-            height: TRACK_HEIGHT, 
-            marginBottom: LANE_GAP,
-            backgroundColor,
+      
+      <List 
+        dense 
+        disablePadding
+        sx={{
+          "& .MuiListItem-root": {
+            minHeight: TRACK_HEIGHT,
+            padding: 0,
+          },
+        }}
+      >
+        {/* Add button row */}
+        <Paper
+          elevation={0}
+          sx={{
+            height: TRACK_HEIGHT,
+            marginBottom: `${LANE_GAP}px`,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "flex-end",
+            px: 1,
+            bgcolor: "transparent",
+            borderRadius: 1,
+            transition: "background-color 0.2s ease",
+            "&:hover": {
+              bgcolor: isDark
+                ? alpha(theme.palette.action.hover, 0.05)
+                : alpha(theme.palette.action.hover, 0.03),
+            },
           }}
         >
-          <div
-            className="flex items-center h-full"
-            style={{ width: LABEL_WIDTH, paddingRight: 8 }}
-          >
-            <div className="ml-auto pr-1">
-              <Fab
-                aria-label="Add"
-                color="primary"
-                onClick={onAdd}
-                sx={{ boxShadow: 1, width: 24, height: 24, minHeight: 24 }}
-              >
-                <AddOutlinedIcon sx={{ fontSize: { xs: 12, sm: 14 } }} />
-              </Fab>
-            </div>
-          </div>
-        </div>
-        {phases.map((p) => (
-          <div
+          <Tooltip title="Agregar fase" arrow placement="left">
+            <IconButton
+              size="small"
+              onClick={onAdd}
+              sx={{
+                width: 28,
+                height: 28,
+                bgcolor: isDark
+                  ? alpha(theme.palette.primary.main, 0.15)
+                  : alpha(theme.palette.primary.main, 0.1),
+                color: theme.palette.primary.main,
+                "&:hover": {
+                  bgcolor: isDark
+                    ? alpha(theme.palette.primary.main, 0.25)
+                    : alpha(theme.palette.primary.main, 0.2),
+                  transform: "scale(1.1)",
+                },
+                transition: "all 0.2s ease",
+                boxShadow: theme.shadows[1],
+              }}
+            >
+              <AddOutlinedIcon sx={{ fontSize: 16 }} />
+            </IconButton>
+          </Tooltip>
+        </Paper>
+
+        {/* Phase items */}
+        {phases.map((p, index) => (
+          <Paper
             key={p.id}
-            className="relative"
-            style={{ 
-              height: TRACK_HEIGHT, 
-              marginBottom: LANE_GAP,
-              backgroundColor,
+            elevation={0}
+            sx={{
+              height: TRACK_HEIGHT,
+              marginBottom: index < phases.length - 1 ? `${LANE_GAP}px` : 0,
+              display: "flex",
+              alignItems: "stretch",
+              borderRadius: 1,
+              overflow: "hidden",
+              bgcolor: "transparent",
+              border: `1px solid transparent`,
+              transition: "all 0.2s ease",
+              "&:hover": {
+                bgcolor: isDark
+                  ? alpha(theme.palette.action.hover, 0.05)
+                  : alpha(theme.palette.action.hover, 0.03),
+                borderColor: theme.palette.divider,
+                boxShadow: theme.shadows[1],
+              },
             }}
           >
-            <div className="flex items-stretch gap-3 h-full">
-              <div
-                className="flex-none h-full flex items-center"
-                style={{ width: LABEL_WIDTH, paddingRight: 8 }}
+            <Box
+              sx={{
+                width: LABEL_WIDTH,
+                pr: 1,
+                display: "flex",
+                alignItems: "center",
+                flexShrink: 0,
+              }}
+            >
+              <PhaseListItem
+                id={p.id}
+                name={p.name}
+                startDate={p.startDate}
+                endDate={p.endDate}
+                color={p.color}
+                onEdit={onEdit}
+                onDelete={onDelete}
+                onView={onView}
+              />
+            </Box>
+            {calendarStart && calendarEnd && (
+              <Box
+                sx={{
+                  flex: 1,
+                  overflow: "hidden",
+                  display: "flex",
+                  alignItems: "stretch",
+                  minWidth: 0,
+                }}
               >
-                <PhaseListItem
-                  id={p.id}
-                  name={p.name}
-                  startDate={p.startDate}
-                  endDate={p.endDate}
-                  onEdit={onEdit}
-                  onDelete={onDelete}
-                  onView={onView}
+                <MiniPhaseTimeline
+                  phase={p}
+                  calendarStart={calendarStart}
+                  calendarEnd={calendarEnd}
+                  height={TRACK_HEIGHT}
+                  onRangeChange={(s, e) =>
+                    onPhaseRangeChange && onPhaseRangeChange(p.id, s, e)
+                  }
                 />
-              </div>
-              {calendarStart && calendarEnd && (
-                <div className="flex-1 overflow-hidden h-full flex items-stretch">
-                  <MiniPhaseTimeline
-                    phase={p}
-                    calendarStart={calendarStart}
-                    calendarEnd={calendarEnd}
-                    height={TRACK_HEIGHT}
-                    onRangeChange={(s, e) =>
-                      onPhaseRangeChange && onPhaseRangeChange(p.id, s, e)
-                    }
-                  />
-                </div>
-              )}
-            </div>
-          </div>
+              </Box>
+            )}
+          </Paper>
         ))}
       </List>
-      <div className="flex items-center justify-end gap-2 mt-3">
-        {onAutoGenerate && (
-          <Button size="small" variant="text" onClick={onAutoGenerate}>
-            Auto
-          </Button>
-        )}
-      </div>
-    </div>
+
+      {/* Auto generate button */}
+      {onAutoGenerate && (
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "flex-end",
+            mt: 2,
+            px: 1,
+          }}
+        >
+          <Tooltip title="Generar fases automáticamente" arrow>
+            <Button
+              size="small"
+              variant="text"
+              startIcon={<AutoAwesomeIcon sx={{ fontSize: 16 }} />}
+              onClick={onAutoGenerate}
+              sx={{
+                textTransform: "none",
+                fontSize: "0.75rem",
+                color: isDark
+                  ? alpha(theme.palette.text.secondary, 0.8)
+                  : theme.palette.text.secondary,
+                "&:hover": {
+                  bgcolor: isDark
+                    ? alpha(theme.palette.action.hover, 0.08)
+                    : alpha(theme.palette.action.hover, 0.05),
+                  color: theme.palette.primary.main,
+                },
+                transition: "all 0.2s ease",
+              }}
+            >
+              Auto Generate
+            </Button>
+          </Tooltip>
+        </Box>
+      )}
+    </Box>
   );
 }

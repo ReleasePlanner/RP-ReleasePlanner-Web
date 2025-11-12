@@ -12,7 +12,11 @@
 
 import {
   Box,
-  Button,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemIcon,
+  ListItemText,
   Tooltip,
   IconButton,
   Typography,
@@ -28,11 +32,12 @@ import {
   Extension as FeaturesIcon,
   CalendarMonth as CalendarsIcon,
   Person as PersonIcon,
+  Timeline as PhasesIcon,
 } from "@mui/icons-material";
 import { useAppDispatch } from "../../store/hooks";
 import { toggleLeftSidebar } from "../../store/store";
 
-export const DRAWER_WIDTH = 260;
+export const DRAWER_WIDTH = 280;
 
 /**
  * Navigation item definition
@@ -62,32 +67,38 @@ const NAV_ITEMS: NavItem[] = [
   {
     label: "Release Planner",
     path: "/release-planner",
-    icon: <DashboardIcon sx={{ fontSize: { xs: 18, sm: 20 } }} />,
-    description: "Manage releases and timelines",
+    icon: <DashboardIcon />,
+    description: "Gestionar releases y timelines",
+  },
+  {
+    label: "Fases",
+    path: "/phases-maintenance",
+    icon: <PhasesIcon />,
+    description: "Gestionar fases base del sistema",
   },
   {
     label: "Products",
     path: "/product-maintenance",
-    icon: <ProductsIcon sx={{ fontSize: { xs: 18, sm: 20 } }} />,
-    description: "Manage your products",
+    icon: <ProductsIcon />,
+    description: "Gestionar productos",
   },
   {
     label: "Features",
     path: "/features",
-    icon: <FeaturesIcon sx={{ fontSize: { xs: 18, sm: 20 } }} />,
-    description: "Track features by product",
+    icon: <FeaturesIcon />,
+    description: "Gestionar features por producto",
   },
   {
     label: "Calendars",
     path: "/calendars",
-    icon: <CalendarsIcon sx={{ fontSize: { xs: 18, sm: 20 } }} />,
-    description: "Manage holidays and special days",
+    icon: <CalendarsIcon />,
+    description: "Gestionar días festivos y especiales",
   },
   {
     label: "IT Owners",
     path: "/it-owners",
-    icon: <PersonIcon sx={{ fontSize: { xs: 18, sm: 20 } }} />,
-    description: "Manage IT Owners",
+    icon: <PersonIcon />,
+    description: "Gestionar IT Owners",
   },
 ];
 
@@ -132,160 +143,180 @@ export function LeftDrawerContent({ onClose }: LeftDrawerContentProps) {
         display: "flex",
         flexDirection: "column",
         backgroundColor: theme.palette.background.paper,
+        borderRight: `1px solid ${alpha(theme.palette.divider, 0.08)}`,
       }}
     >
-      {/* Header Section - Minimalist */}
+      {/* Header Section - Ultra Minimalist */}
       <Box
         sx={{
-          p: 2,
+          px: 2,
+          py: 1.25,
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          borderBottom: `1px solid ${theme.palette.divider}`,
+          borderBottom: `1px solid ${alpha(theme.palette.divider, 0.08)}`,
+          minHeight: 48,
         }}
       >
         <Typography
-          variant="caption"
+          variant="subtitle2"
           component="span"
           sx={{
             fontWeight: 600,
-            textTransform: "uppercase",
-            letterSpacing: "0.08em",
-            color: theme.palette.text.secondary,
-            fontSize: "0.7rem",
+            fontSize: "0.875rem",
+            color: theme.palette.text.primary,
+            letterSpacing: "-0.01em",
           }}
         >
-          Menu
+          Navegación
         </Typography>
 
         {/* Close button - Only on mobile */}
         {isMobile && (
-          <Tooltip title="Close navigation" placement="left">
-            <IconButton
-              aria-label="Close navigation menu"
-              size="small"
-              onClick={handleClose}
-              sx={{
-                color: theme.palette.text.secondary,
-                "&:hover": {
-                  backgroundColor: alpha(theme.palette.primary.main, 0.08),
-                  color: theme.palette.primary.main,
-                },
-              }}
-            >
-              <CloseIcon fontSize="small" />
-            </IconButton>
-          </Tooltip>
+          <IconButton
+            aria-label="Cerrar navegación"
+            size="small"
+            onClick={handleClose}
+            sx={{
+              color: theme.palette.text.secondary,
+              width: 32,
+              height: 32,
+              "&:hover": {
+                backgroundColor: alpha(theme.palette.action.hover, 0.5),
+                color: theme.palette.text.primary,
+              },
+              transition: theme.transitions.create(
+                ["background-color", "color"],
+                { duration: theme.transitions.duration.shortest }
+              ),
+            }}
+          >
+            <CloseIcon fontSize="small" />
+          </IconButton>
         )}
       </Box>
 
-      {/* Navigation Links - Elegant Design */}
+      {/* Navigation Links - Minimalist List Design */}
       <Box
         component="nav"
         sx={{
           flex: 1,
-          p: 1.5,
-          display: "flex",
-          flexDirection: "column",
-          gap: 0.5,
           overflow: "auto",
+          py: 0.5,
         }}
       >
-        {NAV_ITEMS.map((item) => {
-          const active = isActive(item.path);
-          return (
-            <Tooltip
-              key={item.path}
-              title={item.description}
-              placement="right"
-              arrow
-            >
-              <Button
-                fullWidth
-                startIcon={item.icon}
-                onClick={() => handleNavItemClick(item.path)}
+        <List disablePadding>
+          {NAV_ITEMS.map((item, index) => {
+            const active = isActive(item.path);
+            return (
+              <ListItem
+                key={item.path}
+                disablePadding
                 sx={{
-                  justifyContent: "flex-start",
-                  textTransform: "none",
-                  fontSize: "0.938rem",
-                  fontWeight: active ? 600 : 500,
-                  padding: "10px 12px",
-                  borderRadius: "8px",
-                  transition: theme.transitions.create(
-                    ["background-color", "color", "box-shadow"],
-                    { duration: theme.transitions.duration.shorter }
-                  ),
-                  color: active
-                    ? theme.palette.primary.main
-                    : theme.palette.text.primary,
-                  backgroundColor: active
-                    ? alpha(theme.palette.primary.main, 0.08)
-                    : "transparent",
-                  border: active
-                    ? `1px solid ${alpha(theme.palette.primary.main, 0.3)}`
-                    : `1px solid transparent`,
-                  position: "relative",
-                  overflow: "hidden",
-
-                  // Active indicator - left border
-                  "&::before": active
-                    ? {
-                        content: '""',
-                        position: "absolute",
-                        left: 0,
-                        top: 0,
-                        bottom: 0,
-                        width: "3px",
-                        backgroundColor: theme.palette.primary.main,
-                      }
-                    : undefined,
-
-                  // Hover state
-                  "&:hover": {
-                    backgroundColor: active
-                      ? alpha(theme.palette.primary.main, 0.12)
-                      : alpha(theme.palette.primary.main, 0.05),
-                    color: active
-                      ? theme.palette.primary.main
-                      : theme.palette.text.primary,
-                  },
-
-                  // Focus visible state
-                  "&:focus-visible": {
-                    outline: `2px solid ${theme.palette.primary.main}`,
-                    outlineOffset: "-2px",
-                  },
-
-                  // Icon color consistency
-                  "& .MuiButton-startIcon": {
-                    color: "inherit",
-                    marginRight: "12px",
-                  },
+                  px: 1.5,
+                  mb: 0.125,
                 }}
               >
-                {item.label}
-              </Button>
-            </Tooltip>
-          );
-        })}
+                <Tooltip
+                  title={item.description || ""}
+                  placement="right"
+                  arrow
+                  enterDelay={300}
+                >
+                  <ListItemButton
+                    onClick={() => handleNavItemClick(item.path)}
+                    selected={active}
+                    sx={{
+                      borderRadius: 1.5,
+                      py: 0.875,
+                      px: 1.5,
+                      minHeight: 40,
+                      transition: theme.transitions.create(
+                        ["background-color", "color"],
+                        {
+                          duration: theme.transitions.duration.shortest,
+                          easing: theme.transitions.easing.easeInOut,
+                        }
+                      ),
+                      backgroundColor: active
+                        ? alpha(theme.palette.primary.main, 0.08)
+                        : "transparent",
+                      color: active
+                        ? theme.palette.primary.main
+                        : theme.palette.text.primary,
+                      "&:hover": {
+                        backgroundColor: active
+                          ? alpha(theme.palette.primary.main, 0.12)
+                          : alpha(theme.palette.action.hover, 0.04),
+                      },
+                      "&.Mui-selected": {
+                        backgroundColor: alpha(theme.palette.primary.main, 0.08),
+                        color: theme.palette.primary.main,
+                        "&:hover": {
+                          backgroundColor: alpha(theme.palette.primary.main, 0.12),
+                        },
+                        "&::before": {
+                          content: '""',
+                          position: "absolute",
+                          left: 0,
+                          top: "50%",
+                          transform: "translateY(-50%)",
+                          width: 2.5,
+                          height: 18,
+                          backgroundColor: theme.palette.primary.main,
+                          borderRadius: "0 2px 2px 0",
+                        },
+                      },
+                      "&:focus-visible": {
+                        outline: `2px solid ${theme.palette.primary.main}`,
+                        outlineOffset: 2,
+                      },
+                    }}
+                  >
+                    <ListItemIcon
+                      sx={{
+                        minWidth: 36,
+                        color: "inherit",
+                        "& .MuiSvgIcon-root": {
+                          fontSize: 18,
+                        },
+                      }}
+                    >
+                      {item.icon}
+                    </ListItemIcon>
+                    <ListItemText
+                      primary={item.label}
+                      primaryTypographyProps={{
+                        fontSize: "0.8125rem",
+                        fontWeight: active ? 600 : 500,
+                        letterSpacing: "-0.01em",
+                        lineHeight: 1.4,
+                      }}
+                    />
+                  </ListItemButton>
+                </Tooltip>
+              </ListItem>
+            );
+          })}
+        </List>
       </Box>
 
-      {/* Footer - Optional branding or info */}
+      {/* Footer - Minimalist */}
       <Box
         sx={{
-          p: 1.5,
-          borderTop: `1px solid ${theme.palette.divider}`,
-          backgroundColor: alpha(theme.palette.primary.main, 0.02),
+          px: 2,
+          py: 1,
+          borderTop: `1px solid ${alpha(theme.palette.divider, 0.08)}`,
         }}
       >
         <Typography
           variant="caption"
-          display="block"
           sx={{
-            color: theme.palette.text.secondary,
-            textAlign: "center",
-            fontSize: "0.75rem",
-            fontWeight: 500,
+            color: theme.palette.text.disabled,
+            fontSize: "0.6875rem",
+            fontWeight: 400,
+            letterSpacing: "0.02em",
+            lineHeight: 1.3,
           }}
         >
           Release Planner v1.0

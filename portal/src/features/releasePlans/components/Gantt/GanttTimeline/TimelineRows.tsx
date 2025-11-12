@@ -36,13 +36,16 @@ export function MonthsRow({ monthSegments, pxPerDay }: MonthsRowProps) {
       {monthSegments.map((m) => (
         <div
           key={m.startIndex}
-          className="absolute top-0 text-[11px] font-medium flex items-center justify-center border-r"
+          className="absolute top-0 flex items-center justify-center border-r"
           style={{
             left: m.startIndex * pxPerDay,
             width: m.length * pxPerDay,
             height: TIMELINE_DIMENSIONS.MONTHS_ROW_HEIGHT,
             color: colors.TEXT_PRIMARY,
             borderColor: colors.BORDER_LIGHT,
+            fontSize: "0.75rem",
+            fontWeight: 600,
+            letterSpacing: "0.02em",
           }}
         >
           {m.label}
@@ -72,13 +75,15 @@ export function WeeksRow({ weekSegments, pxPerDay }: WeeksRowProps) {
       {weekSegments.map((w) => (
         <div
           key={w.startIndex}
-          className="absolute top-0 text-[10px] flex items-center justify-center border-r"
+          className="absolute top-0 flex items-center justify-center border-r"
           style={{
             left: w.startIndex * pxPerDay,
             width: w.length * pxPerDay,
             height: TIMELINE_DIMENSIONS.WEEKS_ROW_HEIGHT,
             color: colors.TEXT_SECONDARY,
             borderColor: colors.BORDER_LIGHT,
+            fontSize: "0.6875rem",
+            fontWeight: 500,
           }}
         >
           {w.label}
@@ -114,7 +119,7 @@ export function DaysRow({
         return (
           <div
             key={d.getTime()}
-            className="absolute top-0 border-r text-[10px] flex items-center justify-center"
+            className="absolute top-0 border-r flex items-center justify-center"
             style={{
               left: i * pxPerDay,
               width: pxPerDay,
@@ -123,6 +128,24 @@ export function DaysRow({
               backgroundColor: isWeekend ? colors.WEEKEND_BG : undefined,
               borderColor: colors.BORDER_LIGHT,
               cursor: onDayClick ? "pointer" : "default",
+              fontSize: "0.6875rem",
+              fontWeight: 400,
+              transition: "all 0.15s ease",
+            }}
+            onMouseEnter={(e) => {
+              if (onDayClick) {
+                e.currentTarget.style.backgroundColor = 
+                  theme.palette.mode === "dark"
+                    ? "rgba(255, 255, 255, 0.05)"
+                    : "rgba(0, 0, 0, 0.03)";
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (onDayClick) {
+                e.currentTarget.style.backgroundColor = isWeekend 
+                  ? colors.WEEKEND_BG 
+                  : undefined;
+              }
             }}
             title={milestone ? milestone.name : d.toISOString().slice(0, 10)}
             onClick={() => {
@@ -166,11 +189,12 @@ export function DaysRow({
                     right: 2,
                     fontSize: "12px",
                     color:
-                      theme.palette.mode === "dark" ? "#fbbf24" : "#f59e0b", // Lighter amber for dark mode
+                      theme.palette.mode === "dark" ? "#fbbf24" : "#f59e0b",
                     filter:
                       theme.palette.mode === "dark"
                         ? "drop-shadow(0 1px 2px rgba(0,0,0,0.5))"
                         : "drop-shadow(0 1px 2px rgba(0,0,0,0.2))",
+                    zIndex: 2,
                   }}
                 />
               </Tooltip>

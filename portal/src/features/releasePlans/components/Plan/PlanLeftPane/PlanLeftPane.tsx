@@ -11,6 +11,8 @@ import {
   Select,
   MenuItem,
   Tooltip,
+  FormControl,
+  InputLabel,
 } from "@mui/material";
 import type { SelectChangeEvent } from "@mui/material";
 import type { PlanStatus } from "../../../types";
@@ -22,6 +24,7 @@ import type { PlanComponent } from "../../../types";
 import { PlanCalendarsTab } from "../PlanCalendarsTab/PlanCalendarsTab";
 import { PlanReferencesTab } from "../PlanReferencesTab/PlanReferencesTab";
 import type { PlanReference } from "../../../types";
+import { TIMELINE_DIMENSIONS } from "../../Gantt/GanttTimeline/constants";
 
 export type PlanLeftPaneProps = {
   owner: string;
@@ -64,12 +67,21 @@ function TabPanel(props: TabPanelProps) {
       id={`plan-tabpanel-${index}`}
       aria-labelledby={`plan-tab-${index}`}
       {...other}
+      style={{
+        height: "100%",
+        width: "100%",
+        display: value === index ? "flex" : "none",
+        flexDirection: "column",
+      }}
     >
       {value === index && (
         <Box
           sx={{
             height: "100%",
+            width: "100%",
             overflow: "auto",
+            display: "flex",
+            flexDirection: "column",
           }}
         >
           {children}
@@ -165,13 +177,17 @@ export default function PlanLeftPane({
         },
       }}
     >
-      {/* Tabs Header - Fixed */}
+      {/* Tabs Header - Fixed - Aligned to Timeline Height */}
       <Box
         sx={{
           borderBottom: 1,
           borderColor: "divider",
           bgcolor: "background.paper",
           flexShrink: 0,
+          height: TIMELINE_DIMENSIONS.TOTAL_HEIGHT, // Match timeline height (76px)
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "flex-end",
         }}
       >
         <Tabs
@@ -182,14 +198,18 @@ export default function PlanLeftPane({
           scrollButtons="auto"
           allowScrollButtonsMobile
           sx={{
-            minHeight: 48,
+            minHeight: TIMELINE_DIMENSIONS.TOTAL_HEIGHT,
+            height: TIMELINE_DIMENSIONS.TOTAL_HEIGHT,
             "& .MuiTabs-flexContainer": {
               gap: 0,
+              height: "100%",
+              alignItems: "flex-end",
             },
             "& .MuiTab-root": {
-              minHeight: 48,
+              minHeight: TIMELINE_DIMENSIONS.TOTAL_HEIGHT,
+              height: TIMELINE_DIMENSIONS.TOTAL_HEIGHT,
               minWidth: "auto",
-              py: 1.25,
+              py: 0,
               px: 2.5,
               textTransform: "none",
               fontWeight: 500,
@@ -199,6 +219,9 @@ export default function PlanLeftPane({
                   ? "rgba(255, 255, 255, 0.7)"
                   : theme.palette.text.secondary,
               letterSpacing: "0.015em",
+              display: "flex",
+              alignItems: "flex-end",
+              paddingBottom: "8px",
               transition: theme.transitions.create(
                 ["color", "background-color"],
                 {
@@ -233,19 +256,19 @@ export default function PlanLeftPane({
             },
           }}
         >
-          <Tab label="Common Data" {...a11yProps(0)} />
+          <Tab label="Datos Comunes" {...a11yProps(0)} />
           <Tab
             label="Features"
             {...a11yProps(1)}
             disabled={!requiredFieldsFilled}
           />
           <Tab
-            label="Components"
+            label="Componentes"
             {...a11yProps(2)}
             disabled={!requiredFieldsFilled}
           />
-          <Tab label="Calendars" {...a11yProps(3)} />
-          <Tab label="References" {...a11yProps(4)} />
+          <Tab label="Calendarios" {...a11yProps(3)} />
+          <Tab label="Referencias" {...a11yProps(4)} />
         </Tabs>
       </Box>
 
@@ -253,95 +276,81 @@ export default function PlanLeftPane({
       <Box
         sx={{
           flexGrow: 1,
-          overflow: "auto",
+          overflow: "hidden",
           minHeight: 0,
           bgcolor:
             theme.palette.mode === "dark"
               ? theme.palette.background.default
               : "grey.50",
+          display: "flex",
+          flexDirection: "column",
         }}
       >
         {/* Tab 1: Common Data */}
         <TabPanel value={tabValue} index={0}>
           <Box
             sx={{
-              p: 2,
-              maxWidth: "520px",
-              mx: "auto",
+              p: { xs: 1.5, sm: 1.75 },
+              width: "100%",
+              flex: 1,
+              display: "flex",
+              flexDirection: "column",
             }}
           >
-            <Stack spacing={1.75}>
+            <Stack spacing={1.75} sx={{ width: "100%" }}>
               {/* Description */}
-              <Tooltip
-                title="Description of the release plan"
-                arrow
-                placement="top"
-              >
-                <TextField
-                  fullWidth
-                  multiline
-                  rows={2}
-                  value={description || ""}
-                  onChange={(e) => {
-                    if (onDescriptionChange) {
-                      onDescriptionChange(e.target.value);
-                    }
-                  }}
-                  placeholder="Description"
-                  variant="outlined"
-                  size="small"
-                  sx={{
-                    "& .MuiOutlinedInput-root": {
-                      fontSize: "0.875rem",
-                      "& fieldset": {
-                        borderColor: alpha(theme.palette.divider, 0.2),
-                        borderWidth: 1,
-                      },
-                      "&:hover fieldset": {
-                        borderColor: alpha(theme.palette.primary.main, 0.4),
-                      },
-                      "&.Mui-focused fieldset": {
-                        borderColor: theme.palette.primary.main,
-                        borderWidth: 1.5,
-                      },
+              <TextField
+                fullWidth
+                multiline
+                rows={3}
+                value={description || ""}
+                onChange={(e) => {
+                  if (onDescriptionChange) {
+                    onDescriptionChange(e.target.value);
+                  }
+                }}
+                placeholder="Descripción del plan de release..."
+                variant="outlined"
+                size="small"
+                label="Descripción"
+                sx={{
+                  "& .MuiOutlinedInput-root": {
+                    fontSize: "0.875rem",
+                    bgcolor: theme.palette.mode === "dark"
+                      ? alpha(theme.palette.background.paper, 0.5)
+                      : "background.paper",
+                    "& fieldset": {
+                      borderColor: alpha(theme.palette.divider, 0.2),
+                      borderWidth: 1,
                     },
-                  }}
-                />
-              </Tooltip>
+                    "&:hover fieldset": {
+                      borderColor: alpha(theme.palette.primary.main, 0.4),
+                    },
+                    "&.Mui-focused fieldset": {
+                      borderColor: theme.palette.primary.main,
+                      borderWidth: 1.5,
+                    },
+                  },
+                }}
+              />
 
               {/* Status */}
-              <Tooltip
-                title="Current status of the release plan"
-                arrow
-                placement="top"
-              >
+              <FormControl fullWidth size="small">
+                <InputLabel id="status-label">Estado</InputLabel>
                 <Select
-                  fullWidth
+                  labelId="status-label"
                   value={status}
-                  displayEmpty
+                  label="Estado"
                   onChange={(e: SelectChangeEvent) => {
                     if (onStatusChange) {
                       onStatusChange(e.target.value as PlanStatus);
                     }
                   }}
-                  renderValue={(selected) => {
-                    if (!selected) {
-                      return (
-                        <em style={{ color: theme.palette.text.secondary }}>
-                          Status
-                        </em>
-                      );
-                    }
-                    const labels: Record<PlanStatus, string> = {
-                      planned: "Planned",
-                      in_progress: "In Progress",
-                      done: "Completed",
-                      paused: "Paused",
-                    };
-                    return labels[selected as PlanStatus];
-                  }}
                   sx={{
                     fontSize: "0.875rem",
+                    bgcolor: theme.palette.mode === "dark"
+                      ? alpha(theme.palette.background.paper, 0.5)
+                      : "background.paper",
                     "& .MuiOutlinedInput-notchedOutline": {
                       borderColor: alpha(theme.palette.divider, 0.2),
                       borderWidth: 1,
@@ -355,137 +364,123 @@ export default function PlanLeftPane({
                     },
                   }}
                 >
-                  <MenuItem value="planned">Planned</MenuItem>
-                  <MenuItem value="in_progress">In Progress</MenuItem>
-                  <MenuItem value="done">Completed</MenuItem>
-                  <MenuItem value="paused">Paused</MenuItem>
+                  <MenuItem value="planned">Planificado</MenuItem>
+                  <MenuItem value="in_progress">En Progreso</MenuItem>
+                  <MenuItem value="done">Completado</MenuItem>
+                  <MenuItem value="paused">Pausado</MenuItem>
                 </Select>
-              </Tooltip>
+              </FormControl>
 
               {/* Period - Date Range */}
               <Box>
-                <Stack direction="row" spacing={1}>
-                  <Tooltip
-                    title="Start date of the release plan"
-                    arrow
-                    placement="top"
-                  >
-                    <TextField
-                      type="date"
-                      value={startDate}
-                      onChange={(e) => {
-                        if (onStartDateChange) {
-                          onStartDateChange(e.target.value);
-                        }
-                      }}
-                      variant="outlined"
-                      size="small"
-                      aria-label="Start Date"
-                      sx={{
-                        flex: 1,
-                        "& .MuiOutlinedInput-root": {
-                          fontSize: "0.875rem",
-                          "& fieldset": {
-                            borderColor: alpha(theme.palette.divider, 0.2),
-                            borderWidth: 1,
-                          },
-                          "&:hover fieldset": {
-                            borderColor: alpha(theme.palette.primary.main, 0.4),
-                          },
-                          "&.Mui-focused fieldset": {
-                            borderColor: theme.palette.primary.main,
-                            borderWidth: 1.5,
-                          },
-                        },
-                      }}
-                    />
-                  </Tooltip>
-                  <Tooltip
-                    title="End date of the release plan"
-                    arrow
-                    placement="top"
-                  >
-                    <TextField
-                      type="date"
-                      value={endDate}
-                      onChange={(e) => {
-                        if (onEndDateChange) {
-                          onEndDateChange(e.target.value);
-                        }
-                      }}
-                      variant="outlined"
-                      size="small"
-                      aria-label="End Date"
-                      sx={{
-                        flex: 1,
-                        "& .MuiOutlinedInput-root": {
-                          fontSize: "0.875rem",
-                          "& fieldset": {
-                            borderColor: alpha(theme.palette.divider, 0.2),
-                            borderWidth: 1,
-                          },
-                          "&:hover fieldset": {
-                            borderColor: alpha(theme.palette.primary.main, 0.4),
-                          },
-                          "&.Mui-focused fieldset": {
-                            borderColor: theme.palette.primary.main,
-                            borderWidth: 1.5,
-                          },
-                        },
-                      }}
-                    />
-                  </Tooltip>
-                </Stack>
-                <Tooltip
-                  title={`Duration: ${duration} ${
-                    duration === 1 ? "day" : "days"
-                  }`}
-                  arrow
-                  placement="top"
+                <Stack 
+                  direction={{ xs: "column", sm: "row" }} 
+                  spacing={1.5}
                 >
-                  <Typography
-                    variant="caption"
-                    sx={{
-                      fontSize: "0.7rem",
-                      color: theme.palette.text.secondary,
-                      mt: 0.75,
-                      display: "block",
-                      fontWeight: 400,
-                      cursor: "help",
+                  <TextField
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => {
+                      if (onStartDateChange) {
+                        onStartDateChange(e.target.value);
+                      }
                     }}
-                  >
-                    {formatDateRange(startDate, endDate)} • {duration}{" "}
-                    {duration === 1 ? "day" : "days"}
-                  </Typography>
-                </Tooltip>
+                    variant="outlined"
+                    size="small"
+                    label="Fecha Inicio"
+                    fullWidth
+                    InputLabelProps={{
+                      shrink: true,
+                    }}
+                    sx={{
+                      "& .MuiOutlinedInput-root": {
+                        fontSize: "0.875rem",
+                        bgcolor: theme.palette.mode === "dark"
+                          ? alpha(theme.palette.background.paper, 0.5)
+                          : "background.paper",
+                        "& fieldset": {
+                          borderColor: alpha(theme.palette.divider, 0.2),
+                          borderWidth: 1,
+                        },
+                        "&:hover fieldset": {
+                          borderColor: alpha(theme.palette.primary.main, 0.4),
+                        },
+                        "&.Mui-focused fieldset": {
+                          borderColor: theme.palette.primary.main,
+                          borderWidth: 1.5,
+                        },
+                      },
+                    }}
+                  />
+                  <TextField
+                    type="date"
+                    value={endDate}
+                    onChange={(e) => {
+                      if (onEndDateChange) {
+                        onEndDateChange(e.target.value);
+                      }
+                    }}
+                    variant="outlined"
+                    size="small"
+                    label="Fecha Fin"
+                    fullWidth
+                    InputLabelProps={{
+                      shrink: true,
+                    }}
+                    sx={{
+                      "& .MuiOutlinedInput-root": {
+                        fontSize: "0.875rem",
+                        bgcolor: theme.palette.mode === "dark"
+                          ? alpha(theme.palette.background.paper, 0.5)
+                          : "background.paper",
+                        "& fieldset": {
+                          borderColor: alpha(theme.palette.divider, 0.2),
+                          borderWidth: 1,
+                        },
+                        "&:hover fieldset": {
+                          borderColor: alpha(theme.palette.primary.main, 0.4),
+                        },
+                        "&.Mui-focused fieldset": {
+                          borderColor: theme.palette.primary.main,
+                          borderWidth: 1.5,
+                        },
+                      },
+                    }}
+                  />
+                </Stack>
+                <Typography
+                  variant="caption"
+                  sx={{
+                    fontSize: "0.75rem",
+                    color: theme.palette.text.secondary,
+                    mt: 1,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 0.5,
+                    fontWeight: 400,
+                  }}
+                >
+                  <span>{formatDateRange(startDate, endDate)}</span>
+                  <span>•</span>
+                  <span>{duration} {duration === 1 ? "día" : "días"}</span>
+                </Typography>
               </Box>
 
               {/* Product */}
-              <Tooltip
-                title="Product associated with this release plan"
-                arrow
-                placement="top"
-              >
+              <FormControl fullWidth size="small">
+                <InputLabel id="product-label">Producto</InputLabel>
                 <Select
-                  fullWidth
+                  labelId="product-label"
                   value={productId || ""}
-                  displayEmpty
+                  label="Producto"
                   onChange={(e: SelectChangeEvent) => {
                     onProductChange(e.target.value);
                   }}
-                  renderValue={(selected) => {
-                    if (!selected) {
-                      return (
-                        <em style={{ color: theme.palette.text.secondary }}>
-                          Product
-                        </em>
-                      );
-                    }
-                    const product = products.find((p) => p.id === selected);
-                    return product?.name || selected;
-                  }}
                   sx={{
                     fontSize: "0.875rem",
+                    bgcolor: theme.palette.mode === "dark"
+                      ? alpha(theme.palette.background.paper, 0.5)
+                      : "background.paper",
                     "& .MuiOutlinedInput-notchedOutline": {
                       borderColor: alpha(theme.palette.divider, 0.2),
                       borderWidth: 1,
@@ -500,7 +495,7 @@ export default function PlanLeftPane({
                   }}
                 >
                   <MenuItem value="">
-                    <em>None</em>
+                    <em>Ninguno</em>
                   </MenuItem>
                   {products.map((product) => (
                     <MenuItem key={product.id} value={product.id}>
@@ -508,36 +503,25 @@ export default function PlanLeftPane({
                     </MenuItem>
                   ))}
                 </Select>
-              </Tooltip>
+              </FormControl>
 
               {/* IT Owner */}
-              <Tooltip
-                title="IT Owner responsible for this release plan"
-                arrow
-                placement="top"
-              >
+              <FormControl fullWidth size="small">
+                <InputLabel id="it-owner-label">IT Owner</InputLabel>
                 <Select
-                  fullWidth
+                  labelId="it-owner-label"
                   value={itOwner || ""}
-                  displayEmpty
+                  label="IT Owner"
                   onChange={(e: SelectChangeEvent) => {
                     if (onITOwnerChange) {
                       onITOwnerChange(e.target.value);
                     }
                   }}
-                  renderValue={(selected) => {
-                    if (!selected) {
-                      return (
-                        <em style={{ color: theme.palette.text.secondary }}>
-                          IT Owner
-                        </em>
-                      );
-                    }
-                    const owner = IT_OWNERS.find((o) => o.id === selected);
-                    return owner?.name || selected;
-                  }}
                   sx={{
                     fontSize: "0.875rem",
+                    bgcolor: theme.palette.mode === "dark"
+                      ? alpha(theme.palette.background.paper, 0.5)
+                      : "background.paper",
                     "& .MuiOutlinedInput-notchedOutline": {
                       borderColor: alpha(theme.palette.divider, 0.2),
                       borderWidth: 1,
@@ -552,7 +536,7 @@ export default function PlanLeftPane({
                   }}
                 >
                   <MenuItem value="">
-                    <em>None</em>
+                    <em>Ninguno</em>
                   </MenuItem>
                   {IT_OWNERS.map((owner) => (
                     <MenuItem key={owner.id} value={owner.id}>
@@ -560,7 +544,7 @@ export default function PlanLeftPane({
                     </MenuItem>
                   ))}
                 </Select>
-              </Tooltip>
+              </FormControl>
             </Stack>
           </Box>
         </TabPanel>

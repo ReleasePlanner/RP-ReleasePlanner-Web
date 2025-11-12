@@ -1,4 +1,4 @@
-import { Card, CardContent, Collapse, Divider } from "@mui/material";
+import { Card, CardContent, Collapse, Divider, useTheme, alpha } from "@mui/material";
 import type { Plan } from "../../../types";
 import { PlanHeader } from "./PlanHeader";
 import { PlanContent } from "./PlanContent";
@@ -17,6 +17,7 @@ export type PlanCardLayoutProps = {
 /**
  * Layout component for PlanCard
  * Follows SRP - only handles layout and expansion state
+ * Responsive and elegant Material UI design
  */
 export function PlanCardLayout({
   plan,
@@ -28,18 +29,24 @@ export function PlanCardLayout({
   left,
   right,
 }: PlanCardLayoutProps) {
+  const theme = useTheme();
+  
   return (
     <Card
       variant="elevation"
       sx={{
         borderRadius: 2,
         overflow: "hidden",
-        boxShadow:
-          "0 2px 4px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04), inset 0 0 0 1px rgba(0,0,0,0.02)",
-        transition: "all 0.3s ease-in-out",
+        boxShadow: theme.palette.mode === "dark"
+          ? `0 2px 8px ${alpha(theme.palette.common.black, 0.3)}, 0 1px 3px ${alpha(theme.palette.common.black, 0.2)}`
+          : "0 2px 4px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)",
+        transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
+        border: `1px solid ${theme.palette.divider}`,
         "&:hover": {
-          boxShadow:
-            "0 4px 12px rgba(0,0,0,0.1), 0 2px 4px rgba(0,0,0,0.06), inset 0 0 0 1px rgba(0,0,0,0.02)",
+          boxShadow: theme.palette.mode === "dark"
+            ? `0 4px 16px ${alpha(theme.palette.common.black, 0.4)}, 0 2px 6px ${alpha(theme.palette.common.black, 0.3)}`
+            : "0 4px 12px rgba(0,0,0,0.1), 0 2px 4px rgba(0,0,0,0.06)",
+          transform: "translateY(-1px)",
         },
       }}
     >
@@ -51,15 +58,17 @@ export function PlanCardLayout({
         onNameChange={onNameChange}
       />
 
-      <Divider sx={{ borderColor: "rgba(0,0,0,0.06)" }} />
+      <Divider sx={{ borderColor: theme.palette.divider }} />
 
       <Collapse in={expanded} timeout="auto" unmountOnExit>
         <CardContent
           sx={{
             p: 0,
-            height: "600px",
-            minHeight: "400px",
-            maxHeight: "800px",
+            height: { xs: "500px", sm: "600px", md: "700px" },
+            minHeight: { xs: "400px", sm: "500px" },
+            maxHeight: { xs: "600px", sm: "800px", md: "900px" },
+            display: "flex",
+            flexDirection: "column",
             "&:last-child": {
               pb: 0,
             },

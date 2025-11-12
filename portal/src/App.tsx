@@ -5,6 +5,7 @@ import { ProductMaintenancePage } from "./pages/productMaintenancePage";
 import { FeatureMaintenancePage } from "./pages/featureMaintenancePage";
 import { CalendarMaintenancePage } from "./pages/calendarMaintenancePage";
 import { ITOwnerMaintenancePage } from "./pages/itOwnerMaintenancePage";
+import { PhasesMaintenancePage } from "./pages/phasesMaintenancePage";
 
 export default function App() {
   return (
@@ -12,6 +13,10 @@ export default function App() {
       <Route element={<MainLayout />}>
         <Route index element={<ReleasePlanner />} />
         <Route path="release-planner" element={<ReleasePlanner />} />
+        <Route
+          path="phases-maintenance"
+          element={<PhasesMaintenancePage />}
+        />
         <Route
           path="product-maintenance"
           element={<ProductMaintenancePage />}

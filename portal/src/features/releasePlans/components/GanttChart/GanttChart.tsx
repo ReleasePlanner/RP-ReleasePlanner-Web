@@ -21,7 +21,10 @@ import { TodayMarker, Preview, PreviewContainer } from "./GanttChart.styles";
 import { useAppSelector } from "@/store/hooks";
 import type { CalendarDay } from "@/features/calendar/types";
 import type { PlanMilestone } from "../../types";
-import { getTimelineColors } from "../Gantt/GanttTimeline/constants";
+import {
+  getTimelineColors,
+  TIMELINE_DIMENSIONS,
+} from "../Gantt/GanttTimeline/constants";
 
 // header timeline moved to GanttTimeline component
 
@@ -241,11 +244,20 @@ export default function GanttChart({
         className="border rounded-md"
         style={{
           borderColor: colors.BORDER,
+          height: "100%",
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden",
         }}
       >
         <div
-          className="grid items-start"
-          style={{ gridTemplateColumns: `${labelWidth}px 1fr` }}
+          className="grid"
+          style={{
+            gridTemplateColumns: `${labelWidth}px 1fr`,
+            flex: 1,
+            minHeight: 0,
+            overflow: "hidden",
+          }}
         >
           {/* Static phase list (left) */}
           <div
@@ -253,6 +265,10 @@ export default function GanttChart({
             style={{
               backgroundColor: colors.BACKGROUND,
               borderColor: colors.BORDER,
+              height: "100%",
+              display: "flex",
+              flexDirection: "column",
+              overflow: "hidden",
             }}
           >
             <PhasesList
@@ -260,13 +276,21 @@ export default function GanttChart({
               onAdd={onAddPhase ?? (() => {})}
               onEdit={onEditPhase ?? (() => {})}
               onAutoGenerate={onAutoGenerate}
-              headerOffsetTopPx={28 + 24 + 24 + 1 + LANE_GAP}
+              headerOffsetTopPx={TIMELINE_DIMENSIONS.TOTAL_HEIGHT + LANE_GAP}
               calendarStart={start.toISOString().slice(0, 10)}
               calendarEnd={end.toISOString().slice(0, 10)}
             />
           </div>
           {/* Scrollable phase-only timeline (right) */}
-          <div ref={containerRef} className="overflow-auto">
+          <div
+            ref={containerRef}
+            style={{
+              overflow: "auto",
+              height: "100%",
+              display: "flex",
+              flexDirection: "column",
+            }}
+          >
             <div
               ref={contentRef}
               className="min-w-full"

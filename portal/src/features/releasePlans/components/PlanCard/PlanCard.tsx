@@ -411,6 +411,7 @@ export default function PlanCard({ plan }: PlanCardProps) {
         open={phaseOpen}
         onClose={() => setPhaseOpen(false)}
         onSubmit={handleAddPhaseOptimized}
+        existingPhaseNames={(metadata.phases ?? []).map((ph) => ph.name)}
       />
 
       <PhaseEditDialog

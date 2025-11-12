@@ -86,6 +86,7 @@ export default function ResizableSplit({
           style={{
             width: `${leftPercent}%`,
             minWidth: 0,
+            height: "100%",
             display: "flex",
             flexDirection: "column",
             overflow: "hidden",
@@ -124,7 +125,10 @@ export default function ResizableSplit({
         style={{
           width: `${100 - leftPercent}%`,
           minWidth: 0,
-          overflow: "auto",
+          height: "100%",
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden",
         }}
       >
         {right}

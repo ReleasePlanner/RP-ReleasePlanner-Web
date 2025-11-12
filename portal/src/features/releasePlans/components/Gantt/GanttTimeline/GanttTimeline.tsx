@@ -75,6 +75,9 @@ export default function GanttTimeline({
         height: TIMELINE_DIMENSIONS.TOTAL_HEIGHT,
         backgroundColor: colors.BACKGROUND,
         borderColor: colors.BORDER,
+        boxShadow: theme.palette.mode === "dark"
+          ? "0 2px 8px rgba(0,0,0,0.3)"
+          : "0 2px 4px rgba(0,0,0,0.08)",
       }}
     >
       {/* Today marker */}
