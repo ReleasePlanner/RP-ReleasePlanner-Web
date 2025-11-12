@@ -22,9 +22,15 @@ export type GanttTimelineProps = {
   totalDays: number;
   pxPerDay: number;
   todayIndex?: number;
-  milestones?: PlanMilestone[]; // Add this
+  milestones?: PlanMilestone[];
   onJumpToToday?: () => void;
-  onDayClick?: (date: string) => void; // Add this for milestone creation
+  onDayClick?: (date: string) => void;
+  // Cell data props for day-level data
+  cellData?: import("../../../types").GanttCellData[];
+  onAddCellComment?: (date: string) => void;
+  onAddCellFile?: (date: string) => void;
+  onAddCellLink?: (date: string) => void;
+  onToggleCellMilestone?: (date: string) => void;
 };
 
 export default function GanttTimeline({
@@ -32,9 +38,14 @@ export default function GanttTimeline({
   totalDays,
   pxPerDay,
   todayIndex,
-  milestones = [], // Add this
+  milestones = [],
   onJumpToToday,
-  onDayClick, // Add this
+  onDayClick,
+  cellData = [],
+  onAddCellComment,
+  onAddCellFile,
+  onAddCellLink,
+  onToggleCellMilestone,
 }: GanttTimelineProps) {
   const theme = useTheme();
   const colors = getTimelineColors(theme);
@@ -68,16 +79,23 @@ export default function GanttTimeline({
     todayIndex >= 0 &&
     todayIndex < safeTotalDays;
 
+  // Calculate total width needed for all days
+  const totalWidth = safeTotalDays * safePxPerDay;
+
   return (
     <div
-      className="sticky top-0 z-10 border-b"
+      className="sticky top-0 z-10"
       style={{
+        width: totalWidth,
+        minWidth: totalWidth,
         height: TIMELINE_DIMENSIONS.TOTAL_HEIGHT,
-        backgroundColor: colors.BACKGROUND,
-        borderColor: colors.BORDER,
+        backgroundColor: colors.HEADER_BACKGROUND || colors.BACKGROUND,
+        borderBottom: `2px solid ${colors.BORDER}`,
         boxShadow: theme.palette.mode === "dark"
-          ? "0 2px 8px rgba(0,0,0,0.3)"
-          : "0 2px 4px rgba(0,0,0,0.08)",
+          ? "0 4px 12px rgba(0,0,0,0.4), 0 2px 4px rgba(0,0,0,0.3)"
+          : "0 4px 12px rgba(0,0,0,0.1), 0 2px 4px rgba(0,0,0,0.06)",
+        backdropFilter: "blur(8px)",
+        position: "relative",
       }}
     >
       {/* Today marker */}
@@ -103,6 +121,11 @@ export default function GanttTimeline({
         pxPerDay={safePxPerDay}
         milestones={milestonesMap}
         onDayClick={onDayClick}
+        cellData={cellData}
+        onAddCellComment={onAddCellComment}
+        onAddCellFile={onAddCellFile}
+        onAddCellLink={onAddCellLink}
+        onToggleCellMilestone={onToggleCellMilestone}
       />
     </div>
   );

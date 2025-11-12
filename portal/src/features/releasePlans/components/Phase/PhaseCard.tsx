@@ -18,6 +18,7 @@ import {
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined";
 import type { PlanPhase } from "../../types";
+import { formatDateLocal } from "../../lib/date";
 
 export interface PhaseCardProps {
   phase: PlanPhase;
@@ -35,9 +36,10 @@ export function PhaseCard({
   const theme = useTheme();
   const [isHovered, setIsHovered] = useState(false);
 
-  const formatDate = (date?: string) => {
-    if (!date) return "Not set";
-    return new Date(date).toLocaleDateString("en-US", {
+  const formatDate = (utcDateStr?: string) => {
+    if (!utcDateStr) return "Not set";
+    // Format UTC date using browser locale
+    return formatDateLocal(utcDateStr, {
       month: "short",
       day: "numeric",
       year: "numeric",

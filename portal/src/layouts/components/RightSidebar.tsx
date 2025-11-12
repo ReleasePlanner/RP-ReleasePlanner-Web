@@ -44,7 +44,12 @@ export function RightSidebar() {
         anchor="right"
         open={rightOpen}
         onClose={handleClose}
-        ModalProps={{ keepMounted: true }}
+        ModalProps={{
+          keepMounted: true,
+          disableAutoFocus: true,
+          disableEnforceFocus: true,
+          disableRestoreFocus: true,
+        }}
         sx={{ display: { xs: "block", lg: "none" } }}
       >
         <RightDrawerContent onClose={handleClose} />

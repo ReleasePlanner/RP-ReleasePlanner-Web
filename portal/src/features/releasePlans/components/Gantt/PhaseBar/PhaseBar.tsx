@@ -43,7 +43,7 @@ export default function PhaseBar({
         onDoubleClick={onDoubleClick}
       >
         <div
-          className="h-full rounded-sm opacity-70 shadow-inner"
+          className="h-full rounded-md opacity-75 shadow-sm"
           style={{ backgroundColor: color }}
         />
         {label && (

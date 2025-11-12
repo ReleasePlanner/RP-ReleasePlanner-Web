@@ -24,8 +24,8 @@ const releasePlannerFeatures: Feature[] = [
     businessDescription:
       "Enables secure user login and session management. Supports single sign-on (SSO) for enterprise customers.",
     productId: "prod-1",
-    createdAt: new Date("2024-10-15"),
-    updatedAt: new Date("2025-01-10"),
+    createdAt: "2024-10-15",
+    updatedAt: "2025-01-10",
   },
   {
     id: "feat-2",
@@ -40,8 +40,8 @@ const releasePlannerFeatures: Feature[] = [
     businessDescription:
       "Provides visual representation of project timelines. Helps teams understand dependencies and critical paths.",
     productId: "prod-1",
-    createdAt: new Date("2024-11-01"),
-    updatedAt: new Date("2025-01-15"),
+    createdAt: "2024-11-01",
+    updatedAt: "2025-01-15",
   },
   {
     id: "feat-3",
@@ -56,8 +56,8 @@ const releasePlannerFeatures: Feature[] = [
     businessDescription:
       "Accelerates release planning by providing industry-standard templates. Reduces setup time by 70%.",
     productId: "prod-1",
-    createdAt: new Date("2024-12-01"),
-    updatedAt: new Date("2025-01-20"),
+    createdAt: "2024-12-01",
+    updatedAt: "2025-01-20",
   },
   {
     id: "feat-4",
@@ -72,8 +72,8 @@ const releasePlannerFeatures: Feature[] = [
     businessDescription:
       "Protects API infrastructure from abuse. Enables tiered pricing models based on usage limits.",
     productId: "prod-1",
-    createdAt: new Date("2025-01-05"),
-    updatedAt: new Date("2025-01-05"),
+    createdAt: "2025-01-05",
+    updatedAt: "2025-01-05",
   },
   {
     id: "feat-5",
@@ -87,8 +87,8 @@ const releasePlannerFeatures: Feature[] = [
     businessDescription:
       "Enables multiple team members to collaborate simultaneously on release plans. Reduces coordination overhead.",
     productId: "prod-1",
-    createdAt: new Date("2024-12-15"),
-    updatedAt: new Date("2025-01-18"),
+    createdAt: "2024-12-15",
+    updatedAt: "2025-01-18",
   },
   {
     id: "feat-6",
@@ -102,8 +102,8 @@ const releasePlannerFeatures: Feature[] = [
     businessDescription:
       "Enables sharing release plans with stakeholders who don't have access to the platform. Supports offline review.",
     productId: "prod-1",
-    createdAt: new Date("2025-01-10"),
-    updatedAt: new Date("2025-01-10"),
+    createdAt: "2025-01-10",
+    updatedAt: "2025-01-10",
   },
 ];
 
@@ -124,8 +124,8 @@ const analyticsPlatformFeatures: Feature[] = [
     businessDescription:
       "Allows users to create personalized dashboards without technical knowledge. Increases user engagement by 40%.",
     productId: "prod-2",
-    createdAt: new Date("2024-09-20"),
-    updatedAt: new Date("2025-01-12"),
+    createdAt: "2024-09-20",
+    updatedAt: "2025-01-12",
   },
   {
     id: "feat-8",
@@ -139,8 +139,8 @@ const analyticsPlatformFeatures: Feature[] = [
     businessDescription:
       "Enables integration with external systems. Supports automated reporting and data pipelines.",
     productId: "prod-2",
-    createdAt: new Date("2024-10-10"),
-    updatedAt: new Date("2025-01-08"),
+    createdAt: "2024-10-10",
+    updatedAt: "2025-01-08",
   },
   {
     id: "feat-9",
@@ -154,8 +154,8 @@ const analyticsPlatformFeatures: Feature[] = [
     businessDescription:
       "Enables users to drill down into specific data subsets. Reduces time to insights by 50%.",
     productId: "prod-2",
-    createdAt: new Date("2024-12-05"),
-    updatedAt: new Date("2025-01-22"),
+    createdAt: "2024-12-05",
+    updatedAt: "2025-01-22",
   },
   {
     id: "feat-10",
@@ -169,8 +169,8 @@ const analyticsPlatformFeatures: Feature[] = [
     businessDescription:
       "Automates routine reporting tasks. Ensures stakeholders receive timely updates without manual intervention.",
     productId: "prod-2",
-    createdAt: new Date("2025-01-15"),
-    updatedAt: new Date("2025-01-15"),
+    createdAt: "2025-01-15",
+    updatedAt: "2025-01-15",
   },
 ];
 

@@ -26,7 +26,43 @@ export type PlanMilestone = {
   description?: string;
 };
 
-export type PlanReferenceType = "link" | "document" | "note";
+// Gantt Cell data - represents intersection of phase and day
+export type GanttCellComment = {
+  id: string;
+  text: string;
+  author: string;
+  createdAt: string; // ISO date
+  updatedAt?: string; // ISO date
+};
+
+export type GanttCellFile = {
+  id: string;
+  name: string;
+  url: string;
+  size?: number; // bytes
+  mimeType?: string;
+  uploadedAt: string; // ISO date
+};
+
+export type GanttCellLink = {
+  id: string;
+  title: string;
+  url: string;
+  description?: string;
+  createdAt: string; // ISO date
+};
+
+export type GanttCellData = {
+  phaseId?: string; // Optional - if not provided, data is at day level (not phase-specific)
+  date: string; // ISO date (YYYY-MM-DD)
+  isMilestone?: boolean;
+  milestoneColor?: string; // Custom color for milestone marker
+  comments?: GanttCellComment[];
+  files?: GanttCellFile[];
+  links?: GanttCellLink[];
+};
+
+export type PlanReferenceType = "link" | "document" | "note" | "comment" | "file" | "milestone";
 
 export type PlanReference = {
   id: string;
@@ -36,6 +72,11 @@ export type PlanReference = {
   description?: string; // For notes and general description
   createdAt: string; // ISO date
   updatedAt?: string; // ISO date
+  // Optional fields to associate reference with specific day or cell
+  date?: string; // ISO date (YYYY-MM-DD) - if set, reference is associated with this specific day
+  phaseId?: string; // If set along with date, reference is associated with a specific cell (phase + day)
+  // If only date is set (no phaseId), reference is associated with the entire day
+  // If neither date nor phaseId is set, reference is at plan level (general)
 };
 
 export type PlanMetadata = {
@@ -54,6 +95,7 @@ export type PlanMetadata = {
   calendarIds?: string[]; // IDs of calendars associated with this plan
   milestones?: PlanMilestone[]; // Milestones for this plan
   references?: PlanReference[]; // References (links, documents, notes) for this plan
+  cellData?: GanttCellData[]; // Cell-specific data (comments, files, links, milestones)
 };
 
 export type PlanTask = {

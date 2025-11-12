@@ -38,8 +38,8 @@ export interface Feature {
   technicalDescription: string;
   businessDescription: string;
   productId: string;
-  createdAt?: Date;
-  updatedAt?: Date;
+  createdAt?: string; // ISO date string (YYYY-MM-DD or ISO 8601)
+  updatedAt?: string; // ISO date string (YYYY-MM-DD or ISO 8601)
 }
 
 /**

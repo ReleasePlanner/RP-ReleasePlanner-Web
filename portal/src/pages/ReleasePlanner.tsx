@@ -23,6 +23,7 @@ import {
   ListItemText,
   ListItemIcon,
 } from "@mui/material";
+import { formatCompactDate, getCurrentDateUTC } from "@/features/releasePlans/lib/date";
 import {
   Add as AddIcon,
   UnfoldMore as ExpandIcon,
@@ -76,8 +77,9 @@ export default function ReleasePlanner() {
   const handleAddButtonClick = () => setDialogOpen(true);
   const handleDialogClose = () => setDialogOpen(false);
   const handleDialogSubmit = (name: string, description: string) => {
-    const now = new Date();
-    const year = now.getFullYear();
+    // Use UTC dates for storage
+    const nowUTC = getCurrentDateUTC();
+    const year = parseInt(nowUTC.split("-")[0]);
     const id = `plan-${Date.now()}`;
     const newPlan: Plan = {
       id,
@@ -85,8 +87,8 @@ export default function ReleasePlanner() {
         id,
         name,
         owner: "Unassigned",
-        startDate: `${year}-01-01`,
-        endDate: `${year}-12-31`,
+        startDate: `${year}-01-01`, // UTC format
+        endDate: `${year}-12-31`, // UTC format
         status: "planned",
         description,
         // phases will be loaded from basePhases in the reducer
@@ -160,16 +162,6 @@ export default function ReleasePlanner() {
 
   // Get all expanded states at once
   const expandedStates = useAppSelector((s) => s.ui.planExpandedByPlanId ?? {});
-
-  // Format date for compact display
-  const formatCompactDate = (dateStr: string): string => {
-    const date = new Date(dateStr);
-    return date.toLocaleDateString("es-ES", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    });
-  };
 
   const getStatusChipProps = (status: PlanStatus) => {
     switch (status) {
@@ -604,6 +596,9 @@ export default function ReleasePlanner() {
                           )}
                         </Stack>
                       }
+                      secondaryTypographyProps={{
+                        component: "div",
+                      }}
                       sx={{ my: 0 }}
                     />
                   </ListItemButton>

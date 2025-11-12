@@ -117,7 +117,12 @@ export function LeftSidebar() {
         variant="temporary"
         open={leftOpen}
         onClose={handleClose}
-        ModalProps={{ keepMounted: true }}
+        ModalProps={{
+          keepMounted: true,
+          disableAutoFocus: true,
+          disableEnforceFocus: true,
+          disableRestoreFocus: true,
+        }}
         sx={{ display: { xs: "block", md: "none" } }}
       >
         {leftDrawerContent}

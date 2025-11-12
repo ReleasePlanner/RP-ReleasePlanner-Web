@@ -27,8 +27,8 @@ export const getTimelineColors = (theme: Theme) => {
       ? "rgba(255, 255, 255, 0.15)" // Increased opacity
       : "#e5e7eb",
     BORDER_LIGHT: isDark
-      ? "rgba(255, 255, 255, 0.2)" // Increased opacity for better visibility
-      : "#e5e7eb",
+      ? "rgba(255, 255, 255, 0.25)" // Increased opacity for better visibility of grid lines
+      : "#d1d5db", // Slightly darker for better visibility
     TEXT_PRIMARY: isDark
       ? "rgba(255, 255, 255, 0.95)" // High contrast white
       : "#374151",
@@ -41,6 +41,9 @@ export const getTimelineColors = (theme: Theme) => {
     BACKGROUND: isDark
       ? theme.palette.background.paper
       : "#ffffff",
+    HEADER_BACKGROUND: isDark
+      ? "rgba(18, 18, 18, 0.98)"
+      : "rgba(255, 255, 255, 0.98)",
     BACKGROUND_OVERLAY: isDark
       ? "rgba(30, 30, 30, 0.95)" // More opaque for better contrast
       : "rgba(255, 255, 255, 0.8)",
@@ -56,6 +59,9 @@ export const getTimelineColors = (theme: Theme) => {
     BORDER: isDark
       ? "rgba(255, 255, 255, 0.2)" // Increased opacity for better visibility
       : "#e5e7eb",
+    TRACKS_BACKGROUND: isDark
+      ? theme.palette.background.default // Use default background for tracks area
+      : "#fafafa", // Very light gray for elegant minimal look
   };
 };
 

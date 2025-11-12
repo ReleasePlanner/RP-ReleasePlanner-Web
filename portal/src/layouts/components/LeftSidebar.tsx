@@ -60,6 +60,9 @@ export function LeftSidebar() {
         onClose={handleClose}
         ModalProps={{
           keepMounted: true,
+          disableAutoFocus: true,
+          disableEnforceFocus: true,
+          disableRestoreFocus: true,
           sx: {
             backdropFilter: "blur(4px)",
           },

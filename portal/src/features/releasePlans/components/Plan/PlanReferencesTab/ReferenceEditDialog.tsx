@@ -19,6 +19,9 @@ import {
   Link as LinkIcon,
   Description as DocumentIcon,
   Note as NoteIcon,
+  Comment as CommentIcon,
+  AttachFile as FileIcon,
+  Flag as MilestoneIcon,
 } from "@mui/icons-material";
 import type { PlanReference, PlanReferenceType } from "../../../types";
 
@@ -96,6 +99,12 @@ export function ReferenceEditDialog({
         return <DocumentIcon sx={{ fontSize: 20 }} />;
       case "note":
         return <NoteIcon sx={{ fontSize: 20 }} />;
+      case "comment":
+        return <CommentIcon sx={{ fontSize: 20 }} />;
+      case "file":
+        return <FileIcon sx={{ fontSize: 20 }} />;
+      case "milestone":
+        return <MilestoneIcon sx={{ fontSize: 20 }} />;
     }
   };
 
@@ -154,6 +163,24 @@ export function ReferenceEditDialog({
                   <span>Note</span>
                 </Stack>
               </MenuItem>
+              <MenuItem value="comment">
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <CommentIcon sx={{ fontSize: 18 }} />
+                  <span>Comment</span>
+                </Stack>
+              </MenuItem>
+              <MenuItem value="file">
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <FileIcon sx={{ fontSize: 18 }} />
+                  <span>File</span>
+                </Stack>
+              </MenuItem>
+              <MenuItem value="milestone">
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <MilestoneIcon sx={{ fontSize: 18 }} />
+                  <span>Milestone</span>
+                </Stack>
+              </MenuItem>
             </Select>
           </FormControl>
 
@@ -168,15 +195,23 @@ export function ReferenceEditDialog({
             size="small"
           />
 
-          {(type === "link" || type === "document") && (
+          {(type === "link" || type === "document" || type === "file") && (
             <TextField
-              label={type === "link" ? "URL" : "Document URL"}
+              label={
+                type === "link"
+                  ? "URL"
+                  : type === "file"
+                  ? "File URL"
+                  : "Document URL"
+              }
               fullWidth
               value={url}
               onChange={(e) => setUrl(e.target.value)}
               placeholder={
                 type === "link"
                   ? "https://example.com"
+                  : type === "file"
+                  ? "https://example.com/file.pdf"
                   : "https://docs.example.com/file.pdf"
               }
               variant="outlined"
@@ -184,6 +219,8 @@ export function ReferenceEditDialog({
               helperText={
                 type === "link"
                   ? "Enter the web link URL"
+                  : type === "file"
+                  ? "Enter the file URL or file path"
                   : "Enter the document URL or file path"
               }
             />

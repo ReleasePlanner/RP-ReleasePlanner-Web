@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Box,
   TextField,
@@ -15,6 +15,11 @@ import {
   Edit,
   ArrowForward,
 } from "@mui/icons-material";
+import {
+  formatDateLocal,
+  utcToLocalDate,
+  localDateToUTC,
+} from "@/features/releasePlans/lib/date";
 
 export interface DateRangeEditorProps {
   startDate: string;
@@ -38,18 +43,28 @@ export function DateRangeEditor({
 }: DateRangeEditorProps) {
   const theme = useTheme();
   const [isEditing, setIsEditing] = useState(false);
-  const [tempStartDate, setTempStartDate] = useState(startDate);
-  const [tempEndDate, setTempEndDate] = useState(endDate);
+  // Store dates in local format for editing (from UTC)
+  const [tempStartDate, setTempStartDate] = useState(() =>
+    utcToLocalDate(startDate)
+  );
+  const [tempEndDate, setTempEndDate] = useState(() => utcToLocalDate(endDate));
   const [validationError, setValidationError] = useState<string>("");
 
-  // Format date for display
-  const formatDate = (dateStr: string): string => {
-    const date = new Date(dateStr);
-    return new Intl.DateTimeFormat("en-US", {
+  // Update local dates when UTC dates change
+  useEffect(() => {
+    if (!isEditing) {
+      setTempStartDate(utcToLocalDate(startDate));
+      setTempEndDate(utcToLocalDate(endDate));
+    }
+  }, [startDate, endDate, isEditing]);
+
+  // Format UTC date for display using browser locale
+  const formatDate = (utcDateStr: string): string => {
+    return formatDateLocal(utcDateStr, {
       month: "short",
       day: "numeric",
       year: "numeric",
-    }).format(date);
+    });
   };
 
   // Validate date range
@@ -73,22 +88,28 @@ export function DateRangeEditor({
 
   const handleEdit = () => {
     if (disabled) return;
-    setTempStartDate(startDate);
-    setTempEndDate(endDate);
+    // Convert UTC to local for editing
+    setTempStartDate(utcToLocalDate(startDate));
+    setTempEndDate(utcToLocalDate(endDate));
     setValidationError("");
     setIsEditing(true);
   };
 
   const handleSave = () => {
+    // Validate using local dates
     if (validateDateRange(tempStartDate, tempEndDate)) {
-      onDateRangeChange?.(tempStartDate, tempEndDate);
+      // Convert local dates back to UTC before saving
+      const startUTC = localDateToUTC(tempStartDate);
+      const endUTC = localDateToUTC(tempEndDate);
+      onDateRangeChange?.(startUTC, endUTC);
       setIsEditing(false);
     }
   };
 
   const handleCancel = () => {
-    setTempStartDate(startDate);
-    setTempEndDate(endDate);
+    // Reset to current UTC dates converted to local
+    setTempStartDate(utcToLocalDate(startDate));
+    setTempEndDate(utcToLocalDate(endDate));
     setValidationError("");
     setIsEditing(false);
   };

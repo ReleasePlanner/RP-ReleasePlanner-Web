@@ -25,6 +25,7 @@ import { PlanCalendarsTab } from "../PlanCalendarsTab/PlanCalendarsTab";
 import { PlanReferencesTab } from "../PlanReferencesTab/PlanReferencesTab";
 import type { PlanReference } from "../../../types";
 import { TIMELINE_DIMENSIONS } from "../../Gantt/GanttTimeline/constants";
+import { formatDateLocal } from "../../../lib/date";
 
 export type PlanLeftPaneProps = {
   owner: string;
@@ -49,6 +50,7 @@ export type PlanLeftPaneProps = {
   onComponentsChange?: (components: PlanComponent[]) => void;
   onCalendarIdsChange?: (calendarIds: string[]) => void;
   onReferencesChange?: (references: PlanReference[]) => void;
+  onScrollToDate?: (date: string) => void;
 };
 
 interface TabPanelProps {
@@ -121,6 +123,7 @@ export default function PlanLeftPane({
   onComponentsChange, // Add this
   onCalendarIdsChange,
   onReferencesChange,
+  onScrollToDate,
 }: PlanLeftPaneProps) {
   const theme = useTheme();
   const [tabValue, setTabValue] = useState(0);
@@ -139,16 +142,17 @@ export default function PlanLeftPane({
 
   const duration = calculateDuration(startDate, endDate);
 
-  // Format date range
+  // Format date range using browser locale (dates are in UTC)
   const formatDateRange = (start: string, end: string): string => {
-    const startDate = new Date(start);
-    const endDate = new Date(end);
-    const formatter = new Intl.DateTimeFormat("en-US", {
+    return `${formatDateLocal(start, {
       month: "short",
       day: "numeric",
       year: "numeric",
-    });
-    return `${formatter.format(startDate)} - ${formatter.format(endDate)}`;
+    })} - ${formatDateLocal(end, {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    })}`;
   };
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
@@ -580,6 +584,7 @@ export default function PlanLeftPane({
           <PlanReferencesTab
             references={references}
             onReferencesChange={onReferencesChange}
+            onScrollToDate={onScrollToDate}
           />
         </TabPanel>
       </Box>

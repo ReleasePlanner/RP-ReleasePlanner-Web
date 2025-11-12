@@ -17,6 +17,12 @@ import {
   useTheme,
 } from "@mui/material";
 import type { PlanPhase } from "../../types";
+import {
+  getCurrentDateUTC,
+  utcToLocalDate,
+  localDateToUTC,
+  addDays,
+} from "../../lib/date";
 
 export interface PhaseEditDialogProps {
   open: boolean;
@@ -48,22 +54,30 @@ export function PhaseEditDialog({
 
   useEffect(() => {
     if (open && phase) {
+      // Convert UTC dates to local for display in inputs
       setFormData({
         name: phase.name || "",
-        startDate: phase.startDate || "",
-        endDate: phase.endDate || "",
+        startDate: phase.startDate ? utcToLocalDate(phase.startDate) : "",
+        endDate: phase.endDate ? utcToLocalDate(phase.endDate) : "",
         color: phase.color || "#185ABD",
       });
       setErrors({});
     } else if (open && !phase) {
-      // New phase defaults
-      const today = new Date().toISOString().slice(0, 10);
-      const weekLater = new Date();
-      weekLater.setDate(weekLater.getDate() + 7);
+      // New phase defaults - use UTC dates, convert to local for input
+      const todayUTC = getCurrentDateUTC();
+      const weekLaterUTC = addDays(
+        new Date(Date.UTC(
+          parseInt(todayUTC.split("-")[0]),
+          parseInt(todayUTC.split("-")[1]) - 1,
+          parseInt(todayUTC.split("-")[2])
+        )),
+        7
+      ).toISOString().slice(0, 10);
+      // Convert to local for display in input
       setFormData({
         name: "",
-        startDate: today,
-        endDate: weekLater.toISOString().slice(0, 10),
+        startDate: utcToLocalDate(todayUTC),
+        endDate: utcToLocalDate(weekLaterUTC),
         color: "#185ABD",
       });
       setErrors({});
@@ -90,11 +104,12 @@ export function PhaseEditDialog({
   const handleSave = () => {
     if (!validate()) return;
 
+    // Convert local dates back to UTC before saving
     const savedPhase: PlanPhase = {
       id: phase?.id || `phase-${Date.now()}`,
       name: formData.name?.trim() || "",
-      startDate: formData.startDate,
-      endDate: formData.endDate,
+      startDate: formData.startDate ? localDateToUTC(formData.startDate) : "",
+      endDate: formData.endDate ? localDateToUTC(formData.endDate) : "",
       color: formData.color,
     };
 
