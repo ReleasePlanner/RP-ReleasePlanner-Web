@@ -1,0 +1,3 @@
+# Ignore this directory from Nx project detection
+# This is the old portal directory, the new one is in apps/portal
+

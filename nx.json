@@ -61,7 +61,10 @@
         "serveTargetName": "serve",
         "previewTargetName": "preview",
         "serveStaticTargetName": "serve-static"
-      }
+      },
+      "exclude": [
+        "portal/**/*"
+      ]
     },
     {
       "plugin": "@nx/eslint/plugin",
