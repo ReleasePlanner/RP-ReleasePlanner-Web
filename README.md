@@ -1,6 +1,8 @@
 # RP-Release-Planner-Web
 MyPlanner System - My Project module: including API, Web/Mobile Client and Infrastructure
 
+> 📚 **Documentación completa**: Consulta el directorio [`docs/`](./docs/) para toda la documentación del proyecto.
+
 ## Git Flow Workflow
 
 This repository follows the Git Flow branching model.

@@ -1,0 +1,104 @@
+# Docker Compose para desarrollo con hot-reload mejorado
+version: '3.8'
+
+services:
+  # Base de datos PostgreSQL
+  postgres:
+    image: postgres:16-alpine
+    container_name: release-planner-postgres-dev
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-releaseplanner}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-releaseplanner123}
+      POSTGRES_DB: ${POSTGRES_DB:-releaseplanner}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data_dev:/var/lib/postgresql/data
+      - ./scripts/postgres/init:/docker-entrypoint-initdb.d
+    networks:
+      - release-planner-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-releaseplanner}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # Backend API - NestJS (desarrollo con nodemon/watch)
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile.dev
+      args:
+        NODE_ENV: development
+    container_name: release-planner-api-dev
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
+      DATABASE_USER: ${POSTGRES_USER:-releaseplanner}
+      DATABASE_PASSWORD: ${POSTGRES_PASSWORD:-releaseplanner123}
+      DATABASE_NAME: ${POSTGRES_DB:-releaseplanner}
+      FRONTEND_URL: http://localhost:5173
+    ports:
+      - "${API_PORT:-3000}:3000"
+    volumes:
+      # Montar todo el código fuente para hot-reload
+      - ./apps/api:/app/apps/api
+      - ./libs:/app/libs
+      - ./package.json:/app/package.json
+      - ./package-lock.json:/app/package-lock.json
+      - ./tsconfig.base.json:/app/tsconfig.base.json
+      - ./nx.json:/app/nx.json
+      # Excluir node_modules para usar los del contenedor
+      - /app/node_modules
+      - /app/apps/api/node_modules
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - release-planner-network
+    restart: unless-stopped
+    command: npx nx serve api
+
+  # Frontend - React (desarrollo con Vite)
+  frontend:
+    build:
+      context: .
+      dockerfile: apps/portal/Dockerfile.dev
+      args:
+        NODE_ENV: development
+    container_name: release-planner-frontend-dev
+    environment:
+      NODE_ENV: development
+      VITE_API_URL: http://localhost:3000/api
+    ports:
+      - "${FRONTEND_PORT:-5173}:5173"
+    volumes:
+      # Montar todo el código fuente para hot-reload
+      - ./apps/portal:/app/apps/portal
+      - ./libs:/app/libs
+      - ./package.json:/app/package.json
+      - ./package-lock.json:/app/package-lock.json
+      - ./tsconfig.base.json:/app/tsconfig.base.json
+      - ./nx.json:/app/nx.json
+      # Excluir node_modules para usar los del contenedor
+      - /app/node_modules
+      - /app/apps/portal/node_modules
+    depends_on:
+      - api
+    networks:
+      - release-planner-network
+    restart: unless-stopped
+    command: npx nx serve portal --host 0.0.0.0 --port 5173
+
+networks:
+  release-planner-network:
+    driver: bridge
+
+volumes:
+  postgres_data_dev:
+    driver: local
+

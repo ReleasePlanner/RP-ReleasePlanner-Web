@@ -1,30 +1,61 @@
+import { lazy, Suspense } from "react";
 import { Routes, Route } from "react-router-dom";
+import { CircularProgress, Box } from "@mui/material";
 import { MainLayout } from "./layouts/MainLayout";
-import ReleasePlanner from "./pages/ReleasePlanner";
-import { ProductMaintenancePage } from "./pages/productMaintenancePage";
-import { FeatureMaintenancePage } from "./pages/featureMaintenancePage";
-import { CalendarMaintenancePage } from "./pages/calendarMaintenancePage";
-import { ITOwnerMaintenancePage } from "./pages/itOwnerMaintenancePage";
-import { PhasesMaintenancePage } from "./pages/phasesMaintenancePage";
+import { ProtectedRoute } from "./components/auth/ProtectedRoute";
+import { AuthPage } from "./components/auth/AuthPage";
+
+// Lazy load pages for better performance and code splitting
+const ReleasePlanner = lazy(() => import("./pages/ReleasePlanner"));
+const ProductMaintenancePage = lazy(() => import("./pages/productMaintenancePage"));
+const FeatureMaintenancePage = lazy(() => import("./pages/featureMaintenancePage"));
+const CalendarMaintenancePage = lazy(() => import("./pages/calendarMaintenancePage"));
+const ITOwnerMaintenancePage = lazy(() => import("./pages/itOwnerMaintenancePage"));
+const PhasesMaintenancePage = lazy(() => import("./pages/phasesMaintenancePage"));
+
+// Loading fallback component
+const LoadingFallback = () => (
+  <Box
+    display="flex"
+    justifyContent="center"
+    alignItems="center"
+    minHeight="100vh"
+  >
+    <CircularProgress />
+  </Box>
+);
 
 export default function App() {
   return (
-    <Routes>
-      <Route element={<MainLayout />}>
-        <Route index element={<ReleasePlanner />} />
-        <Route path="release-planner" element={<ReleasePlanner />} />
+    <Suspense fallback={<LoadingFallback />}>
+      <Routes>
+        {/* Public auth routes */}
+        <Route path="auth/login" element={<AuthPage />} />
+        <Route path="auth/register" element={<AuthPage />} />
+
+        {/* Protected routes */}
         <Route
-          path="phases-maintenance"
-          element={<PhasesMaintenancePage />}
-        />
-        <Route
-          path="product-maintenance"
-          element={<ProductMaintenancePage />}
-        />
-        <Route path="features" element={<FeatureMaintenancePage />} />
-        <Route path="calendars" element={<CalendarMaintenancePage />} />
-        <Route path="it-owners" element={<ITOwnerMaintenancePage />} />
-      </Route>
-    </Routes>
+          element={
+            <ProtectedRoute>
+              <MainLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<ReleasePlanner />} />
+          <Route path="release-planner" element={<ReleasePlanner />} />
+          <Route
+            path="phases-maintenance"
+            element={<PhasesMaintenancePage />}
+          />
+          <Route
+            path="product-maintenance"
+            element={<ProductMaintenancePage />}
+          />
+          <Route path="features" element={<FeatureMaintenancePage />} />
+          <Route path="calendars" element={<CalendarMaintenancePage />} />
+          <Route path="it-owners" element={<ITOwnerMaintenancePage />} />
+        </Route>
+      </Routes>
+    </Suspense>
   );
 }

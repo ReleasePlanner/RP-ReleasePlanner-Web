@@ -1,17 +1,25 @@
-import { BaseEntity } from '../../common/base/base.entity';
+import { Entity, Column, ManyToOne, JoinColumn, Index } from 'typeorm';
+import { BaseEntity } from '../../common/database/base.entity';
+import { Plan } from './plan.entity';
 
+@Entity('plan_milestones')
+@Index(['planId'])
 export class PlanMilestone extends BaseEntity {
+  @Column({ type: 'date' })
   date: string; // ISO date (YYYY-MM-DD)
+
+  @Column({ type: 'varchar', length: 255 })
   name: string;
+
+  @Column({ type: 'text', nullable: true })
   description?: string;
 
-  constructor(date: string, name: string, description?: string) {
-    super();
-    this.date = date;
-    this.name = name;
-    this.description = description;
-    this.validate();
-  }
+  @Column({ type: 'uuid' })
+  planId: string;
+
+  @ManyToOne(() => Plan, (plan) => plan.milestones, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'planId' })
+  plan: Plan;
 
   validate(): void {
     if (!this.date || !this.isValidDate(this.date)) {
@@ -31,4 +39,3 @@ export class PlanMilestone extends BaseEntity {
     return d instanceof Date && !isNaN(d.getTime());
   }
 }
-

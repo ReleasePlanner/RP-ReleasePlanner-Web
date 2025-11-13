@@ -1,0 +1,112 @@
+{{- if .Values.api.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "my-app-chart.api.fullname" . }}
+  labels:
+    {{- include "my-app-chart.api.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.api.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "my-app-chart.api.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        checksum/secret: {{ include (print $.Template.BasePath "/secret-postgresql.yaml") . | sha256sum }}
+      labels:
+        {{- include "my-app-chart.api.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+      - name: api
+        securityContext:
+          {{- toYaml .Values.securityContext | nindent 12 }}
+        image: "{{ include "my-app-chart.imageRegistry" . }}{{ .Values.api.image.repository }}:{{ .Values.api.image.tag | default .Chart.AppVersion }}"
+        imagePullPolicy: {{ .Values.api.image.pullPolicy }}
+        ports:
+        - name: http
+          containerPort: {{ .Values.api.service.targetPort }}
+          protocol: TCP
+        env:
+        - name: NODE_ENV
+          value: {{ .Values.api.env.NODE_ENV | quote }}
+        - name: PORT
+          value: {{ .Values.api.env.PORT | quote }}
+        - name: DATABASE_HOST
+          value: {{ include "my-app-chart.postgresql.fullname" . }}
+        - name: DATABASE_PORT
+          value: {{ .Values.postgresql.service.port | quote }}
+        - name: DATABASE_USER
+          value: {{ .Values.postgresql.auth.username | quote }}
+        - name: DATABASE_NAME
+          value: {{ .Values.postgresql.auth.database | quote }}
+        - name: DATABASE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "my-app-chart.postgresql.secretName" . }}
+              key: postgres-password
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "my-app-chart.postgresql.secretName" . }}
+              key: postgres-password
+        - name: FRONTEND_URL
+          value: {{ .Values.api.env.FRONTEND_URL | quote }}
+        - name: REDIS_HOST
+          value: {{ if .Values.redis.enabled }}{{ include "my-app-chart.redis.fullname" . }}{{ else }}{{ .Values.api.env.REDIS_HOST | default "redis" }}{{ end | quote }}
+        - name: REDIS_PORT
+          value: {{ .Values.api.env.REDIS_PORT | quote }}
+        - name: REDIS_DB
+          value: {{ .Values.api.env.REDIS_DB | quote }}
+        - name: REDIS_TTL
+          value: {{ .Values.api.env.REDIS_TTL | quote }}
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "my-app-chart.jwt.secretName" . }}
+              key: jwt-secret
+              optional: true
+        - name: JWT_REFRESH_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "my-app-chart.jwt.secretName" . }}
+              key: jwt-refresh-secret
+              optional: true
+        - name: JWT_EXPIRES_IN
+          value: {{ .Values.api.env.JWT_EXPIRES_IN | default "15m" | quote }}
+        - name: JWT_REFRESH_EXPIRES_IN
+          value: {{ .Values.api.env.JWT_REFRESH_EXPIRES_IN | default "7d" | quote }}
+        - name: RATE_LIMIT_SHORT
+          value: {{ .Values.api.env.RATE_LIMIT_SHORT | quote }}
+        - name: RATE_LIMIT_MEDIUM
+          value: {{ .Values.api.env.RATE_LIMIT_MEDIUM | quote }}
+        - name: RATE_LIMIT_LONG
+          value: {{ .Values.api.env.RATE_LIMIT_LONG | quote }}
+        - name: REQUEST_TIMEOUT_MS
+          value: {{ .Values.api.env.REQUEST_TIMEOUT_MS | quote }}
+        livenessProbe:
+          {{- toYaml .Values.api.livenessProbe | nindent 10 }}
+        readinessProbe:
+          {{- toYaml .Values.api.readinessProbe | nindent 10 }}
+        resources:
+          {{- toYaml .Values.api.resources | nindent 10 }}
+      {{- with .Values.api.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.api.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.api.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}
+

@@ -1,4 +1,5 @@
-import { BaseEntity } from '../../common/base/base.entity';
+import { Entity, Column, OneToMany, Index } from 'typeorm';
+import { BaseEntity } from '../../common/database/base.entity';
 import { PlanPhase } from './plan-phase.entity';
 import { PlanTask } from './plan-task.entity';
 import { PlanMilestone } from './plan-milestone.entity';
@@ -12,47 +13,75 @@ export enum PlanStatus {
   PAUSED = 'paused',
 }
 
+@Entity('plans')
+@Index(['name'])
+@Index(['productId'])
+@Index(['itOwner'])
 export class Plan extends BaseEntity {
+  @Column({ type: 'varchar', length: 255 })
   name: string;
+
+  @Column({ type: 'varchar', length: 255 })
   owner: string;
+
+  @Column({ type: 'date' })
   startDate: string; // ISO date
+
+  @Column({ type: 'date' })
   endDate: string; // ISO date
+
+  @Column({ type: 'enum', enum: PlanStatus, default: PlanStatus.PLANNED })
   status: PlanStatus;
+
+  @Column({ type: 'text', nullable: true })
   description?: string;
-  phases: PlanPhase[];
+
+  @Column({ type: 'uuid', nullable: true })
   productId?: string;
+
+  @Column({ type: 'uuid', nullable: true })
   itOwner?: string;
+
+  // Arrays stored as JSON columns
+  @Column({ type: 'jsonb', default: '[]' })
   featureIds: string[];
+
+  @Column({ type: 'jsonb', default: '[]' })
   components: Array<{ componentId: string; finalVersion: string }>;
+
+  @Column({ type: 'jsonb', default: '[]' })
   calendarIds: string[];
-  milestones: PlanMilestone[];
-  references: PlanReference[];
-  cellData: GanttCellData[];
+
+  // Relations
+  @OneToMany(() => PlanPhase, (phase) => phase.plan, {
+    cascade: true,
+    eager: false,
+  })
+  phases: PlanPhase[];
+
+  @OneToMany(() => PlanTask, (task) => task.plan, {
+    cascade: true,
+    eager: false,
+  })
   tasks: PlanTask[];
 
-  constructor(
-    name: string,
-    owner: string,
-    startDate: string,
-    endDate: string,
-    status: PlanStatus = PlanStatus.PLANNED,
-  ) {
-    super();
-    this.name = name;
-    this.owner = owner;
-    this.startDate = startDate;
-    this.endDate = endDate;
-    this.status = status;
-    this.phases = [];
-    this.featureIds = [];
-    this.components = [];
-    this.calendarIds = [];
-    this.milestones = [];
-    this.references = [];
-    this.cellData = [];
-    this.tasks = [];
-    this.validate();
-  }
+  @OneToMany(() => PlanMilestone, (milestone) => milestone.plan, {
+    cascade: true,
+    eager: false,
+  })
+  milestones: PlanMilestone[];
+
+  @OneToMany(() => PlanReference, (reference) => reference.plan, {
+    cascade: true,
+    eager: false,
+  })
+  references: PlanReference[];
+
+  @OneToMany(() => GanttCellData, (cellData) => cellData.plan, {
+    cascade: true,
+    eager: false,
+  })
+  cellData: GanttCellData[];
 
   validate(): void {
     if (!this.name || this.name.trim().length === 0) {
@@ -85,11 +114,18 @@ export class Plan extends BaseEntity {
   }
 
   addPhase(phase: PlanPhase): void {
+    if (!this.phases) {
+      this.phases = [];
+    }
+    phase.planId = this.id;
     this.phases.push(phase);
     this.touch();
   }
 
   removePhase(phaseId: string): void {
+    if (!this.phases) {
+      throw new Error('No phases available');
+    }
     const index = this.phases.findIndex((p) => p.id === phaseId);
     if (index === -1) {
       throw new Error(`Phase with id ${phaseId} not found`);
@@ -99,11 +135,18 @@ export class Plan extends BaseEntity {
   }
 
   addTask(task: PlanTask): void {
+    if (!this.tasks) {
+      this.tasks = [];
+    }
+    task.planId = this.id;
     this.tasks.push(task);
     this.touch();
   }
 
   removeTask(taskId: string): void {
+    if (!this.tasks) {
+      throw new Error('No tasks available');
+    }
     const index = this.tasks.findIndex((t) => t.id === taskId);
     if (index === -1) {
       throw new Error(`Task with id ${taskId} not found`);
@@ -112,4 +155,3 @@ export class Plan extends BaseEntity {
     this.touch();
   }
 }
-

@@ -1,0 +1,262 @@
+# Default values for my-app-chart
+# This is a YAML-formatted file.
+
+# Global configuration
+global:
+  imageRegistry: ""
+  imagePullSecrets: []
+
+# Frontend (React) configuration
+frontend:
+  enabled: true
+  image:
+    repository: release-planner-frontend
+    tag: "1.0.0"
+    pullPolicy: IfNotPresent
+  replicaCount: 2
+  service:
+    type: LoadBalancer  # Options: ClusterIP, NodePort, LoadBalancer
+    port: 80
+    targetPort: 80
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 256Mi
+  livenessProbe:
+    httpGet:
+      path: /health
+      port: 80
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+  readinessProbe:
+    httpGet:
+      path: /health
+      port: 80
+    initialDelaySeconds: 10
+    periodSeconds: 5
+    timeoutSeconds: 3
+    failureThreshold: 3
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+# Backend API (NestJS) configuration
+api:
+  enabled: true
+  image:
+    repository: release-planner-api
+    tag: "1.0.0"
+    pullPolicy: IfNotPresent
+  replicaCount: 2
+  service:
+    type: ClusterIP
+    port: 3000
+    targetPort: 3000
+  resources:
+    requests:
+      cpu: 200m
+      memory: 256Mi
+    limits:
+      cpu: 1000m
+      memory: 512Mi
+  livenessProbe:
+    httpGet:
+      path: /api/health
+      port: 3000
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+  readinessProbe:
+    httpGet:
+      path: /api/health
+      port: 3000
+    initialDelaySeconds: 15
+    periodSeconds: 5
+    timeoutSeconds: 3
+    failureThreshold: 3
+  env:
+    NODE_ENV: production
+    PORT: "3000"
+    FRONTEND_URL: "http://localhost"
+    # Redis configuration
+    REDIS_HOST: redis
+    REDIS_PORT: "6379"
+    REDIS_DB: "0"
+    REDIS_TTL: "3600"
+    # JWT configuration (should be set via secrets in production)
+    JWT_SECRET: "CHANGE_ME_IN_PRODUCTION"
+    JWT_EXPIRES_IN: "15m"
+    JWT_REFRESH_SECRET: "CHANGE_ME_IN_PRODUCTION"
+    JWT_REFRESH_EXPIRES_IN: "7d"
+    # Rate limiting
+    RATE_LIMIT_SHORT: "100"
+    RATE_LIMIT_MEDIUM: "200"
+    RATE_LIMIT_LONG: "1000"
+    # Timeout
+    REQUEST_TIMEOUT_MS: "30000"
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+# Redis configuration
+redis:
+  enabled: true
+  image:
+    repository: redis
+    tag: "7-alpine"
+    pullPolicy: IfNotPresent
+  replicaCount: 1
+  service:
+    type: ClusterIP
+    port: 6379
+    targetPort: 6379
+  persistence:
+    enabled: true
+    size: 1Gi
+    storageClass: ""
+    accessMode: ReadWriteOnce
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 256Mi
+  livenessProbe:
+    exec:
+      command:
+        - /bin/sh
+        - -c
+        - redis-cli ping
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+  readinessProbe:
+    exec:
+      command:
+        - /bin/sh
+        - -c
+        - redis-cli ping
+    initialDelaySeconds: 10
+    periodSeconds: 5
+    timeoutSeconds: 3
+    failureThreshold: 3
+
+# PostgreSQL database configuration
+postgresql:
+  enabled: true
+  image:
+    repository: postgres
+    tag: "16-alpine"
+    pullPolicy: IfNotPresent
+  replicaCount: 1  # StatefulSet replica count
+  auth:
+    database: releaseplanner
+    username: releaseplanner
+    # Password will be set via secret
+    existingSecret: postgresql-secret
+    secretKeys:
+      adminPasswordKey: postgres-password
+      userPasswordKey: postgres-password
+  persistence:
+    enabled: true
+    size: 10Gi
+    storageClass: ""  # Use default storage class if empty
+    accessMode: ReadWriteOnce
+  service:
+    type: ClusterIP
+    port: 5432
+    targetPort: 5432
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: 2000m
+      memory: 2Gi
+  livenessProbe:
+    exec:
+      command:
+        - /bin/sh
+        - -c
+        - pg_isready -U releaseplanner
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+  readinessProbe:
+    exec:
+      command:
+        - /bin/sh
+        - -c
+        - pg_isready -U releaseplanner
+    initialDelaySeconds: 10
+    periodSeconds: 5
+    timeoutSeconds: 3
+    failureThreshold: 3
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+# Ingress configuration
+ingress:
+  enabled: true
+  className: "nginx"  # Options: nginx, traefik, etc.
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+  hosts:
+    - host: release-planner.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+          service: frontend
+        - path: /api
+          pathType: Prefix
+          service: api
+  tls:
+    - secretName: release-planner-tls
+      hosts:
+        - release-planner.example.com
+
+# Secrets configuration
+secrets:
+  postgresql:
+    enabled: true
+    # These values should be set via --set or from a secret management system
+    password: "CHANGE_ME_IN_PRODUCTION"
+    adminPassword: "CHANGE_ME_IN_PRODUCTION"
+  jwt:
+    enabled: true
+    # These values should be set via --set or from a secret management system
+    secret: "CHANGE_ME_IN_PRODUCTION"
+    refreshSecret: "CHANGE_ME_IN_PRODUCTION"
+
+# Service Account
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+# Pod Security Context
+podSecurityContext:
+  fsGroup: 2000
+
+# Security Context
+securityContext:
+  capabilities:
+    drop:
+    - ALL
+  readOnlyRootFilesystem: false
+  runAsNonRoot: true
+  runAsUser: 1000
+  allowPrivilegeEscalation: false
+

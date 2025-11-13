@@ -1,4 +1,6 @@
-import { BaseEntity } from '../../common/base/base.entity';
+import { Entity, Column, ManyToOne, JoinColumn, Index } from 'typeorm';
+import { BaseEntity } from '../../common/database/base.entity';
+import { Plan } from './plan.entity';
 
 export enum PlanReferenceType {
   LINK = 'link',
@@ -9,31 +11,33 @@ export enum PlanReferenceType {
   MILESTONE = 'milestone',
 }
 
+@Entity('plan_references')
+@Index(['planId'])
 export class PlanReference extends BaseEntity {
+  @Column({ type: 'enum', enum: PlanReferenceType })
   type: PlanReferenceType;
+
+  @Column({ type: 'varchar', length: 255 })
   title: string;
+
+  @Column({ type: 'text', nullable: true })
   url?: string;
+
+  @Column({ type: 'text', nullable: true })
   description?: string;
+
+  @Column({ type: 'date', nullable: true })
   date?: string; // ISO date (YYYY-MM-DD)
+
+  @Column({ type: 'uuid', nullable: true })
   phaseId?: string;
 
-  constructor(
-    type: PlanReferenceType,
-    title: string,
-    url?: string,
-    description?: string,
-    date?: string,
-    phaseId?: string,
-  ) {
-    super();
-    this.type = type;
-    this.title = title;
-    this.url = url;
-    this.description = description;
-    this.date = date;
-    this.phaseId = phaseId;
-    this.validate();
-  }
+  @Column({ type: 'uuid' })
+  planId: string;
+
+  @ManyToOne(() => Plan, (plan) => plan.references, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'planId' })
+  plan: Plan;
 
   validate(): void {
     if (!Object.values(PlanReferenceType).includes(this.type)) {
@@ -62,4 +66,3 @@ export class PlanReference extends BaseEntity {
     return d instanceof Date && !isNaN(d.getTime());
   }
 }
-

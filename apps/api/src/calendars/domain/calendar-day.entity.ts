@@ -1,32 +1,36 @@
-import { BaseEntity } from '../../common/base/base.entity';
+import { Entity, Column, ManyToOne, JoinColumn, Index } from 'typeorm';
+import { BaseEntity } from '../../common/database/base.entity';
+import { Calendar } from './calendar.entity';
 
 export enum CalendarDayType {
   HOLIDAY = 'holiday',
   SPECIAL = 'special',
 }
 
+@Entity('calendar_days')
+@Index(['calendarId', 'date'])
 export class CalendarDay extends BaseEntity {
+  @Column({ type: 'varchar', length: 255 })
   name: string;
+
+  @Column({ type: 'date' })
   date: string; // YYYY-MM-DD format
+
+  @Column({ type: 'enum', enum: CalendarDayType })
   type: CalendarDayType;
+
+  @Column({ type: 'text', nullable: true })
   description?: string;
+
+  @Column({ type: 'boolean', default: false })
   recurring: boolean;
 
-  constructor(
-    name: string,
-    date: string,
-    type: CalendarDayType,
-    recurring: boolean,
-    description?: string,
-  ) {
-    super();
-    this.name = name;
-    this.date = date;
-    this.type = type;
-    this.recurring = recurring;
-    this.description = description;
-    this.validate();
-  }
+  @Column({ type: 'uuid' })
+  calendarId: string;
+
+  @ManyToOne(() => Calendar, (calendar) => calendar.days, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'calendarId' })
+  calendar: Calendar;
 
   validate(): void {
     if (!this.name || this.name.trim().length === 0) {
@@ -49,4 +53,3 @@ export class CalendarDay extends BaseEntity {
     return d instanceof Date && !isNaN(d.getTime());
   }
 }
-

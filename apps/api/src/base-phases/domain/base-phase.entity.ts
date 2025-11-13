@@ -1,21 +1,23 @@
 /**
- * Base Phase Entity
+ * Base Phase Entity (TypeORM)
  * 
  * Domain entity representing a base phase template
  */
-import { BaseEntity } from '../../common/base/base.entity';
+import { Entity, Column, Index } from 'typeorm';
+import { BaseEntity } from '../../common/database/base.entity';
 
+@Entity('base_phases')
+@Index(['name'], { unique: true })
+@Index(['color'], { unique: true })
 export class BasePhase extends BaseEntity {
+  @Column({ type: 'varchar', length: 255 })
   name: string;
-  color: string;
-  category?: string;
 
-  constructor(name: string, color: string, category?: string) {
-    super();
-    this.name = name;
-    this.color = color;
-    this.category = category;
-  }
+  @Column({ type: 'varchar', length: 7 })
+  color: string;
+
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  category?: string;
 
   /**
    * Business rule: Phase name must be unique
@@ -39,4 +41,3 @@ export class BasePhase extends BaseEntity {
     return /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(color);
   }
 }
-

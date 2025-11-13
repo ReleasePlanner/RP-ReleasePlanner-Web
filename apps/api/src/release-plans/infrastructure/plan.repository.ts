@@ -1,27 +1,69 @@
+/**
+ * Plan Repository
+ * 
+ * Infrastructure layer - Data access using TypeORM
+ */
 import { Injectable } from '@nestjs/common';
-import { BaseRepository } from '../../common/base/base.repository';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { BaseRepository } from '../../common/database/base.repository';
 import { Plan } from '../domain/plan.entity';
 import { IRepository } from '../../common/interfaces/repository.interface';
 
 export interface IPlanRepository extends IRepository<Plan> {
-  findByName(name: string): Promise<Plan | null>;
-  findByOwner(owner: string): Promise<Plan[]>;
+  findByProductId(productId: string): Promise<Plan[]>;
   findByStatus(status: string): Promise<Plan[]>;
+  findByOwner(owner: string): Promise<Plan[]>;
+  findWithRelations(id: string): Promise<Plan | null>;
 }
 
 @Injectable()
-export class PlanRepository extends BaseRepository<Plan> implements IPlanRepository {
-  async findByName(name: string): Promise<Plan | null> {
-    const plans = await this.findAll();
-    return plans.find((p) => p.name.toLowerCase() === name.toLowerCase()) || null;
+export class PlanRepository
+  extends BaseRepository<Plan>
+  implements IPlanRepository
+{
+  constructor(
+    @InjectRepository(Plan)
+    repository: Repository<Plan>,
+  ) {
+    super(repository);
   }
 
-  async findByOwner(owner: string): Promise<Plan[]> {
-    return this.findMany({ owner } as Partial<Plan>);
+  async findByProductId(productId: string): Promise<Plan[]> {
+    return this.repository.find({
+      where: { productId } as any,
+    });
   }
 
   async findByStatus(status: string): Promise<Plan[]> {
-    return this.findMany({ status: status as Plan['status'] } as Partial<Plan>);
+    return this.repository.find({
+      where: { status: status as any } as any,
+    });
+  }
+
+  async findByOwner(owner: string): Promise<Plan[]> {
+    return this.repository.find({
+      where: { owner } as any,
+    });
+  }
+
+  async findWithRelations(id: string): Promise<Plan | null> {
+    return this.repository.findOne({
+      where: { id } as any,
+      relations: [
+        'phases',
+        'tasks',
+        'milestones',
+        'references',
+        'cellData',
+        'cellData.comments',
+        'cellData.files',
+        'cellData.links',
+      ],
+    });
+  }
+
+  override async findById(id: string): Promise<Plan | null> {
+    return this.findWithRelations(id);
   }
 }
-

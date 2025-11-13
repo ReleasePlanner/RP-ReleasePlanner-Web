@@ -1,19 +1,28 @@
-import { BaseEntity } from '../../common/base/base.entity';
+import { Entity, Column, ManyToOne, JoinColumn, Index } from 'typeorm';
+import { BaseEntity } from '../../common/database/base.entity';
+import { Plan } from './plan.entity';
 
+@Entity('plan_tasks')
+@Index(['planId'])
 export class PlanTask extends BaseEntity {
+  @Column({ type: 'varchar', length: 255 })
   title: string;
+
+  @Column({ type: 'date' })
   startDate: string; // ISO date
+
+  @Column({ type: 'date' })
   endDate: string; // ISO date
+
+  @Column({ type: 'varchar', length: 7, nullable: true })
   color?: string;
 
-  constructor(title: string, startDate: string, endDate: string, color?: string) {
-    super();
-    this.title = title;
-    this.startDate = startDate;
-    this.endDate = endDate;
-    this.color = color;
-    this.validate();
-  }
+  @Column({ type: 'uuid' })
+  planId: string;
+
+  @ManyToOne(() => Plan, (plan) => plan.tasks, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'planId' })
+  plan: Plan;
 
   validate(): void {
     if (!this.title || this.title.trim().length === 0) {
@@ -46,4 +55,3 @@ export class PlanTask extends BaseEntity {
     return /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(color);
   }
 }
-

@@ -1,0 +1,11 @@
+/**
+ * Roles Decorator
+ * 
+ * Decorator for specifying required roles for a route
+ */
+import { SetMetadata } from '@nestjs/common';
+import { UserRole } from '../../users/domain/user.entity';
+
+export const ROLES_KEY = 'roles';
+export const Roles = (...roles: UserRole[]) => SetMetadata(ROLES_KEY, roles);
+

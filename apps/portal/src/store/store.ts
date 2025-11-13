@@ -6,6 +6,7 @@ import { productsReducer } from "../state/productsSlice";
 import { itOwnersReducer } from "../state/itOwnersSlice";
 import { calendarsReducer } from "../state/calendarsSlice";
 import { featuresReducer } from "../state/featuresSlice";
+import { authReducer } from "./authSlice";
 
 type UiState = {
   leftSidebarOpen: boolean;
@@ -76,6 +77,7 @@ export const {
 export const store = configureStore({
   reducer: {
     ui: uiSlice.reducer,
+    auth: authReducer,
     releasePlans: releasePlansReducer,
     products: productsReducer,
     itOwners: itOwnersReducer,

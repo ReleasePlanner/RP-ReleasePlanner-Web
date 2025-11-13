@@ -1,15 +1,21 @@
-import { BaseEntity } from '../../common/base/base.entity';
+import { Entity, Column, ManyToOne, JoinColumn, OneToMany, Index } from 'typeorm';
+import { BaseEntity } from '../../common/database/base.entity';
+import { Plan } from './plan.entity';
 
+@Entity('gantt_cell_comments')
 export class GanttCellComment extends BaseEntity {
+  @Column({ type: 'text' })
   text: string;
+
+  @Column({ type: 'varchar', length: 255 })
   author: string;
 
-  constructor(text: string, author: string) {
-    super();
-    this.text = text;
-    this.author = author;
-    this.validate();
-  }
+  @Column({ type: 'uuid' })
+  cellDataId: string;
+
+  @ManyToOne(() => GanttCellData, (cellData) => cellData.comments, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'cellDataId' })
+  cellData: GanttCellData;
 
   validate(): void {
     if (!this.text || this.text.trim().length === 0) {
@@ -21,20 +27,26 @@ export class GanttCellComment extends BaseEntity {
   }
 }
 
+@Entity('gantt_cell_files')
 export class GanttCellFile extends BaseEntity {
+  @Column({ type: 'varchar', length: 255 })
   name: string;
+
+  @Column({ type: 'text' })
   url: string;
+
+  @Column({ type: 'bigint', nullable: true })
   size?: number; // bytes
+
+  @Column({ type: 'varchar', length: 100, nullable: true })
   mimeType?: string;
 
-  constructor(name: string, url: string, size?: number, mimeType?: string) {
-    super();
-    this.name = name;
-    this.url = url;
-    this.size = size;
-    this.mimeType = mimeType;
-    this.validate();
-  }
+  @Column({ type: 'uuid' })
+  cellDataId: string;
+
+  @ManyToOne(() => GanttCellData, (cellData) => cellData.files, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'cellDataId' })
+  cellData: GanttCellData;
 
   validate(): void {
     if (!this.name || this.name.trim().length === 0) {
@@ -46,18 +58,23 @@ export class GanttCellFile extends BaseEntity {
   }
 }
 
+@Entity('gantt_cell_links')
 export class GanttCellLink extends BaseEntity {
+  @Column({ type: 'varchar', length: 255 })
   title: string;
+
+  @Column({ type: 'text' })
   url: string;
+
+  @Column({ type: 'text', nullable: true })
   description?: string;
 
-  constructor(title: string, url: string, description?: string) {
-    super();
-    this.title = title;
-    this.url = url;
-    this.description = description;
-    this.validate();
-  }
+  @Column({ type: 'uuid' })
+  cellDataId: string;
+
+  @ManyToOne(() => GanttCellData, (cellData) => cellData.links, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'cellDataId' })
+  cellData: GanttCellData;
 
   validate(): void {
     if (!this.title || this.title.trim().length === 0) {
@@ -69,31 +86,45 @@ export class GanttCellLink extends BaseEntity {
   }
 }
 
+@Entity('gantt_cell_data')
+@Index(['planId', 'date'])
 export class GanttCellData extends BaseEntity {
+  @Column({ type: 'uuid', nullable: true })
   phaseId?: string;
-  date: string; // ISO date (YYYY-MM-DD)
-  isMilestone?: boolean;
-  milestoneColor?: string;
-  comments: GanttCellComment[];
-  files: GanttCellFile[];
-  links: GanttCellLink[];
 
-  constructor(
-    date: string,
-    phaseId?: string,
-    isMilestone?: boolean,
-    milestoneColor?: string,
-  ) {
-    super();
-    this.date = date;
-    this.phaseId = phaseId;
-    this.isMilestone = isMilestone;
-    this.milestoneColor = milestoneColor;
-    this.comments = [];
-    this.files = [];
-    this.links = [];
-    this.validate();
-  }
+  @Column({ type: 'date' })
+  date: string; // ISO date (YYYY-MM-DD)
+
+  @Column({ type: 'boolean', default: false })
+  isMilestone?: boolean;
+
+  @Column({ type: 'varchar', length: 7, nullable: true })
+  milestoneColor?: string;
+
+  @Column({ type: 'uuid' })
+  planId: string;
+
+  @ManyToOne(() => Plan, (plan) => plan.cellData, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'planId' })
+  plan: Plan;
+
+  @OneToMany(() => GanttCellComment, (comment) => comment.cellData, {
+    cascade: true,
+    eager: false,
+  })
+  comments: GanttCellComment[];
+
+  @OneToMany(() => GanttCellFile, (file) => file.cellData, {
+    cascade: true,
+    eager: false,
+  })
+  files: GanttCellFile[];
+
+  @OneToMany(() => GanttCellLink, (link) => link.cellData, {
+    cascade: true,
+    eager: false,
+  })
+  links: GanttCellLink[];
 
   validate(): void {
     if (!this.date || !this.isValidDate(this.date)) {
@@ -110,4 +141,3 @@ export class GanttCellData extends BaseEntity {
     return d instanceof Date && !isNaN(d.getTime());
   }
 }
-

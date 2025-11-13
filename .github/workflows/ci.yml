@@ -23,33 +23,27 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
-          cache-dependency-path: portal/package-lock.json
 
       - name: Install deps
-        working-directory: portal
         run: npm ci
 
-      - name: Typecheck
-        working-directory: portal
-        run: npm run typecheck
+      - name: Typecheck Portal
+        run: npm run typecheck --workspace=apps/portal
 
-      - name: Lint
-        working-directory: portal
-        run: npm run lint
+      - name: Lint Portal
+        run: npm run lint:portal
 
-      - name: Test with coverage
-        working-directory: portal
-        run: npm run test:coverage
+      - name: Test Portal with coverage
+        run: npm run test:portal -- --coverage
 
       - name: Upload coverage artifact
         uses: actions/upload-artifact@v4
         if: always()
         with:
           name: coverage-html
-          path: portal/coverage
+          path: coverage/portal
 
-      - name: Build
-        working-directory: portal
-        run: npm run build
+      - name: Build Portal
+        run: npm run build:portal
 
 

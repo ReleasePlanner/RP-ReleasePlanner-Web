@@ -1,7 +1,9 @@
 /**
- * Component Version Entity
+ * Component Version Entity (TypeORM)
  */
-import { BaseEntity } from '../../common/base/base.entity';
+import { Entity, Column, ManyToOne, JoinColumn } from 'typeorm';
+import { BaseEntity } from '../../common/database/base.entity';
+import { Product } from './product.entity';
 
 export enum ComponentType {
   WEB = 'web',
@@ -9,18 +11,23 @@ export enum ComponentType {
   MOBILE = 'mobile',
 }
 
+@Entity('component_versions')
 export class ComponentVersion extends BaseEntity {
+  @Column({ type: 'enum', enum: ComponentType })
   type: ComponentType;
+
+  @Column({ type: 'varchar', length: 50 })
   currentVersion: string;
+
+  @Column({ type: 'varchar', length: 50 })
   previousVersion: string;
 
-  constructor(type: ComponentType, currentVersion: string, previousVersion: string) {
-    super();
-    this.type = type;
-    this.currentVersion = currentVersion;
-    this.previousVersion = previousVersion;
-    this.validate();
-  }
+  @Column({ type: 'uuid' })
+  productId: string;
+
+  @ManyToOne(() => Product, (product) => product.components, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'productId' })
+  product: Product;
 
   validate(): void {
     if (!Object.values(ComponentType).includes(this.type)) {
@@ -34,4 +41,3 @@ export class ComponentVersion extends BaseEntity {
     }
   }
 }
-

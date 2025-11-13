@@ -3,6 +3,7 @@
  *
  * Wraps the app with dynamic theme based on Redux state.
  * Listens to darkMode state and applies appropriate theme.
+ * Initializes authentication state.
  */
 
 import { useSelector } from "react-redux";
@@ -10,6 +11,7 @@ import { ThemeProvider, CssBaseline } from "@mui/material";
 import { BrowserRouter } from "react-router-dom";
 import type { RootState } from "./store/store";
 import { getTheme } from "./theme";
+import { AuthProvider } from "./components/auth/AuthProvider";
 import App from "./App";
 
 export function RootProvider() {
@@ -20,7 +22,9 @@ export function RootProvider() {
     <ThemeProvider theme={currentTheme}>
       <CssBaseline />
       <BrowserRouter>
-        <App />
+        <AuthProvider>
+          <App />
+        </AuthProvider>
       </BrowserRouter>
     </ThemeProvider>
   );

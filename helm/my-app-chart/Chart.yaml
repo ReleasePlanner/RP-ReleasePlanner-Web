@@ -1,0 +1,17 @@
+apiVersion: v2
+name: my-app-chart
+description: A Helm chart for Release Planner full-stack application (React + NestJS + PostgreSQL)
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+keywords:
+  - react
+  - nestjs
+  - postgresql
+  - full-stack
+maintainers:
+  - name: Release Planner Team
+home: https://github.com/your-org/release-planner
+sources:
+  - https://github.com/your-org/release-planner
+

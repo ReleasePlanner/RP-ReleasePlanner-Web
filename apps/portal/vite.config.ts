@@ -24,13 +24,20 @@ export default defineConfig(() => ({
     outDir: './dist',
     emptyOutDir: true,
     reportCompressedSize: true,
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: true, // Remove console.log in production
+        drop_debugger: true,
+      },
+    },
     commonjsOptions: {
       transformMixedEsModules: true,
     },
     rollupOptions: {
       output: {
         manualChunks(id: string) {
-          // Vendor chunks
+          // Vendor chunks - optimize for caching
           if (
             id.includes("node_modules/@mui/material") ||
             id.includes("node_modules/@emotion")
@@ -59,7 +66,7 @@ export default defineConfig(() => ({
             return "vendor-other";
           }
 
-          // Feature-specific chunks
+          // Feature-specific chunks for lazy loading
           if (
             id.includes("src/features/releasePlans/components/Gantt") ||
             id.includes("src/features/releasePlans/components/GanttChart")
@@ -72,6 +79,13 @@ export default defineConfig(() => ({
           ) {
             return "feature-plans";
           }
+          if (id.includes("src/pages")) {
+            // Split pages into separate chunks
+            const pageMatch = id.match(/src\/pages\/([^/]+)/);
+            if (pageMatch) {
+              return `page-${pageMatch[1]}`;
+            }
+          }
 
           // Shared utilities and constants
           if (
@@ -82,9 +96,25 @@ export default defineConfig(() => ({
             return "utils-shared";
           }
         },
+        // Optimize chunk file names for better caching
+        chunkFileNames: 'assets/js/[name]-[hash].js',
+        entryFileNames: 'assets/js/[name]-[hash].js',
+        assetFileNames: (assetInfo) => {
+          const info = assetInfo.name?.split('.') || [];
+          const ext = info[info.length - 1];
+          if (/png|jpe?g|svg|gif|tiff|bmp|ico/i.test(ext)) {
+            return `assets/images/[name]-[hash][extname]`;
+          }
+          if (/woff2?|eot|ttf|otf/i.test(ext)) {
+            return `assets/fonts/[name]-[hash][extname]`;
+          }
+          return `assets/[ext]/[name]-[hash][extname]`;
+        },
       },
     },
     chunkSizeWarningLimit: 750,
+    // Enable source maps only in development
+    sourcemap: process.env.NODE_ENV !== 'production',
   },
   test: {
     name: 'portal',

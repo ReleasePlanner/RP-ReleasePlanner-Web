@@ -2,11 +2,15 @@
  * Product Module
  */
 import { Module } from '@nestjs/common';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { ProductController } from './presentation/product.controller';
 import { ProductService } from './application/product.service';
 import { ProductRepository } from './infrastructure/product.repository';
+import { Product } from './domain/product.entity';
+import { ComponentVersion } from './domain/component-version.entity';
 
 @Module({
+  imports: [TypeOrmModule.forFeature([Product, ComponentVersion])],
   controllers: [ProductController],
   providers: [
     ProductService,
