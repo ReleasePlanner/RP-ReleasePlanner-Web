@@ -1,0 +1,45 @@
+{
+  "compilerOptions": {
+    "composite": true,
+    "declarationMap": true,
+    "emitDeclarationOnly": true,
+    "importHelpers": true,
+    "isolatedModules": true,
+    "lib": ["es2022"],
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "noEmitOnError": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitOverride": true,
+    "noImplicitReturns": true,
+    "noUnusedLocals": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "target": "es2022",
+    "customConditions": ["rp-release-planner"],
+    "paths": {
+      "@rp-release-planner/shared/types": ["libs/shared/types/src/index.ts"],
+      "@rp-release-planner/shared/utils": ["libs/shared/utils/src/index.ts"],
+      "@rp-release-planner/api/common": ["libs/api/common/src/index.ts"]
+    }
+  },
+  "files": [],
+  "include": [],
+  "references": [
+    {
+      "path": "./apps/portal"
+    },
+    {
+      "path": "./apps/api"
+    },
+    {
+      "path": "./libs/shared/types"
+    },
+    {
+      "path": "./libs/shared/utils"
+    },
+    {
+      "path": "./libs/api/common"
+    }
+  ]
+}
