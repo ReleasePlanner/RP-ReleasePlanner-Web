@@ -8,9 +8,13 @@ WORKDIR /app
 COPY package*.json ./
 COPY nx.json ./
 COPY tsconfig.base.json ./
+COPY eslint.config.mjs ./
+
+# Copiar package.json de la API para instalar sus dependencias específicas
+COPY apps/api/package.json ./apps/api/
 
 # Instalar todas las dependencias (incluyendo dev dependencies)
-RUN npm ci
+RUN npm ci --legacy-peer-deps
 
 # Exponer puerto 3000
 EXPOSE 3000

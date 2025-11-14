@@ -88,6 +88,18 @@ describe('PlanReference', () => {
         new PlanReference(PlanReferenceType.MILESTONE, 'Title');
       }).not.toThrow();
     });
+
+    it('should accept valid date format', () => {
+      expect(() => {
+        new PlanReference(PlanReferenceType.NOTE, 'Title', undefined, undefined, '2024-01-01');
+      }).not.toThrow();
+    });
+
+    it('should accept reference without date', () => {
+      expect(() => {
+        new PlanReference(PlanReferenceType.NOTE, 'Title');
+      }).not.toThrow();
+    });
   });
 });
 

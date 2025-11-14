@@ -64,6 +64,26 @@ describe('PlanPhase', () => {
         new PlanPhase('Phase');
       }).not.toThrow();
     });
+
+    it('should allow phase with only startDate', () => {
+      expect(() => {
+        new PlanPhase('Phase', '2024-01-01');
+      }).not.toThrow();
+    });
+
+    it('should allow phase with only endDate', () => {
+      expect(() => {
+        const phase = new PlanPhase('Phase');
+        phase.endDate = '2024-01-31';
+        phase.validate();
+      }).not.toThrow();
+    });
+
+    it('should allow phase without color', () => {
+      expect(() => {
+        new PlanPhase('Phase', '2024-01-01', '2024-01-31');
+      }).not.toThrow();
+    });
   });
 });
 

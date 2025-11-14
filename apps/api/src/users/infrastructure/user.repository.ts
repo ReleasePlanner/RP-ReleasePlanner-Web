@@ -27,7 +27,7 @@ export class UserRepository
 {
   constructor(
     @InjectRepository(User)
-    protected readonly repository: Repository<User>,
+    protected override readonly repository: Repository<User>,
   ) {
     super(repository);
   }

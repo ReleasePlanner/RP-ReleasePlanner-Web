@@ -24,6 +24,7 @@ module.exports = {
     '!src/**/*.interface.ts',
     '!src/**/index.ts',
     '!src/main.ts',
+    '!src/migrations/**',
   ],
   coverageThreshold: {
     global: {

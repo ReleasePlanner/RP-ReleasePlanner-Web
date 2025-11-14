@@ -90,7 +90,7 @@ services:
     networks:
       - release-planner-network
     restart: unless-stopped
-    command: npx nx serve api
+    command: sh -c "cd /app && npm install --legacy-peer-deps 2>&1 | tail -5 && npx nx serve api --configuration=development"
     labels:
       - "prometheus.scrape=true"
       - "prometheus.port=3000"

@@ -1,6 +1,5 @@
 import { Entity, Column, ManyToOne, JoinColumn, Index } from 'typeorm';
 import { BaseEntity } from '../../common/database/base.entity';
-import { Plan } from './plan.entity';
 
 @Entity('plan_milestones')
 @Index(['planId'])
@@ -17,9 +16,25 @@ export class PlanMilestone extends BaseEntity {
   @Column({ type: 'uuid' })
   planId: string;
 
-  @ManyToOne(() => Plan, (plan) => plan.milestones, { onDelete: 'CASCADE' })
+  @ManyToOne(() => require('../../release-plans/domain/plan.entity').Plan, (plan: any) => plan.milestones, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'planId' })
-  plan: Plan;
+  plan: any;
+
+  constructor(date?: string, name?: string, description?: string) {
+    super();
+    if (date !== undefined) {
+      this.date = date;
+    }
+    if (name !== undefined) {
+      this.name = name;
+    }
+    if (description !== undefined) {
+      this.description = description;
+    }
+    if (date !== undefined && name !== undefined) {
+      this.validate();
+    }
+  }
 
   validate(): void {
     if (!this.date || !this.isValidDate(this.date)) {

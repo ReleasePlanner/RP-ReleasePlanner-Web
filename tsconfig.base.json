@@ -16,6 +16,7 @@
     "skipLibCheck": true,
     "strict": true,
     "target": "es2022",
+    "baseUrl": ".",
     "customConditions": ["rp-release-planner"],
     "paths": {
       "@rp-release-planner/shared/types": ["libs/shared/types/src/index.ts"],

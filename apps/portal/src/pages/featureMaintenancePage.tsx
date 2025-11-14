@@ -5,7 +5,7 @@
  */
 
 import { useState, useMemo } from "react";
-import { Box, Button } from "@mui/material";
+import { Box, Button, CircularProgress, Alert } from "@mui/material";
 import { Add as AddIcon } from "@mui/icons-material";
 import { PageLayout } from "@/components";
 import type { Feature, ProductWithFeatures } from "@/features/feature/types";
@@ -19,12 +19,14 @@ import {
   PRODUCT_OWNERS,
   generateFeatureId,
 } from "@/features/feature";
-import { useAppSelector, useAppDispatch } from "@/store/hooks";
 import {
-  addFeature,
-  updateFeature,
-  deleteFeature,
-} from "@/state/featuresSlice";
+  useProducts,
+  useFeatures,
+  useCreateFeature,
+  useUpdateFeature,
+  useDeleteFeature,
+} from "../api/hooks";
+import type { Feature as APIFeature } from "../api/services/features.service";
 
 interface EditingState {
   productId: string;
@@ -38,27 +40,39 @@ interface EditingState {
  * Features are stored in Redux store and loaded from there.
  */
 export function FeatureMaintenancePage() {
-  const dispatch = useAppDispatch();
+  // API hooks
+  const { data: apiProducts = [], isLoading: productsLoading, error: productsError } = useProducts();
+  const { data: allFeatures = [], isLoading: featuresLoading, error: featuresError } = useFeatures();
+  const createMutation = useCreateFeature();
+  const updateMutation = useUpdateFeature();
+  const deleteMutation = useDeleteFeature();
 
-  // Load products from Redux store
-  const products = useAppSelector((state) => state.products.products);
+  // Convert API features to local Feature format
+  const convertAPIFeatureToLocal = (apiFeature: APIFeature): Feature => {
+    return {
+      id: apiFeature.id,
+      name: apiFeature.name,
+      description: apiFeature.description,
+      category: apiFeature.category.name,
+      status: apiFeature.status === 'in-progress' ? 'in-progress' : apiFeature.status as any,
+      createdBy: apiFeature.createdBy.name,
+      technicalDescription: apiFeature.technicalDescription,
+      businessDescription: apiFeature.businessDescription,
+      productId: apiFeature.productId,
+    };
+  };
 
-  // Load features from Redux store
-  const productFeatures = useAppSelector(
-    (state) => state.features.productFeatures
-  );
-
-  // Combine products with their features from Redux
+  // Combine products with their features from API
   const productsWithFeatures: ProductWithFeatures[] = useMemo(() => {
-    return products.map((product) => {
-      const featuresData = productFeatures.find((pf) => pf.id === product.id);
+    return apiProducts.map((product) => {
+      const productFeatures = allFeatures.filter((f) => f.productId === product.id);
       return {
         id: product.id,
         name: product.name,
-        features: featuresData?.features || [],
+        features: productFeatures.map(convertAPIFeatureToLocal),
       };
     });
-  }, [products, productFeatures]);
+  }, [apiProducts, allFeatures]);
 
   const [selectedProductId, setSelectedProductId] = useState<string>(
     productsWithFeatures[0]?.id || ""
@@ -104,30 +118,84 @@ export function FeatureMaintenancePage() {
     setOpenDialog(true);
   };
 
-  const handleDeleteFeature = (featureId: string) => {
+  const handleDeleteFeature = async (featureId: string) => {
     if (!selectedProductId) return;
-    dispatch(deleteFeature({ productId: selectedProductId, featureId }));
+    try {
+      await deleteMutation.mutateAsync(featureId);
+    } catch (error) {
+      console.error('Error deleting feature:', error);
+    }
   };
 
-  const handleSaveFeature = () => {
+  const handleSaveFeature = async () => {
     if (!editingState || !editingState.feature) return;
 
     const feature = editingState.feature;
     const isNew = !selectedProduct?.features.some((f) => f.id === feature.id);
 
-    if (isNew) {
-      dispatch(addFeature({ productId: editingState.productId, feature }));
-    } else {
-      dispatch(updateFeature(feature));
+    try {
+      if (isNew) {
+        await createMutation.mutateAsync({
+          name: feature.name,
+          description: feature.description,
+          category: { name: feature.category },
+          status: feature.status as any,
+          createdBy: { name: feature.createdBy },
+          technicalDescription: feature.technicalDescription,
+          businessDescription: feature.businessDescription,
+          productId: editingState.productId,
+        });
+      } else {
+        await updateMutation.mutateAsync({
+          id: feature.id,
+          data: {
+            name: feature.name,
+            description: feature.description,
+            category: { name: feature.category },
+            status: feature.status as any,
+            createdBy: { name: feature.createdBy },
+            technicalDescription: feature.technicalDescription,
+            businessDescription: feature.businessDescription,
+          },
+        });
+      }
+      handleCloseDialog();
+    } catch (error) {
+      console.error('Error saving feature:', error);
     }
-
-    handleCloseDialog();
   };
 
   const handleCloseDialog = () => {
     setOpenDialog(false);
     setEditingState(null);
   };
+
+  const isLoading = productsLoading || featuresLoading;
+  const error = productsError || featuresError;
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <PageLayout title="Features Management" description="Manage product features with full CRUD operations and filtering">
+        <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
+          <CircularProgress />
+        </Box>
+      </PageLayout>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <PageLayout title="Features Management" description="Manage product features with full CRUD operations and filtering">
+        <Box p={3}>
+          <Alert severity="error">
+            Error al cargar los datos: {error instanceof Error ? error.message : 'Error desconocido'}
+          </Alert>
+        </Box>
+      </PageLayout>
+    );
+  }
 
   return (
     <PageLayout
@@ -217,3 +285,4 @@ export function FeatureMaintenancePage() {
     </PageLayout>
   );
 }
+export default FeatureMaintenancePage;

@@ -6,6 +6,6 @@ import { FeatureStatus } from '../../domain/feature.entity';
 export class UpdateFeatureDto extends PartialType(CreateFeatureDto) {
   @IsEnum(FeatureStatus)
   @IsOptional()
-  status?: FeatureStatus;
+  override status?: FeatureStatus;
 }
 

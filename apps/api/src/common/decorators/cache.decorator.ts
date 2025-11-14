@@ -15,7 +15,7 @@ export const CACHE_TTL_METADATA = 'cache:ttl';
  * @param ttl Time to live in seconds (default: 3600)
  * @param keyPrefix Cache key prefix (default: method name)
  */
-export function CacheResult(ttl: number = 3600, keyPrefix?: string) {
+export function CacheResult(ttl = 3600, keyPrefix?: string) {
   return applyDecorators(
     UseInterceptors(CacheInterceptor),
     CacheTTL(ttl),

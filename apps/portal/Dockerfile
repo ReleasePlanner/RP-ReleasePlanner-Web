@@ -16,7 +16,7 @@ COPY apps/portal/tsconfig*.json ./apps/portal/
 COPY apps/portal/index.html ./apps/portal/
 
 # Instalar dependencias del workspace
-RUN npm ci
+RUN npm ci --legacy-peer-deps
 
 # Copiar código fuente del portal y librerías compartidas
 COPY apps/portal/src ./apps/portal/src
@@ -24,8 +24,8 @@ COPY apps/portal/public ./apps/portal/public
 COPY libs ./libs
 
 # Construir la aplicación para producción
-WORKDIR /app/apps/portal
-RUN npm run build
+WORKDIR /app
+RUN npx nx build portal
 
 # Stage 2: Production stage - Servir con Nginx
 FROM nginx:alpine

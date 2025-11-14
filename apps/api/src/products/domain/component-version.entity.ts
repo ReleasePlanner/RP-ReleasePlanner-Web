@@ -3,7 +3,6 @@
  */
 import { Entity, Column, ManyToOne, JoinColumn } from 'typeorm';
 import { BaseEntity } from '../../common/database/base.entity';
-import { Product } from './product.entity';
 
 export enum ComponentType {
   WEB = 'web',
@@ -25,9 +24,25 @@ export class ComponentVersion extends BaseEntity {
   @Column({ type: 'uuid' })
   productId: string;
 
-  @ManyToOne(() => Product, (product) => product.components, { onDelete: 'CASCADE' })
+  @ManyToOne(() => require('./product.entity').Product, (product: any) => product.components, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'productId' })
-  product: Product;
+  product: any;
+
+  constructor(type?: ComponentType, currentVersion?: string, previousVersion?: string) {
+    super();
+    if (type !== undefined) {
+      this.type = type;
+    }
+    if (currentVersion !== undefined) {
+      this.currentVersion = currentVersion;
+    }
+    if (previousVersion !== undefined) {
+      this.previousVersion = previousVersion;
+    }
+    if (type !== undefined && currentVersion !== undefined && previousVersion !== undefined) {
+      this.validate();
+    }
+  }
 
   validate(): void {
     if (!Object.values(ComponentType).includes(this.type)) {

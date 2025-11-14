@@ -167,6 +167,33 @@ describe('PlanService', () => {
 
       expect(repository.create).toHaveBeenCalled();
     });
+
+    it('should create plan with phases when provided', async () => {
+      const createDtoWithPhases: CreatePlanDto = {
+        name: 'Plan',
+        owner: 'Owner',
+        startDate: '2024-01-01',
+        endDate: '2024-12-31',
+        phases: [
+          { name: 'Phase 1', startDate: '2024-01-01', endDate: '2024-01-31', color: '#FF0000' },
+          { name: 'Phase 2', startDate: '2024-02-01', endDate: '2024-02-28', color: '#00FF00' },
+        ],
+      };
+
+      const mockPlan = new Plan('Plan', 'Owner', '2024-01-01', '2024-12-31', PlanStatus.PLANNED);
+      mockPlan.id = 'new-id';
+      const phase1 = new PlanPhase('Phase 1', '2024-01-01', '2024-01-31', '#FF0000');
+      const phase2 = new PlanPhase('Phase 2', '2024-02-01', '2024-02-28', '#00FF00');
+      mockPlan.phases = [phase1, phase2];
+
+      repository.findByName.mockResolvedValue(null);
+      repository.create.mockResolvedValue(mockPlan);
+
+      const result = await service.create(createDtoWithPhases);
+
+      expect(result).toHaveProperty('id', 'new-id');
+      expect(repository.create).toHaveBeenCalled();
+    });
   });
 
   describe('update', () => {
@@ -207,6 +234,67 @@ describe('PlanService', () => {
       repository.findByName.mockResolvedValue(conflictingPlan);
 
       await expect(service.update('id1', updateDto)).rejects.toThrow(ConflictException);
+    });
+
+    it('should allow update when name is unchanged', async () => {
+      const existingPlan = new Plan('Old Plan', 'Owner', '2024-01-01', '2024-12-31', PlanStatus.PLANNED);
+      existingPlan.id = 'id1';
+      const updatedPlan = new Plan('Old Plan', 'Owner', '2024-01-01', '2024-12-31', PlanStatus.PLANNED);
+      updatedPlan.id = 'id1';
+
+      const updateDtoSameName: UpdatePlanDto = {
+        name: 'Old Plan',
+      };
+
+      repository.findById.mockResolvedValue(existingPlan);
+      repository.update.mockResolvedValue(updatedPlan);
+
+      const result = await service.update('id1', updateDtoSameName);
+
+      expect(result).toHaveProperty('name', 'Old Plan');
+      expect(repository.findByName).not.toHaveBeenCalled();
+      expect(repository.update).toHaveBeenCalled();
+    });
+
+    it('should allow update without name', async () => {
+      const existingPlan = new Plan('Old Plan', 'Owner', '2024-01-01', '2024-12-31', PlanStatus.PLANNED);
+      existingPlan.id = 'id1';
+      const updatedPlan = new Plan('Old Plan', 'Owner', '2024-01-01', '2024-12-31', PlanStatus.PLANNED);
+      updatedPlan.id = 'id1';
+
+      const updateDtoNoName: UpdatePlanDto = {
+        description: 'New Description',
+      };
+
+      repository.findById.mockResolvedValue(existingPlan);
+      repository.update.mockResolvedValue(updatedPlan);
+
+      const result = await service.update('id1', updateDtoNoName);
+
+      expect(result).toHaveProperty('name', 'Old Plan');
+      expect(repository.findByName).not.toHaveBeenCalled();
+      expect(repository.update).toHaveBeenCalled();
+    });
+
+    it('should allow update when name exists but is the same plan', async () => {
+      const existingPlan = new Plan('Old Plan', 'Owner', '2024-01-01', '2024-12-31', PlanStatus.PLANNED);
+      existingPlan.id = 'id1';
+      const updatedPlan = new Plan('Updated Plan', 'Owner', '2024-01-01', '2024-12-31', PlanStatus.PLANNED);
+      updatedPlan.id = 'id1';
+
+      const updateDtoNewName: UpdatePlanDto = {
+        name: 'Updated Plan',
+      };
+
+      repository.findById.mockResolvedValue(existingPlan);
+      repository.findByName.mockResolvedValue(existingPlan); // Same plan found
+      repository.update.mockResolvedValue(updatedPlan);
+
+      const result = await service.update('id1', updateDtoNewName);
+
+      expect(result).toHaveProperty('name', 'Updated Plan');
+      expect(repository.findByName).toHaveBeenCalledWith('Updated Plan');
+      expect(repository.update).toHaveBeenCalled();
     });
   });
 

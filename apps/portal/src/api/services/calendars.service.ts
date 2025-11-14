@@ -41,6 +41,7 @@ export interface CreateCalendarDto {
 export interface UpdateCalendarDto {
   name?: string;
   description?: string;
+  days?: CreateCalendarDayDto[];
 }
 
 export const calendarsService = {

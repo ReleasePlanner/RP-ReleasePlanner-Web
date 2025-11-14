@@ -19,7 +19,7 @@ export class PaginationDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  page?: number = 1;
+  page = 1;
 
   @ApiProperty({
     description: 'Number of items per page',
@@ -34,7 +34,7 @@ export class PaginationDto {
   @IsInt()
   @Min(1)
   @Max(100)
-  limit?: number = 10;
+  limit = 10;
 
   get skip(): number {
     return ((this.page || 1) - 1) * (this.limit || 10);

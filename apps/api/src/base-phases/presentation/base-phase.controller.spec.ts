@@ -4,12 +4,15 @@
  * Coverage: 100%
  */
 import { Test, TestingModule } from '@nestjs/testing';
+import { Reflector } from '@nestjs/core';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { BasePhaseController } from './base-phase.controller';
 import { BasePhaseService } from '../application/base-phase.service';
 import { CreateBasePhaseDto } from '../application/dto/create-base-phase.dto';
 import { UpdateBasePhaseDto } from '../application/dto/update-base-phase.dto';
 import { BasePhaseResponseDto } from '../application/dto/base-phase-response.dto';
 import { ConflictException, NotFoundException } from '../../common/exceptions/business-exception';
+import { CacheService } from '../../common/cache/cache.service';
 
 describe('BasePhaseController', () => {
   let controller: BasePhaseController;
@@ -23,6 +26,24 @@ describe('BasePhaseController', () => {
     delete: jest.fn(),
   };
 
+  const mockCacheService = {
+    get: jest.fn(),
+    set: jest.fn(),
+    del: jest.fn(),
+    delPattern: jest.fn(),
+    reset: jest.fn(),
+  };
+
+  const mockCacheManager = {
+    get: jest.fn(),
+    set: jest.fn(),
+    del: jest.fn(),
+    reset: jest.fn(),
+    store: {
+      keys: jest.fn(),
+    },
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [BasePhaseController],
@@ -31,6 +52,15 @@ describe('BasePhaseController', () => {
           provide: BasePhaseService,
           useValue: mockService,
         },
+        {
+          provide: CacheService,
+          useValue: mockCacheService,
+        },
+        {
+          provide: CACHE_MANAGER,
+          useValue: mockCacheManager,
+        },
+        Reflector,
       ],
     }).compile();
 

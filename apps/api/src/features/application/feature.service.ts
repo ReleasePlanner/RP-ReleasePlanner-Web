@@ -5,7 +5,7 @@ import { ProductOwner } from '../domain/product-owner.entity';
 import { CreateFeatureDto } from './dto/create-feature.dto';
 import { UpdateFeatureDto } from './dto/update-feature.dto';
 import { FeatureResponseDto } from './dto/feature-response.dto';
-import { IFeatureRepository } from '../infrastructure/feature.repository';
+import type { IFeatureRepository } from '../infrastructure/feature.repository';
 import { ConflictException, NotFoundException } from '../../common/exceptions/business-exception';
 
 @Injectable()
@@ -77,7 +77,7 @@ export class FeatureService {
       feature.createdBy = new ProductOwner(dto.createdBy.name);
     }
 
-    const updated = await this.repository.update(id, dto);
+    const updated = await this.repository.update(id, dto as any);
     return new FeatureResponseDto(updated);
   }
 

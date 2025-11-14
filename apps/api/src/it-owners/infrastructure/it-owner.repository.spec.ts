@@ -2,86 +2,147 @@
  * IT Owner Repository Unit Tests
  * Coverage: 100%
  */
+import { Test, TestingModule } from '@nestjs/testing';
+import { getRepositoryToken } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { ITOwnerRepository } from './it-owner.repository';
 import { ITOwner } from '../domain/it-owner.entity';
+import { NotFoundException } from '../../common/exceptions/business-exception';
 
 describe('ITOwnerRepository', () => {
   let repository: ITOwnerRepository;
+  let mockTypeOrmRepository: jest.Mocked<Repository<ITOwner>>;
 
-  beforeEach(() => {
-    repository = new ITOwnerRepository();
+  beforeEach(async () => {
+    const mockRepository = {
+      find: jest.fn(),
+      findOne: jest.fn(),
+      create: jest.fn(),
+      save: jest.fn(),
+      delete: jest.fn(),
+      count: jest.fn(),
+    } as unknown as jest.Mocked<Repository<ITOwner>>;
+
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        ITOwnerRepository,
+        {
+          provide: getRepositoryToken(ITOwner),
+          useValue: mockRepository,
+        },
+      ],
+    }).compile();
+
+    repository = module.get<ITOwnerRepository>(ITOwnerRepository);
+    mockTypeOrmRepository = module.get(getRepositoryToken(ITOwner));
   });
 
   afterEach(() => {
-    (repository as any).entities.clear();
+    jest.clearAllMocks();
   });
 
   describe('findByName', () => {
-    it('should find owner by name (case-insensitive)', async () => {
-      const owner1 = new ITOwner('Owner One');
-      const owner2 = new ITOwner('Owner Two');
+    it('should find owner by name', async () => {
+      const owner = new ITOwner('Owner One');
+      mockTypeOrmRepository.findOne.mockResolvedValue(owner);
 
-      await repository.create(owner1);
-      await repository.create(owner2);
+      const found = await repository.findByName('Owner One');
 
-      const found = await repository.findByName('owner one');
-      expect(found).not.toBeNull();
-      expect(found?.name).toBe('Owner One');
+      expect(mockTypeOrmRepository.findOne).toHaveBeenCalledWith({
+        where: { name: 'Owner One' },
+      });
+      expect(found).toEqual(owner);
     });
 
     it('should return null when owner not found', async () => {
+      mockTypeOrmRepository.findOne.mockResolvedValue(null);
+
       const found = await repository.findByName('Non Existent');
+
       expect(found).toBeNull();
     });
   });
 
   describe('CRUD operations', () => {
     it('should create a new owner', async () => {
-      const owner = new ITOwner('Test Owner');
-      const created = await repository.create(owner);
+      const ownerData = { name: 'Test Owner' } as ITOwner;
+      const savedOwner = new ITOwner('Test Owner');
+      savedOwner.id = 'test-id';
+      
+      mockTypeOrmRepository.create.mockReturnValue(ownerData as ITOwner);
+      mockTypeOrmRepository.save.mockResolvedValue(savedOwner);
 
-      expect(created).toHaveProperty('id');
-      expect(created.name).toBe('Test Owner');
+      const created = await repository.create(ownerData);
+
+      expect(mockTypeOrmRepository.create).toHaveBeenCalledWith(ownerData);
+      expect(mockTypeOrmRepository.save).toHaveBeenCalled();
+      expect(created).toEqual(savedOwner);
     });
 
     it('should find all owners', async () => {
-      await repository.create(new ITOwner('Owner 1'));
-      await repository.create(new ITOwner('Owner 2'));
+      const owners = [
+        new ITOwner('Owner 1'),
+        new ITOwner('Owner 2'),
+      ];
+      mockTypeOrmRepository.find.mockResolvedValue(owners);
 
       const all = await repository.findAll();
-      expect(all).toHaveLength(2);
+
+      expect(mockTypeOrmRepository.find).toHaveBeenCalled();
+      expect(all).toEqual(owners);
     });
 
     it('should find owner by id', async () => {
       const owner = new ITOwner('Test Owner');
-      const created = await repository.create(owner);
+      owner.id = 'test-id';
+      mockTypeOrmRepository.findOne.mockResolvedValue(owner);
 
-      const found = await repository.findById(created.id);
-      expect(found).not.toBeNull();
-      expect(found?.id).toBe(created.id);
+      const found = await repository.findById('test-id');
+
+      expect(mockTypeOrmRepository.findOne).toHaveBeenCalledWith({
+        where: { id: 'test-id' },
+      });
+      expect(found).toEqual(owner);
     });
 
     it('should update owner', async () => {
-      const owner = new ITOwner('Old Name');
-      const created = await repository.create(owner);
+      const existingOwner = new ITOwner('Old Name');
+      existingOwner.id = 'test-id';
+      const updatedOwner = new ITOwner('New Name');
+      updatedOwner.id = 'test-id';
 
-      await new Promise((resolve) => setTimeout(resolve, 10));
+      mockTypeOrmRepository.findOne.mockResolvedValue(existingOwner);
+      mockTypeOrmRepository.save.mockResolvedValue(updatedOwner);
 
-      const updated = await repository.update(created.id, { name: 'New Name' });
+      const updated = await repository.update('test-id', { name: 'New Name' });
 
+      expect(mockTypeOrmRepository.findOne).toHaveBeenCalledWith({
+        where: { id: 'test-id' },
+      });
+      expect(mockTypeOrmRepository.save).toHaveBeenCalled();
       expect(updated.name).toBe('New Name');
-      expect(updated.updatedAt.getTime()).toBeGreaterThanOrEqual(created.updatedAt.getTime());
+    });
+
+    it('should throw error when updating non-existent owner', async () => {
+      mockTypeOrmRepository.findOne.mockResolvedValue(null);
+
+      await expect(
+        repository.update('non-existent', { name: 'New Name' }),
+      ).rejects.toThrow(NotFoundException);
     });
 
     it('should delete owner', async () => {
-      const owner = new ITOwner('Test Owner');
-      const created = await repository.create(owner);
+      mockTypeOrmRepository.delete.mockResolvedValue({ affected: 1 } as any);
 
-      await repository.delete(created.id);
+      await repository.delete('test-id');
 
-      const found = await repository.findById(created.id);
-      expect(found).toBeNull();
+      expect(mockTypeOrmRepository.delete).toHaveBeenCalledWith('test-id');
+    });
+
+    it('should throw error when deleting non-existent owner', async () => {
+      mockTypeOrmRepository.delete.mockResolvedValue({ affected: 0 } as any);
+
+      await expect(repository.delete('non-existent')).rejects.toThrow(NotFoundException);
     });
   });
 });
-

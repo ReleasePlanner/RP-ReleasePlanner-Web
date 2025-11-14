@@ -7,7 +7,7 @@ import { ComponentVersion } from '../domain/component-version.entity';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { ProductResponseDto } from './dto/product-response.dto';
-import { IProductRepository } from '../infrastructure/product.repository';
+import type { IProductRepository } from '../infrastructure/product.repository';
 import { ConflictException, NotFoundException } from '../../common/exceptions/business-exception';
 
 @Injectable()
@@ -19,7 +19,7 @@ export class ProductService {
 
   async findAll(): Promise<ProductResponseDto[]> {
     const products = await this.repository.findAll();
-    return products.map((product) => new ProductResponseDto(product));
+    return products.map((product) => new ProductResponseDto(product as any));
   }
 
   async findById(id: string): Promise<ProductResponseDto> {
@@ -27,7 +27,7 @@ export class ProductService {
     if (!product) {
       throw new NotFoundException('Product', id);
     }
-    return new ProductResponseDto(product);
+    return new ProductResponseDto(product as any);
   }
 
   async create(dto: CreateProductDto): Promise<ProductResponseDto> {
@@ -49,7 +49,7 @@ export class ProductService {
     // Create product
     const product = new Product(dto.name, components);
     const created = await this.repository.create(product);
-    return new ProductResponseDto(created);
+    return new ProductResponseDto(created as any);
   }
 
   async update(id: string, dto: UpdateProductDto): Promise<ProductResponseDto> {
@@ -77,8 +77,8 @@ export class ProductService {
       product.components = components;
     }
 
-    const updated = await this.repository.update(id, dto);
-    return new ProductResponseDto(updated);
+    const updated = await this.repository.update(id, dto as any);
+    return new ProductResponseDto(updated as any);
   }
 
   async delete(id: string): Promise<void> {

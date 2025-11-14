@@ -1,6 +1,6 @@
 /**
  * HTTP Client for API requests
- * 
+ *
  * Features:
  * - Automatic retry with exponential backoff
  * - Request timeout handling
@@ -11,9 +11,9 @@
  * - JWT token injection
  * - Automatic token refresh on 401
  */
-import { API_BASE_URL, TOKEN_STORAGE_KEY, REFRESH_TOKEN_STORAGE_KEY } from './config';
-import { logger } from '../utils/logging/Logger';
-import { authService } from './services/auth.service';
+import { API_BASE_URL } from "./config";
+import { logger } from "../utils/logging/Logger";
+import { authService } from "./services/auth.service";
 
 export interface ApiError {
   message: string;
@@ -41,10 +41,10 @@ export class HttpClientError extends Error {
     correlationId?: string,
     requestId?: string,
     isNetworkError = false,
-    isTimeout = false,
+    isTimeout = false
   ) {
     super(message);
-    this.name = 'HttpClientError';
+    this.name = "HttpClientError";
     this.statusCode = statusCode;
     this.error = error;
     this.code = code;
@@ -70,7 +70,7 @@ const DEFAULT_RETRY_DELAY = 1000; // 1 second
  * Check if the browser is online
  */
 function isOnline(): boolean {
-  return typeof navigator !== 'undefined' && navigator.onLine !== false;
+  return typeof navigator !== "undefined" && navigator.onLine !== false;
 }
 
 /**
@@ -104,12 +104,13 @@ function isRetryableError(error: HttpClientError): boolean {
  */
 async function handleResponse<T>(
   response: Response,
-  correlationId: string,
+  correlationId: string
 ): Promise<T> {
-  const contentType = response.headers.get('content-type');
-  const isJson = contentType?.includes('application/json');
-  const responseCorrelationId = response.headers.get('x-correlation-id') || correlationId;
-  const requestId = response.headers.get('x-request-id') || 'unknown';
+  const contentType = response.headers.get("content-type");
+  const isJson = contentType?.includes("application/json");
+  const responseCorrelationId =
+    response.headers.get("x-correlation-id") || correlationId;
+  const requestId = response.headers.get("x-request-id") || "unknown";
 
   if (!response.ok) {
     let errorMessage = `HTTP Error: ${response.status} ${response.statusText}`;
@@ -119,9 +120,22 @@ async function handleResponse<T>(
     if (isJson) {
       try {
         const errorData = await response.json();
-        errorMessage = errorData.message || errorData.error || errorMessage;
-        error = errorData.error;
-        errorCode = errorData.code;
+        // NestJS may wrap error responses in { data: {...}, message: ..., statusCode: ... }
+        // or { message: ..., error: ..., statusCode: ... }
+        if (errorData && typeof errorData === 'object') {
+          if ('data' in errorData && errorData.data) {
+            // If error is wrapped in data field
+            const data = errorData.data;
+            errorMessage = data.message || data.error || errorData.message || errorMessage;
+            error = data.error || errorData.error;
+            errorCode = data.code || errorData.code;
+          } else {
+            // Standard error format
+            errorMessage = errorData.message || errorData.error || errorMessage;
+            error = errorData.error;
+            errorCode = errorData.code;
+          }
+        }
       } catch {
         // Fallback to status text
       }
@@ -133,13 +147,13 @@ async function handleResponse<T>(
       error,
       errorCode,
       responseCorrelationId,
-      requestId,
+      requestId
     );
 
     // Log error
-    logger.error('API request failed', httpError, {
-      component: 'httpClient',
-      action: 'handleResponse',
+    logger.error("API request failed", httpError, {
+      component: "httpClient",
+      action: "handleResponse",
       metadata: {
         statusCode: response.status,
         statusText: response.statusText,
@@ -158,7 +172,13 @@ async function handleResponse<T>(
   }
 
   if (isJson) {
-    return response.json();
+    const jsonData = await response.json();
+    // NestJS wraps responses in { data: {...}, statusCode: ... }
+    // Extract data if it exists, otherwise return the full response
+    if (jsonData && typeof jsonData === 'object' && 'data' in jsonData && jsonData.data !== undefined) {
+      return jsonData.data as T;
+    }
+    return jsonData as T;
   }
 
   return response.text() as unknown as T;
@@ -171,7 +191,7 @@ async function executeRequest<T>(
   url: string,
   method: string,
   options: HttpClientOptions = {},
-  data?: unknown,
+  data?: unknown
 ): Promise<T> {
   const {
     timeout = DEFAULT_TIMEOUT,
@@ -188,17 +208,17 @@ async function executeRequest<T>(
   // Check online status
   if (!isOnline()) {
     const offlineError = new HttpClientError(
-      'Network request failed: Device is offline',
+      "Network request failed: Device is offline",
       0,
-      'NETWORK_ERROR',
-      'OFFLINE',
+      "NETWORK_ERROR",
+      "OFFLINE",
       correlationId,
       undefined,
-      true,
+      true
     );
-    logger.error('API request failed: offline', offlineError, {
-      component: 'httpClient',
-      action: 'executeRequest',
+    logger.error("API request failed: offline", offlineError, {
+      component: "httpClient",
+      action: "executeRequest",
       metadata: { url: fullUrl, method },
     });
     throw offlineError;
@@ -214,8 +234,8 @@ async function executeRequest<T>(
       // Log request
       if (attempt === 0) {
         logger.debug(`API request: ${method} ${url}`, {
-          component: 'httpClient',
-          action: 'executeRequest',
+          component: "httpClient",
+          action: "executeRequest",
           metadata: {
             method,
             url: fullUrl,
@@ -225,29 +245,34 @@ async function executeRequest<T>(
           },
         });
       } else {
-        logger.warn(`API request retry: ${method} ${url} (attempt ${attempt + 1}/${retries + 1})`, {
-          component: 'httpClient',
-          action: 'executeRequest',
-          metadata: {
-            method,
-            url: fullUrl,
-            correlationId,
-            attempt: attempt + 1,
-            previousError: lastError?.message,
-          },
-        });
+        logger.warn(
+          `API request retry: ${method} ${url} (attempt ${attempt + 1}/${
+            retries + 1
+          })`,
+          {
+            component: "httpClient",
+            action: "executeRequest",
+            metadata: {
+              method,
+              url: fullUrl,
+              correlationId,
+              attempt: attempt + 1,
+              previousError: lastError?.message,
+            },
+          }
+        );
       }
 
       // Get access token and add to headers
       const accessToken = authService.getAccessToken();
-      const headers: HeadersInit = {
-        'Content-Type': 'application/json',
-        'X-Correlation-ID': correlationId,
-        ...fetchOptions.headers,
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+        "X-Correlation-ID": correlationId,
+        ...(fetchOptions.headers as Record<string, string>),
       };
 
       if (accessToken) {
-        headers['Authorization'] = `Bearer ${accessToken}`;
+        headers["Authorization"] = `Bearer ${accessToken}`;
       }
 
       const response = await fetch(fullUrl, {
@@ -267,20 +292,22 @@ async function executeRequest<T>(
         const refreshToken = authService.getRefreshToken();
         if (refreshToken) {
           try {
-            logger.debug('Attempting to refresh token after 401', {
-              component: 'httpClient',
-              action: 'executeRequest',
+            logger.debug("Attempting to refresh token after 401", {
+              component: "httpClient",
+              action: "executeRequest",
               metadata: { url: fullUrl, method },
             });
 
-            const refreshResponse = await authService.refreshToken(refreshToken);
-            
+            const refreshResponse = await authService.refreshToken(
+              refreshToken
+            );
+
             // Retry original request with new token
-            const retryHeaders: HeadersInit = {
-              'Content-Type': 'application/json',
-              'X-Correlation-ID': correlationId,
-              'Authorization': `Bearer ${refreshResponse.accessToken}`,
-              ...fetchOptions.headers,
+            const retryHeaders: Record<string, string> = {
+              "Content-Type": "application/json",
+              "X-Correlation-ID": correlationId,
+              Authorization: `Bearer ${refreshResponse.accessToken}`,
+              ...(fetchOptions.headers as Record<string, string>),
             };
 
             const retryResponse = await fetch(fullUrl, {
@@ -292,28 +319,40 @@ async function executeRequest<T>(
             });
 
             if (retryResponse.ok) {
-              const result = await handleResponse<T>(retryResponse, correlationId);
-              logger.debug(`API request succeeded after token refresh: ${method} ${url}`, {
-                component: 'httpClient',
-                action: 'executeRequest',
-                metadata: {
-                  method,
-                  url: fullUrl,
-                  correlationId,
-                  attempt: attempt + 1,
-                  statusCode: retryResponse.status,
-                },
-              });
+              const result = await handleResponse<T>(
+                retryResponse,
+                correlationId
+              );
+              logger.debug(
+                `API request succeeded after token refresh: ${method} ${url}`,
+                {
+                  component: "httpClient",
+                  action: "executeRequest",
+                  metadata: {
+                    method,
+                    url: fullUrl,
+                    correlationId,
+                    attempt: attempt + 1,
+                    statusCode: retryResponse.status,
+                  },
+                }
+              );
               return result;
             }
           } catch (refreshError) {
             // Refresh failed, clear auth and throw original error
             authService.clearAuth();
-            logger.error('Token refresh failed', refreshError instanceof Error ? refreshError : new Error(String(refreshError)), {
-              component: 'httpClient',
-              action: 'executeRequest',
-              metadata: { url: fullUrl, method },
-            });
+            logger.error(
+              "Token refresh failed",
+              refreshError instanceof Error
+                ? refreshError
+                : new Error(String(refreshError)),
+              {
+                component: "httpClient",
+                action: "executeRequest",
+                metadata: { url: fullUrl, method },
+              }
+            );
           }
         }
       }
@@ -322,8 +361,8 @@ async function executeRequest<T>(
 
       // Log success
       logger.debug(`API request succeeded: ${method} ${url}`, {
-        component: 'httpClient',
-        action: 'executeRequest',
+        component: "httpClient",
+        action: "executeRequest",
         metadata: {
           method,
           url: fullUrl,
@@ -340,37 +379,40 @@ async function executeRequest<T>(
       }
 
       // Handle timeout
-      if (error instanceof Error && error.name === 'AbortError') {
+      if (error instanceof Error && error.name === "AbortError") {
         lastError = new HttpClientError(
           `Request timeout: The operation took longer than ${timeout}ms to complete`,
           408,
-          'TIMEOUT',
-          'REQUEST_TIMEOUT',
+          "TIMEOUT",
+          "REQUEST_TIMEOUT",
           correlationId,
           undefined,
           false,
-          true,
+          true
         );
       } else if (error instanceof HttpClientError) {
         lastError = error;
-      } else if (error instanceof TypeError && error.message.includes('fetch')) {
+      } else if (
+        error instanceof TypeError &&
+        error.message.includes("fetch")
+      ) {
         // Network error
         lastError = new HttpClientError(
-          'Network request failed: Unable to reach server',
+          "Network request failed: Unable to reach server",
           0,
-          'NETWORK_ERROR',
-          'NETWORK_ERROR',
+          "NETWORK_ERROR",
+          "NETWORK_ERROR",
           correlationId,
           undefined,
-          true,
+          true
         );
       } else {
         lastError = new HttpClientError(
-          error instanceof Error ? error.message : 'Unknown error',
+          error instanceof Error ? error.message : "Unknown error",
           500,
-          'UNKNOWN_ERROR',
-          'UNKNOWN_ERROR',
-          correlationId,
+          "UNKNOWN_ERROR",
+          "UNKNOWN_ERROR",
+          correlationId
         );
       }
 
@@ -394,28 +436,50 @@ async function executeRequest<T>(
     }
   }
 
-  throw lastError!;
+  // This should never happen, but TypeScript needs this check
+  if (!lastError) {
+    throw new HttpClientError(
+      "Request failed: Unknown error occurred",
+      500,
+      "UNKNOWN_ERROR",
+      "UNKNOWN_ERROR",
+      correlationId
+    );
+  }
+
+  throw lastError;
 }
 
 export const httpClient = {
   async get<T>(url: string, options?: HttpClientOptions): Promise<T> {
-    return executeRequest<T>(url, 'GET', options);
+    return executeRequest<T>(url, "GET", options);
   },
 
-  async post<T>(url: string, data?: unknown, options?: HttpClientOptions): Promise<T> {
-    return executeRequest<T>(url, 'POST', options, data);
+  async post<T>(
+    url: string,
+    data?: unknown,
+    options?: HttpClientOptions
+  ): Promise<T> {
+    return executeRequest<T>(url, "POST", options, data);
   },
 
-  async put<T>(url: string, data?: unknown, options?: HttpClientOptions): Promise<T> {
-    return executeRequest<T>(url, 'PUT', options, data);
+  async put<T>(
+    url: string,
+    data?: unknown,
+    options?: HttpClientOptions
+  ): Promise<T> {
+    return executeRequest<T>(url, "PUT", options, data);
   },
 
-  async patch<T>(url: string, data?: unknown, options?: HttpClientOptions): Promise<T> {
-    return executeRequest<T>(url, 'PATCH', options, data);
+  async patch<T>(
+    url: string,
+    data?: unknown,
+    options?: HttpClientOptions
+  ): Promise<T> {
+    return executeRequest<T>(url, "PATCH", options, data);
   },
 
   async delete<T>(url: string, options?: HttpClientOptions): Promise<T> {
-    return executeRequest<T>(url, 'DELETE', options);
+    return executeRequest<T>(url, "DELETE", options);
   },
 };
-

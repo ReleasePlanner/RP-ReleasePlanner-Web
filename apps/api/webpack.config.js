@@ -9,6 +9,10 @@ module.exports = {
       devtoolModuleFilenameTemplate: '[absolute-resource-path]',
     }),
   },
+  resolve: {
+    modules: ['node_modules', join(__dirname, '../../node_modules')],
+    extensions: ['.ts', '.js', '.json'],
+  },
   plugins: [
     new NxAppWebpackPlugin({
       target: 'node',

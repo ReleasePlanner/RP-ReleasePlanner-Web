@@ -19,7 +19,7 @@ export class TimeoutInterceptor implements NestInterceptor {
   private readonly logger = new Logger(TimeoutInterceptor.name);
   private readonly defaultTimeout: number;
 
-  constructor(timeoutMs: number = 30000) {
+  constructor(timeoutMs = 30000) {
     // Default 30 seconds, can be configured via environment variable
     this.defaultTimeout = parseInt(
       process.env.REQUEST_TIMEOUT_MS || String(timeoutMs),

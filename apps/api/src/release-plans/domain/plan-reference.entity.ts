@@ -1,6 +1,5 @@
 import { Entity, Column, ManyToOne, JoinColumn, Index } from 'typeorm';
 import { BaseEntity } from '../../common/database/base.entity';
-import { Plan } from './plan.entity';
 
 export enum PlanReferenceType {
   LINK = 'link',
@@ -35,9 +34,41 @@ export class PlanReference extends BaseEntity {
   @Column({ type: 'uuid' })
   planId: string;
 
-  @ManyToOne(() => Plan, (plan) => plan.references, { onDelete: 'CASCADE' })
+  @ManyToOne(() => require('../../release-plans/domain/plan.entity').Plan, (plan: any) => plan.references, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'planId' })
-  plan: Plan;
+  plan: any;
+
+  constructor(
+    type?: PlanReferenceType,
+    title?: string,
+    url?: string,
+    description?: string,
+    date?: string,
+    phaseId?: string,
+  ) {
+    super();
+    if (type !== undefined) {
+      this.type = type;
+    }
+    if (title !== undefined) {
+      this.title = title;
+    }
+    if (url !== undefined) {
+      this.url = url;
+    }
+    if (description !== undefined) {
+      this.description = description;
+    }
+    if (date !== undefined) {
+      this.date = date;
+    }
+    if (phaseId !== undefined) {
+      this.phaseId = phaseId;
+    }
+    if (type !== undefined && title !== undefined) {
+      this.validate();
+    }
+  }
 
   validate(): void {
     if (!Object.values(PlanReferenceType).includes(this.type)) {

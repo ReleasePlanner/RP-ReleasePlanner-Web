@@ -14,6 +14,7 @@ export interface IPlanRepository extends IRepository<Plan> {
   findByProductId(productId: string): Promise<Plan[]>;
   findByStatus(status: string): Promise<Plan[]>;
   findByOwner(owner: string): Promise<Plan[]>;
+  findByName(name: string): Promise<Plan | null>;
   findWithRelations(id: string): Promise<Plan | null>;
 }
 
@@ -44,6 +45,12 @@ export class PlanRepository
   async findByOwner(owner: string): Promise<Plan[]> {
     return this.repository.find({
       where: { owner } as any,
+    });
+  }
+
+  async findByName(name: string): Promise<Plan | null> {
+    return this.repository.findOne({
+      where: { name } as any,
     });
   }
 

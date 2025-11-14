@@ -5,7 +5,7 @@ import { CalendarDayType } from '../domain/calendar-day.entity';
 import { CreateCalendarDto } from './dto/create-calendar.dto';
 import { UpdateCalendarDto } from './dto/update-calendar.dto';
 import { CalendarResponseDto } from './dto/calendar-response.dto';
-import { ICalendarRepository } from '../infrastructure/calendar.repository';
+import type { ICalendarRepository } from '../infrastructure/calendar.repository';
 import { ConflictException, NotFoundException } from '../../common/exceptions/business-exception';
 
 @Injectable()

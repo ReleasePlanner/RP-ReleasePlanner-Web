@@ -7,7 +7,6 @@ import { Module, Global, Logger } from '@nestjs/common';
 import { CacheModule as NestCacheModule } from '@nestjs/cache-manager';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { CacheService } from './cache.service';
-import redisConfig from '../../config/redis.config';
 
 const logger = new Logger('CacheModule');
 

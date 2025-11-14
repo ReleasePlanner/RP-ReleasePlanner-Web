@@ -150,6 +150,44 @@ describe('ITOwnerService', () => {
 
       await expect(service.update('id1', updateDto)).rejects.toThrow(ConflictException);
     });
+
+    it('should allow update when name is unchanged', async () => {
+      const existingOwner = new ITOwner('Old Owner');
+      existingOwner.id = 'id1';
+      const updatedOwner = new ITOwner('Old Owner');
+      updatedOwner.id = 'id1';
+
+      const updateDtoSameName: UpdateITOwnerDto = {
+        name: 'Old Owner',
+      };
+
+      repository.findById.mockResolvedValue(existingOwner);
+      repository.update.mockResolvedValue(updatedOwner);
+
+      const result = await service.update('id1', updateDtoSameName);
+
+      expect(result).toHaveProperty('name', 'Old Owner');
+      expect(repository.findByName).not.toHaveBeenCalled();
+      expect(repository.update).toHaveBeenCalled();
+    });
+
+    it('should allow update without name', async () => {
+      const existingOwner = new ITOwner('Old Owner');
+      existingOwner.id = 'id1';
+      const updatedOwner = new ITOwner('Old Owner');
+      updatedOwner.id = 'id1';
+
+      const updateDtoNoName: UpdateITOwnerDto = {};
+
+      repository.findById.mockResolvedValue(existingOwner);
+      repository.update.mockResolvedValue(updatedOwner);
+
+      const result = await service.update('id1', updateDtoNoName);
+
+      expect(result).toHaveProperty('name', 'Old Owner');
+      expect(repository.findByName).not.toHaveBeenCalled();
+      expect(repository.update).toHaveBeenCalled();
+    });
   });
 
   describe('delete', () => {

@@ -24,7 +24,8 @@ import { RegisterDto } from '../application/dto/register.dto';
 import { AuthResponseDto } from '../application/dto/auth-response.dto';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import { Public } from '../decorators/public.decorator';
-import { CurrentUser, CurrentUserPayload } from '../decorators/current-user.decorator';
+import { CurrentUser } from '../decorators/current-user.decorator';
+import type { CurrentUserPayload } from '../decorators/current-user.decorator';
 import { Throttle } from '@nestjs/throttler';
 
 @ApiTags('auth')

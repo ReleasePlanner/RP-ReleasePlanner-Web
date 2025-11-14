@@ -135,6 +135,56 @@ export interface UpdatePlanPhaseDto {
   color?: string;
 }
 
+export interface UpdatePlanTaskDto {
+  title?: string;
+  startDate?: string;
+  endDate?: string;
+  color?: string;
+}
+
+export interface UpdatePlanMilestoneDto {
+  name?: string;
+  date?: string;
+  description?: string;
+}
+
+export interface UpdateGanttCellCommentDto {
+  text?: string;
+  author?: string;
+}
+
+export interface UpdateGanttCellFileDto {
+  name?: string;
+  url?: string;
+  size?: number;
+  mimeType?: string;
+}
+
+export interface UpdateGanttCellLinkDto {
+  title?: string;
+  url?: string;
+  description?: string;
+}
+
+export interface UpdateGanttCellDataDto {
+  phaseId?: string;
+  date?: string;
+  isMilestone?: boolean;
+  milestoneColor?: string;
+  comments?: UpdateGanttCellCommentDto[];
+  files?: UpdateGanttCellFileDto[];
+  links?: UpdateGanttCellLinkDto[];
+}
+
+export interface UpdatePlanReferenceDto {
+  type?: 'link' | 'document' | 'note' | 'comment' | 'file' | 'milestone';
+  title?: string;
+  url?: string;
+  description?: string;
+  date?: string;
+  phaseId?: string;
+}
+
 export interface UpdatePlanDto {
   name?: string;
   owner?: string;
@@ -143,10 +193,15 @@ export interface UpdatePlanDto {
   status?: 'planned' | 'in_progress' | 'done' | 'paused';
   description?: string;
   phases?: UpdatePlanPhaseDto[];
+  tasks?: UpdatePlanTaskDto[];
+  milestones?: UpdatePlanMilestoneDto[];
+  references?: UpdatePlanReferenceDto[];
+  cellData?: UpdateGanttCellDataDto[];
   productId?: string;
   itOwner?: string;
   featureIds?: string[];
   calendarIds?: string[];
+  components?: Array<{ componentId: string; finalVersion: string }>;
 }
 
 export const plansService = {

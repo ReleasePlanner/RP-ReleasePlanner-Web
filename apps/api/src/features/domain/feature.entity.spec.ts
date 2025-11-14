@@ -10,7 +10,9 @@ describe('Feature', () => {
   describe('constructor', () => {
     it('should create a Feature with all properties', () => {
       const category = new FeatureCategory('Category');
+      category.id = 'cat-id';
       const owner = new ProductOwner('Owner');
+      owner.id = 'owner-id';
       const feature = new Feature(
         'Feature Name',
         'Description',
@@ -25,11 +27,89 @@ describe('Feature', () => {
       expect(feature.name).toBe('Feature Name');
       expect(feature.description).toBe('Description');
       expect(feature.category).toBe(category);
+      expect(feature.categoryId).toBe('cat-id');
       expect(feature.status).toBe(FeatureStatus.PLANNED);
       expect(feature.createdBy).toBe(owner);
+      expect(feature.createdById).toBe('owner-id');
       expect(feature.technicalDescription).toBe('Technical Description');
       expect(feature.businessDescription).toBe('Business Description');
       expect(feature.productId).toBe('prod-1');
+    });
+
+    it('should create a Feature without optional properties', () => {
+      const category = new FeatureCategory('Category');
+      category.id = 'cat-id';
+      const owner = new ProductOwner('Owner');
+      owner.id = 'owner-id';
+      const feature = new Feature(
+        'Feature Name',
+        'Description',
+        category,
+        FeatureStatus.PLANNED,
+        owner,
+        undefined,
+        undefined,
+        'prod-1',
+      );
+
+      expect(feature.name).toBe('Feature Name');
+      expect(feature.description).toBe('Description');
+      expect(feature.technicalDescription).toBeUndefined();
+      expect(feature.businessDescription).toBeUndefined();
+    });
+
+    it('should not validate when name is undefined', () => {
+      const category = new FeatureCategory('Category');
+      const owner = new ProductOwner('Owner');
+      const feature = new Feature(
+        undefined as any,
+        'Description',
+        category,
+        FeatureStatus.PLANNED,
+        owner,
+        undefined,
+        undefined,
+        'prod-1',
+      );
+
+      expect(feature.name).toBeUndefined();
+      // Should not throw because validation is not called
+    });
+
+    it('should not validate when description is undefined', () => {
+      const category = new FeatureCategory('Category');
+      const owner = new ProductOwner('Owner');
+      const feature = new Feature(
+        'Feature Name',
+        undefined as any,
+        category,
+        FeatureStatus.PLANNED,
+        owner,
+        undefined,
+        undefined,
+        'prod-1',
+      );
+
+      expect(feature.description).toBeUndefined();
+      // Should not throw because validation is not called
+    });
+
+    it('should not validate when productId is undefined', () => {
+      const category = new FeatureCategory('Category');
+      const owner = new ProductOwner('Owner');
+      const feature = new Feature(
+        'Feature Name',
+        'Description',
+        category,
+        FeatureStatus.PLANNED,
+        owner,
+        undefined,
+        undefined,
+        undefined as any,
+      );
+
+      expect(feature.productId).toBeUndefined();
+      // Should not throw because validation is not called
     });
   });
 
@@ -50,6 +130,14 @@ describe('Feature', () => {
       }).toThrow('Feature name is required');
     });
 
+    it('should throw error when name is whitespace only', () => {
+      const category = new FeatureCategory('Category');
+      const owner = new ProductOwner('Owner');
+      expect(() => {
+        new Feature('   ', 'Desc', category, FeatureStatus.PLANNED, owner, 'Tech', 'Biz', 'prod-1');
+      }).toThrow('Feature name is required');
+    });
+
     it('should throw error when description is empty', () => {
       const category = new FeatureCategory('Category');
       const owner = new ProductOwner('Owner');
@@ -58,11 +146,27 @@ describe('Feature', () => {
       }).toThrow('Feature description is required');
     });
 
+    it('should throw error when description is whitespace only', () => {
+      const category = new FeatureCategory('Category');
+      const owner = new ProductOwner('Owner');
+      expect(() => {
+        new Feature('Feature', '   ', category, FeatureStatus.PLANNED, owner, 'Tech', 'Biz', 'prod-1');
+      }).toThrow('Feature description is required');
+    });
+
     it('should throw error when productId is empty', () => {
       const category = new FeatureCategory('Category');
       const owner = new ProductOwner('Owner');
       expect(() => {
         new Feature('Feature', 'Desc', category, FeatureStatus.PLANNED, owner, 'Tech', 'Biz', '');
+      }).toThrow('Product ID is required');
+    });
+
+    it('should throw error when productId is whitespace only', () => {
+      const category = new FeatureCategory('Category');
+      const owner = new ProductOwner('Owner');
+      expect(() => {
+        new Feature('Feature', 'Desc', category, FeatureStatus.PLANNED, owner, 'Tech', 'Biz', '   ');
       }).toThrow('Product ID is required');
     });
 

@@ -2,98 +2,173 @@
  * Product Repository Unit Tests
  * Coverage: 100%
  */
+import { Test, TestingModule } from '@nestjs/testing';
+import { getRepositoryToken } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { ProductRepository } from './product.repository';
 import { Product } from '../domain/product.entity';
 import { ComponentVersion, ComponentType } from '../domain/component-version.entity';
+import { NotFoundException } from '../../common/exceptions/business-exception';
 
 describe('ProductRepository', () => {
   let repository: ProductRepository;
+  let mockTypeOrmRepository: jest.Mocked<Repository<Product>>;
 
-  beforeEach(() => {
-    repository = new ProductRepository();
+  beforeEach(async () => {
+    const mockRepository = {
+      find: jest.fn(),
+      findOne: jest.fn(),
+      create: jest.fn(),
+      save: jest.fn(),
+      delete: jest.fn(),
+      count: jest.fn(),
+    } as unknown as jest.Mocked<Repository<Product>>;
+
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        ProductRepository,
+        {
+          provide: getRepositoryToken(Product),
+          useValue: mockRepository,
+        },
+      ],
+    }).compile();
+
+    repository = module.get<ProductRepository>(ProductRepository);
+    mockTypeOrmRepository = module.get(getRepositoryToken(Product));
   });
 
   afterEach(() => {
-    (repository as any).entities.clear();
+    jest.clearAllMocks();
   });
 
   describe('findByName', () => {
-    it('should find product by name (case-insensitive)', async () => {
-      const product1 = new Product('Product One', []);
-      const product2 = new Product('Product Two', []);
+    it('should find product by name', async () => {
+      const product = new Product('Product One');
+      product.id = 'test-id';
+      mockTypeOrmRepository.findOne.mockResolvedValue(product);
 
-      await repository.create(product1);
-      await repository.create(product2);
+      const result = await repository.findByName('Product One');
 
-      const found = await repository.findByName('product one');
-      expect(found).not.toBeNull();
-      expect(found?.name).toBe('Product One');
+      expect(mockTypeOrmRepository.findOne).toHaveBeenCalledWith({
+        where: { name: 'Product One' },
+      });
+      expect(result).toEqual(product);
     });
 
     it('should return null when product not found', async () => {
-      const found = await repository.findByName('Non Existent');
-      expect(found).toBeNull();
+      mockTypeOrmRepository.findOne.mockResolvedValue(null);
+
+      const result = await repository.findByName('Non Existent');
+
+      expect(result).toBeNull();
+    });
+  });
+
+  describe('findWithComponents', () => {
+    it('should find product with components', async () => {
+      const component = new ComponentVersion(ComponentType.WEB, '1.0.0', '0.9.0');
+      const product = new Product('Product', [component]);
+      product.id = 'test-id';
+      mockTypeOrmRepository.findOne.mockResolvedValue(product);
+
+      const result = await repository.findWithComponents('test-id');
+
+      expect(mockTypeOrmRepository.findOne).toHaveBeenCalledWith({
+        where: { id: 'test-id' },
+        relations: ['components'],
+      });
+      expect(result).toEqual(product);
+    });
+
+    it('should return null when product not found', async () => {
+      mockTypeOrmRepository.findOne.mockResolvedValue(null);
+
+      const result = await repository.findWithComponents('non-existent');
+
+      expect(result).toBeNull();
+    });
+  });
+
+  describe('findById', () => {
+    it('should use findWithComponents', async () => {
+      const component = new ComponentVersion(ComponentType.WEB, '1.0.0', '0.9.0');
+      const product = new Product('Product', [component]);
+      product.id = 'test-id';
+      mockTypeOrmRepository.findOne.mockResolvedValue(product);
+
+      const result = await repository.findById('test-id');
+
+      expect(mockTypeOrmRepository.findOne).toHaveBeenCalledWith({
+        where: { id: 'test-id' },
+        relations: ['components'],
+      });
+      expect(result).toEqual(product);
     });
   });
 
   describe('CRUD operations', () => {
     it('should create a new product', async () => {
-      const product = new Product('Test Product', [
-        new ComponentVersion(ComponentType.WEB, '1.0.0', '0.9.0'),
-      ]);
-      const created = await repository.create(product);
+      const productData = { name: 'Test Product' } as Product;
+      const savedProduct = new Product('Test Product');
+      savedProduct.id = 'test-id';
 
-      expect(created).toHaveProperty('id');
-      expect(created.name).toBe('Test Product');
-      expect(created.components).toHaveLength(1);
+      mockTypeOrmRepository.create.mockReturnValue(productData as Product);
+      mockTypeOrmRepository.save.mockResolvedValue(savedProduct);
+
+      const created = await repository.create(productData);
+
+      expect(mockTypeOrmRepository.create).toHaveBeenCalledWith(productData);
+      expect(mockTypeOrmRepository.save).toHaveBeenCalled();
+      expect(created).toEqual(savedProduct);
     });
 
     it('should find all products', async () => {
-      await repository.create(new Product('Product 1', []));
-      await repository.create(new Product('Product 2', []));
+      const products = [new Product('Product 1'), new Product('Product 2')];
+      mockTypeOrmRepository.find.mockResolvedValue(products);
 
-      const all = await repository.findAll();
-      expect(all).toHaveLength(2);
-    });
+      const result = await repository.findAll();
 
-    it('should find product by id', async () => {
-      const product = new Product('Test Product', []);
-      const created = await repository.create(product);
-
-      const found = await repository.findById(created.id);
-      expect(found).not.toBeNull();
-      expect(found?.id).toBe(created.id);
+      expect(mockTypeOrmRepository.find).toHaveBeenCalled();
+      expect(result).toEqual(products);
     });
 
     it('should update product', async () => {
-      const product = new Product('Old Name', []);
-      const created = await repository.create(product);
+      const existingProduct = new Product('Old Name');
+      existingProduct.id = 'test-id';
+      const updatedProduct = new Product('New Name');
+      updatedProduct.id = 'test-id';
 
-      await new Promise((resolve) => setTimeout(resolve, 10));
+      mockTypeOrmRepository.findOne.mockResolvedValue(existingProduct);
+      mockTypeOrmRepository.save.mockResolvedValue(updatedProduct);
 
-      const updated = await repository.update(created.id, { name: 'New Name' });
+      const result = await repository.update('test-id', { name: 'New Name' } as any);
 
-      expect(updated.name).toBe('New Name');
-      expect(updated.updatedAt.getTime()).toBeGreaterThanOrEqual(created.updatedAt.getTime());
+      expect(mockTypeOrmRepository.findOne).toHaveBeenCalledWith({
+        where: { id: 'test-id' },
+      });
+      expect(mockTypeOrmRepository.save).toHaveBeenCalled();
+      expect(result.name).toBe('New Name');
+    });
+
+    it('should throw error when updating non-existent product', async () => {
+      mockTypeOrmRepository.findOne.mockResolvedValue(null);
+
+      await expect(repository.update('non-existent', { name: 'New Name' } as any)).rejects.toThrow(NotFoundException);
     });
 
     it('should delete product', async () => {
-      const product = new Product('Test Product', []);
-      const created = await repository.create(product);
+      mockTypeOrmRepository.delete.mockResolvedValue({ affected: 1 } as any);
 
-      await repository.delete(created.id);
+      await repository.delete('test-id');
 
-      const found = await repository.findById(created.id);
-      expect(found).toBeNull();
+      expect(mockTypeOrmRepository.delete).toHaveBeenCalledWith('test-id');
     });
 
-    it('should check if product exists', async () => {
-      const product = new Product('Test Product', []);
-      const created = await repository.create(product);
+    it('should throw error when deleting non-existent product', async () => {
+      mockTypeOrmRepository.delete.mockResolvedValue({ affected: 0 } as any);
 
-      expect(await repository.exists(created.id)).toBe(true);
-      expect(await repository.exists('non-existent')).toBe(false);
+      await expect(repository.delete('non-existent')).rejects.toThrow(NotFoundException);
     });
   });
 });
-

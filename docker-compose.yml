@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.8"
 
 services:
   # Base de datos PostgreSQL
@@ -73,15 +73,7 @@ services:
       FRONTEND_URL: http://localhost:5173
     ports:
       - "${API_PORT:-3000}:3000"
-    volumes:
-      # Hot-reload: montar código fuente para desarrollo
-      - ./apps/api/src:/app/src
-      - ./apps/api/package.json:/app/package.json
-      - ./apps/api/tsconfig.json:/app/tsconfig.json
-      - ./apps/api/webpack.config.js:/app/webpack.config.js
-      # Excluir node_modules para usar los del contenedor
-      - /app/node_modules
-      - /app/dist
+    # No volumes needed for production - code is baked into image
     depends_on:
       postgres:
         condition: service_healthy
@@ -90,7 +82,7 @@ services:
     networks:
       - release-planner-network
     restart: unless-stopped
-    command: npx nx serve api
+    # Use CMD from Dockerfile: node dist/main.js (WORKDIR is /app/apps/api)
     labels:
       - "prometheus.scrape=true"
       - "prometheus.port=3000"
@@ -109,24 +101,13 @@ services:
       VITE_API_URL: http://localhost:3000/api
     ports:
       - "${FRONTEND_PORT:-5173}:80"
-    volumes:
-      # Hot-reload: montar código fuente para desarrollo
-      - ./apps/portal/src:/app/src
-      - ./apps/portal/public:/app/public
-      - ./apps/portal/index.html:/app/index.html
-      - ./apps/portal/vite.config.ts:/app/vite.config.ts
-      - ./apps/portal/package.json:/app/package.json
-      - ./apps/portal/tsconfig.json:/app/tsconfig.json
-      # Excluir node_modules y dist
-      - /app/node_modules
-      - /app/dist
+    # No volumes needed for production - static files are baked into image
     depends_on:
       - api
     networks:
       - release-planner-network
     restart: unless-stopped
-    # En desarrollo, usar Vite dev server en lugar de Nginx
-    command: npx nx serve portal --host 0.0.0.0 --port 80
+    # Nginx starts automatically - no command needed
     labels:
       - "prometheus.scrape=true"
       - "prometheus.port=80"

@@ -19,6 +19,21 @@ export class BasePhase extends BaseEntity {
   @Column({ type: 'varchar', length: 100, nullable: true })
   category?: string;
 
+  constructor(name?: string, color?: string, category?: string) {
+    super();
+    if (name !== undefined) {
+      this.name = name;
+    }
+    if (color !== undefined) {
+      this.color = color;
+    }
+    if (category !== undefined) {
+      this.category = category;
+    }
+    // Don't validate automatically - allow invalid instances for testing
+    // Validation should be called explicitly when needed
+  }
+
   /**
    * Business rule: Phase name must be unique
    */

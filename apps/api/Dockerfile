@@ -15,15 +15,15 @@ COPY apps/api/webpack.config.js ./apps/api/
 COPY apps/api/tsconfig*.json ./apps/api/
 
 # Instalar dependencias del workspace
-RUN npm ci
+RUN npm ci --legacy-peer-deps
 
 # Copiar código fuente de la API y librerías compartidas
 COPY apps/api/src ./apps/api/src
 COPY libs ./libs
 
 # Construir la aplicación para producción
-WORKDIR /app/apps/api
-RUN npm run build
+WORKDIR /app
+RUN npx nx build api
 
 # Stage 2: Production stage - Ejecutar la aplicación
 FROM node:20-alpine
@@ -44,7 +44,7 @@ COPY tsconfig.base.json ./
 COPY apps/api/package.json ./apps/api/
 
 # Instalar solo dependencias de producción
-RUN npm ci --only=production && \
+RUN npm ci --omit=dev --legacy-peer-deps && \
     npm cache clean --force
 
 # Copiar archivos compilados desde el builder
@@ -71,6 +71,7 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
 # Cambiar al directorio de la API
 WORKDIR /app/apps/api
 
-# Iniciar la aplicación
+# Iniciar la aplicación directamente sin entrypoint
+ENTRYPOINT []
 CMD ["node", "dist/main.js"]
 

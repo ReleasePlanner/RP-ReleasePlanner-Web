@@ -24,8 +24,8 @@ export class HttpExceptionFilter implements ExceptionFilter {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
     const request = ctx.getRequest<Request>();
-    const correlationId = request.correlationId || 'unknown';
-    const requestId = request.requestId || 'unknown';
+    const correlationId = (request as any).correlationId || 'unknown';
+    const requestId = (request as any).requestId || 'unknown';
 
     let status: number;
     let message: string | object;

@@ -55,7 +55,7 @@ export class ProductResponseDto {
   constructor(entity: {
     id: string;
     name: string;
-    components: ComponentVersion[];
+    components: ComponentVersion[] | any[];
     createdAt: Date;
     updatedAt: Date;
   }) {

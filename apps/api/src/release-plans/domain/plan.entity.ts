@@ -57,31 +57,70 @@ export class Plan extends BaseEntity {
     cascade: true,
     eager: false,
   })
-  phases: PlanPhase[];
+  phases?: PlanPhase[];
 
   @OneToMany(() => PlanTask, (task) => task.plan, {
     cascade: true,
     eager: false,
   })
-  tasks: PlanTask[];
+  tasks?: PlanTask[];
 
   @OneToMany(() => PlanMilestone, (milestone) => milestone.plan, {
     cascade: true,
     eager: false,
   })
-  milestones: PlanMilestone[];
+  milestones?: PlanMilestone[];
 
   @OneToMany(() => PlanReference, (reference) => reference.plan, {
     cascade: true,
     eager: false,
   })
-  references: PlanReference[];
+  references?: PlanReference[];
 
   @OneToMany(() => GanttCellData, (cellData) => cellData.plan, {
     cascade: true,
     eager: false,
   })
-  cellData: GanttCellData[];
+  cellData?: GanttCellData[];
+
+  constructor(
+    name?: string,
+    owner?: string,
+    startDate?: string,
+    endDate?: string,
+    status?: PlanStatus,
+    description?: string,
+  ) {
+    super();
+    if (name !== undefined) {
+      this.name = name;
+    }
+    if (owner !== undefined) {
+      this.owner = owner;
+    }
+    if (startDate !== undefined) {
+      this.startDate = startDate;
+    }
+    if (endDate !== undefined) {
+      this.endDate = endDate;
+    }
+    if (status !== undefined) {
+      this.status = status;
+    } else {
+      this.status = PlanStatus.PLANNED;
+    }
+    if (description !== undefined) {
+      this.description = description;
+    }
+    // Don't initialize TypeORM relations - TypeORM will handle them
+    // Only initialize JSON column arrays (not relations)
+    this.featureIds = [];
+    this.components = [];
+    this.calendarIds = [];
+    if (name !== undefined && owner !== undefined && startDate !== undefined && endDate !== undefined) {
+      this.validate();
+    }
+  }
 
   validate(): void {
     if (!this.name || this.name.trim().length === 0) {
@@ -113,7 +152,7 @@ export class Plan extends BaseEntity {
     return d instanceof Date && !isNaN(d.getTime());
   }
 
-  addPhase(phase: PlanPhase): void {
+  addPhase(phase: any): void {
     if (!this.phases) {
       this.phases = [];
     }

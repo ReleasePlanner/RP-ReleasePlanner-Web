@@ -184,6 +184,46 @@ describe('CalendarService', () => {
 
       await expect(service.update('id1', updateDto)).rejects.toThrow(ConflictException);
     });
+
+    it('should allow update when name is unchanged', async () => {
+      const existingCalendar = new Calendar('Old Calendar', []);
+      existingCalendar.id = 'id1';
+      const updatedCalendar = new Calendar('Old Calendar', []);
+      updatedCalendar.id = 'id1';
+
+      const updateDtoSameName: UpdateCalendarDto = {
+        name: 'Old Calendar',
+      };
+
+      repository.findById.mockResolvedValue(existingCalendar);
+      repository.update.mockResolvedValue(updatedCalendar);
+
+      const result = await service.update('id1', updateDtoSameName);
+
+      expect(result).toHaveProperty('name', 'Old Calendar');
+      expect(repository.findByName).not.toHaveBeenCalled();
+      expect(repository.update).toHaveBeenCalled();
+    });
+
+    it('should allow update without name', async () => {
+      const existingCalendar = new Calendar('Old Calendar', []);
+      existingCalendar.id = 'id1';
+      const updatedCalendar = new Calendar('Old Calendar', []);
+      updatedCalendar.id = 'id1';
+
+      const updateDtoNoName: UpdateCalendarDto = {
+        description: 'New Description',
+      };
+
+      repository.findById.mockResolvedValue(existingCalendar);
+      repository.update.mockResolvedValue(updatedCalendar);
+
+      const result = await service.update('id1', updateDtoNoName);
+
+      expect(result).toHaveProperty('name', 'Old Calendar');
+      expect(repository.findByName).not.toHaveBeenCalled();
+      expect(repository.update).toHaveBeenCalled();
+    });
   });
 
   describe('delete', () => {

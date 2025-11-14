@@ -13,6 +13,7 @@ import { IRepository } from '../../common/interfaces/repository.interface';
 export interface IFeatureRepository extends IRepository<Feature> {
   findByProductId(productId: string): Promise<Feature[]>;
   findByStatus(status: string): Promise<Feature[]>;
+  findByName(name: string): Promise<Feature | null>;
 }
 
 @Injectable()
@@ -38,6 +39,12 @@ export class FeatureRepository
     return this.repository.find({
       where: { status: status as any } as any,
       relations: ['category', 'createdBy'],
+    });
+  }
+
+  async findByName(name: string): Promise<Feature | null> {
+    return this.repository.findOne({
+      where: { name } as any,
     });
   }
 }

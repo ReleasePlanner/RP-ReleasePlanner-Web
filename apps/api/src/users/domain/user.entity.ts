@@ -6,9 +6,6 @@
 import {
   Entity,
   Column,
-  PrimaryGeneratedColumn,
-  CreateDateColumn,
-  UpdateDateColumn,
   Index,
 } from 'typeorm';
 import { BaseEntity } from '../../common/database/base.entity';
@@ -44,10 +41,10 @@ export class User extends BaseEntity {
     enum: UserRole,
     default: UserRole.USER,
   })
-  role: UserRole;
+  role!: UserRole;
 
   @Column({ type: 'boolean', default: true })
-  isActive: boolean;
+  isActive!: boolean;
 
   @Column({ type: 'timestamp', nullable: true })
   lastLoginAt?: Date;

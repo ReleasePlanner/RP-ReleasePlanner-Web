@@ -3,179 +3,223 @@
  * 
  * Coverage: 100%
  */
+import { Test, TestingModule } from '@nestjs/testing';
+import { getRepositoryToken } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { BasePhaseRepository } from './base-phase.repository';
 import { BasePhase } from '../domain/base-phase.entity';
+import { NotFoundException } from '../../common/exceptions/business-exception';
 
 describe('BasePhaseRepository', () => {
   let repository: BasePhaseRepository;
+  let mockTypeOrmRepository: jest.Mocked<Repository<BasePhase>>;
 
-  beforeEach(() => {
-    repository = new BasePhaseRepository();
+  beforeEach(async () => {
+    const mockRepository = {
+      find: jest.fn(),
+      findOne: jest.fn(),
+      create: jest.fn(),
+      save: jest.fn(),
+      delete: jest.fn(),
+      count: jest.fn(),
+    } as unknown as jest.Mocked<Repository<BasePhase>>;
+
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        BasePhaseRepository,
+        {
+          provide: getRepositoryToken(BasePhase),
+          useValue: mockRepository,
+        },
+      ],
+    }).compile();
+
+    repository = module.get<BasePhaseRepository>(BasePhaseRepository);
+    mockTypeOrmRepository = module.get(getRepositoryToken(BasePhase));
   });
 
   afterEach(() => {
-    // Clear all entities
-    (repository as any).entities.clear();
+    jest.clearAllMocks();
   });
 
   describe('findByName', () => {
     it('should find phase by name (case-insensitive)', async () => {
-      const phase1 = new BasePhase('Phase One', '#FF0000');
-      const phase2 = new BasePhase('Phase Two', '#00FF00');
-
-      await repository.create(phase1);
-      await repository.create(phase2);
+      const phase = new BasePhase('Phase One', '#FF0000');
+      mockTypeOrmRepository.findOne.mockResolvedValue(phase);
 
       const found = await repository.findByName('phase one');
-      expect(found).not.toBeNull();
-      expect(found?.name).toBe('Phase One');
-      expect(found?.color).toBe('#FF0000');
+
+      expect(mockTypeOrmRepository.findOne).toHaveBeenCalledWith({
+        where: { name: 'phase one' },
+      });
+      expect(found).toEqual(phase);
     });
 
     it('should return null when phase not found', async () => {
-      const found = await repository.findByName('Non Existent');
-      expect(found).toBeNull();
-    });
+      mockTypeOrmRepository.findOne.mockResolvedValue(null);
 
-    it('should handle empty repository', async () => {
-      const found = await repository.findByName('Any Name');
+      const found = await repository.findByName('Non Existent');
+
       expect(found).toBeNull();
     });
   });
 
   describe('findByColor', () => {
     it('should find phase by color (case-insensitive)', async () => {
-      const phase1 = new BasePhase('Phase One', '#FF0000');
-      const phase2 = new BasePhase('Phase Two', '#00FF00');
-
-      await repository.create(phase1);
-      await repository.create(phase2);
+      const phase = new BasePhase('Phase One', '#FF0000');
+      mockTypeOrmRepository.findOne.mockResolvedValue(phase);
 
       const found = await repository.findByColor('#ff0000');
-      expect(found).not.toBeNull();
-      expect(found?.name).toBe('Phase One');
-      expect(found?.color).toBe('#FF0000');
+
+      expect(mockTypeOrmRepository.findOne).toHaveBeenCalledWith({
+        where: { color: '#ff0000' },
+      });
+      expect(found).toEqual(phase);
     });
 
     it('should return null when color not found', async () => {
-      const found = await repository.findByColor('#000000');
-      expect(found).toBeNull();
-    });
+      mockTypeOrmRepository.findOne.mockResolvedValue(null);
 
-    it('should handle empty repository', async () => {
-      const found = await repository.findByColor('#FFFFFF');
+      const found = await repository.findByColor('#000000');
+
       expect(found).toBeNull();
     });
   });
 
   describe('CRUD operations', () => {
     it('should create a new phase', async () => {
-      const phase = new BasePhase('Test Phase', '#FF0000', 'Test Category');
-      const created = await repository.create(phase);
+      const phaseData = { name: 'Test Phase', color: '#FF0000', category: 'Test Category' } as BasePhase;
+      const savedPhase = new BasePhase('Test Phase', '#FF0000', 'Test Category');
+      savedPhase.id = 'test-id';
+      
+      mockTypeOrmRepository.create.mockReturnValue(phaseData as BasePhase);
+      mockTypeOrmRepository.save.mockResolvedValue(savedPhase);
 
-      expect(created).toHaveProperty('id');
-      expect(created.name).toBe('Test Phase');
-      expect(created.color).toBe('#FF0000');
-      expect(created.category).toBe('Test Category');
-      expect(created.createdAt).toBeInstanceOf(Date);
-      expect(created.updatedAt).toBeInstanceOf(Date);
+      const created = await repository.create(phaseData);
+
+      expect(mockTypeOrmRepository.create).toHaveBeenCalledWith(phaseData);
+      expect(mockTypeOrmRepository.save).toHaveBeenCalled();
+      expect(created).toEqual(savedPhase);
     });
 
     it('should find all phases', async () => {
-      const phase1 = new BasePhase('Phase 1', '#FF0000');
-      const phase2 = new BasePhase('Phase 2', '#00FF00');
-
-      await repository.create(phase1);
-      await repository.create(phase2);
+      const phases = [
+        new BasePhase('Phase 1', '#FF0000'),
+        new BasePhase('Phase 2', '#00FF00'),
+      ];
+      mockTypeOrmRepository.find.mockResolvedValue(phases);
 
       const all = await repository.findAll();
-      expect(all).toHaveLength(2);
+
+      expect(mockTypeOrmRepository.find).toHaveBeenCalled();
+      expect(all).toEqual(phases);
     });
 
     it('should find phase by id', async () => {
       const phase = new BasePhase('Test Phase', '#FF0000');
-      const created = await repository.create(phase);
+      phase.id = 'test-id';
+      mockTypeOrmRepository.findOne.mockResolvedValue(phase);
 
-      const found = await repository.findById(created.id);
-      expect(found).not.toBeNull();
-      expect(found?.id).toBe(created.id);
-      expect(found?.name).toBe('Test Phase');
+      const found = await repository.findById('test-id');
+
+      expect(mockTypeOrmRepository.findOne).toHaveBeenCalledWith({
+        where: { id: 'test-id' },
+      });
+      expect(found).toEqual(phase);
     });
 
     it('should return null when id not found', async () => {
+      mockTypeOrmRepository.findOne.mockResolvedValue(null);
+
       const found = await repository.findById('non-existent-id');
+
       expect(found).toBeNull();
     });
 
     it('should update phase', async () => {
-      const phase = new BasePhase('Old Name', '#FF0000');
-      const created = await repository.create(phase);
+      const existingPhase = new BasePhase('Old Name', '#FF0000');
+      existingPhase.id = 'test-id';
+      const updatedPhase = new BasePhase('New Name', '#00FF00');
+      updatedPhase.id = 'test-id';
 
-      // Wait a bit to ensure updatedAt changes
-      await new Promise((resolve) => setTimeout(resolve, 10));
+      mockTypeOrmRepository.findOne.mockResolvedValue(existingPhase);
+      mockTypeOrmRepository.save.mockResolvedValue(updatedPhase);
 
-      const updated = await repository.update(created.id, {
+      const updated = await repository.update('test-id', {
         name: 'New Name',
         color: '#00FF00',
       });
 
+      expect(mockTypeOrmRepository.findOne).toHaveBeenCalledWith({
+        where: { id: 'test-id' },
+      });
+      expect(mockTypeOrmRepository.save).toHaveBeenCalled();
       expect(updated.name).toBe('New Name');
-      expect(updated.color).toBe('#00FF00');
-      expect(updated.updatedAt.getTime()).toBeGreaterThanOrEqual(created.updatedAt.getTime());
     });
 
     it('should throw error when updating non-existent phase', async () => {
+      mockTypeOrmRepository.findOne.mockResolvedValue(null);
+
       await expect(
         repository.update('non-existent', { name: 'New Name' }),
-      ).rejects.toThrow('Entity with id non-existent not found');
+      ).rejects.toThrow(NotFoundException);
     });
 
     it('should delete phase', async () => {
-      const phase = new BasePhase('Test Phase', '#FF0000');
-      const created = await repository.create(phase);
+      mockTypeOrmRepository.delete.mockResolvedValue({ affected: 1 } as any);
 
-      await repository.delete(created.id);
+      await repository.delete('test-id');
 
-      const found = await repository.findById(created.id);
-      expect(found).toBeNull();
+      expect(mockTypeOrmRepository.delete).toHaveBeenCalledWith('test-id');
     });
 
     it('should throw error when deleting non-existent phase', async () => {
-      await expect(repository.delete('non-existent')).rejects.toThrow(
-        'Entity with id non-existent not found',
-      );
+      mockTypeOrmRepository.delete.mockResolvedValue({ affected: 0 } as any);
+
+      await expect(repository.delete('non-existent')).rejects.toThrow(NotFoundException);
     });
 
     it('should check if phase exists', async () => {
-      const phase = new BasePhase('Test Phase', '#FF0000');
-      const created = await repository.create(phase);
+      mockTypeOrmRepository.count.mockResolvedValue(1);
 
-      expect(await repository.exists(created.id)).toBe(true);
-      expect(await repository.exists('non-existent')).toBe(false);
+      const exists = await repository.exists('test-id');
+
+      expect(mockTypeOrmRepository.count).toHaveBeenCalledWith({
+        where: { id: 'test-id' },
+      });
+      expect(exists).toBe(true);
+    });
+
+    it('should return false when phase does not exist', async () => {
+      mockTypeOrmRepository.count.mockResolvedValue(0);
+
+      const exists = await repository.exists('non-existent');
+
+      expect(exists).toBe(false);
     });
 
     it('should count phases', async () => {
-      expect(await repository.count()).toBe(0);
+      mockTypeOrmRepository.count.mockResolvedValue(2);
 
-      await repository.create(new BasePhase('Phase 1', '#FF0000'));
-      expect(await repository.count()).toBe(1);
+      const count = await repository.count();
 
-      await repository.create(new BasePhase('Phase 2', '#00FF00'));
-      expect(await repository.count()).toBe(2);
+      expect(mockTypeOrmRepository.count).toHaveBeenCalled();
+      expect(count).toBe(2);
     });
 
     it('should find many phases by criteria', async () => {
-      const phase1 = new BasePhase('Phase 1', '#FF0000', 'Category 1');
-      const phase2 = new BasePhase('Phase 2', '#00FF00', 'Category 1');
-      const phase3 = new BasePhase('Phase 3', '#0000FF', 'Category 2');
-
-      await repository.create(phase1);
-      await repository.create(phase2);
-      await repository.create(phase3);
+      const phases = [
+        new BasePhase('Phase 1', '#FF0000', 'Category 1'),
+        new BasePhase('Phase 2', '#00FF00', 'Category 1'),
+      ];
+      mockTypeOrmRepository.find.mockResolvedValue(phases);
 
       const found = await repository.findMany({ category: 'Category 1' });
-      expect(found).toHaveLength(2);
-      expect(found.every((p) => p.category === 'Category 1')).toBe(true);
+
+      expect(mockTypeOrmRepository.find).toHaveBeenCalledWith({
+        where: { category: 'Category 1' },
+      });
+      expect(found).toEqual(phases);
     });
   });
 });

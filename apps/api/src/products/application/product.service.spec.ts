@@ -204,6 +204,52 @@ describe('ProductService', () => {
 
       expect(repository.update).toHaveBeenCalled();
     });
+
+    it('should allow update when name is unchanged', async () => {
+      const existingProduct = new Product('Old Product', []);
+      existingProduct.id = 'id1';
+      const updatedProduct = new Product('Old Product', []);
+      updatedProduct.id = 'id1';
+
+      const updateDtoSameName: UpdateProductDto = {
+        name: 'Old Product',
+      };
+
+      repository.findById.mockResolvedValue(existingProduct);
+      repository.update.mockResolvedValue(updatedProduct);
+
+      const result = await service.update('id1', updateDtoSameName);
+
+      expect(result).toHaveProperty('name', 'Old Product');
+      expect(repository.findByName).not.toHaveBeenCalled();
+      expect(repository.update).toHaveBeenCalled();
+    });
+
+    it('should allow update without name', async () => {
+      const existingProduct = new Product('Old Product', []);
+      existingProduct.id = 'id1';
+      const updatedProduct = new Product('Old Product', []);
+      updatedProduct.id = 'id1';
+
+      const updateDtoNoName: UpdateProductDto = {
+        components: [
+          {
+            type: ComponentType.WEB,
+            currentVersion: '2.0.0',
+            previousVersion: '1.0.0',
+          },
+        ],
+      };
+
+      repository.findById.mockResolvedValue(existingProduct);
+      repository.update.mockResolvedValue(updatedProduct);
+
+      const result = await service.update('id1', updateDtoNoName);
+
+      expect(result).toHaveProperty('name', 'Old Product');
+      expect(repository.findByName).not.toHaveBeenCalled();
+      expect(repository.update).toHaveBeenCalled();
+    });
   });
 
   describe('delete', () => {

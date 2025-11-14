@@ -41,7 +41,7 @@ docs
 
 # Nx
 .nx
-nx.json
+# nx.json - Needed for Docker builds
 
 # Logs
 logs

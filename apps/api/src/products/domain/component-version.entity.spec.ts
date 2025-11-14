@@ -40,6 +40,18 @@ describe('ComponentVersion', () => {
       }).toThrow('Previous version is required');
     });
 
+    it('should throw error when currentVersion is whitespace only', () => {
+      expect(() => {
+        new ComponentVersion(ComponentType.WEB, '   ', '0.9.0');
+      }).toThrow('Current version is required');
+    });
+
+    it('should throw error when previousVersion is whitespace only', () => {
+      expect(() => {
+        new ComponentVersion(ComponentType.WEB, '1.0.0', '   ');
+      }).toThrow('Previous version is required');
+    });
+
     it('should accept all valid component types', () => {
       expect(() => {
         new ComponentVersion(ComponentType.WEB, '1.0.0', '0.9.0');

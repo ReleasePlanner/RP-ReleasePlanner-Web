@@ -5,20 +5,20 @@
  */
 import { Injectable, Inject, Logger } from '@nestjs/common';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
-import { Cache } from 'cache-manager';
 
 @Injectable()
 export class CacheService {
   private readonly logger = new Logger(CacheService.name);
 
-  constructor(@Inject(CACHE_MANAGER) private cacheManager: Cache) {}
+  constructor(@Inject(CACHE_MANAGER) private cacheManager: any) {}
 
   /**
    * Get value from cache
    */
   async get<T>(key: string): Promise<T | undefined> {
     try {
-      return await this.cacheManager.get<T>(key);
+      const result = await (this.cacheManager as any).get(key);
+      return result as T | undefined;
     } catch (error) {
       this.logger.error(`Cache get error for key ${key}`, error instanceof Error ? error.stack : String(error));
       return undefined;
@@ -53,7 +53,7 @@ export class CacheService {
   async delPattern(pattern: string): Promise<void> {
     try {
       // Note: This requires Redis store, not all cache managers support pattern deletion
-      const store = (this.cacheManager.store as any);
+      const store = (this.cacheManager as any).store;
       if (store && typeof store.keys === 'function') {
         const keys = await store.keys(pattern);
         if (keys && keys.length > 0) {
@@ -71,7 +71,7 @@ export class CacheService {
    */
   async reset(): Promise<void> {
     try {
-      await this.cacheManager.reset();
+      await (this.cacheManager as any).reset();
       this.logger.debug('Cache reset completed');
     } catch (error) {
       this.logger.error('Cache reset error', error instanceof Error ? error.stack : String(error));

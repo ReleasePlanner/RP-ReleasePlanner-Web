@@ -21,9 +21,7 @@ import {
   ApiResponse,
   ApiParam,
   ApiBody,
-  ApiBearerAuth,
 } from '@nestjs/swagger';
-import { CacheInterceptor } from '@nestjs/cache-manager';
 import { BasePhaseService } from '../application/base-phase.service';
 import { CreateBasePhaseDto } from '../application/dto/create-base-phase.dto';
 import { UpdateBasePhaseDto } from '../application/dto/update-base-phase.dto';

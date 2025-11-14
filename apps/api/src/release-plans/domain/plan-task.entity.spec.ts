@@ -58,6 +58,30 @@ describe('PlanTask', () => {
         new PlanTask('Task', '2024-01-01', '2024-01-31', 'invalid-color');
       }).toThrow('Invalid color format. Must be a valid hex color');
     });
+
+    it('should accept valid hex color formats', () => {
+      expect(() => {
+        new PlanTask('Task', '2024-01-01', '2024-01-31', '#FF0000');
+      }).not.toThrow();
+      expect(() => {
+        new PlanTask('Task', '2024-01-01', '2024-01-31', '#FFF');
+      }).not.toThrow();
+      expect(() => {
+        new PlanTask('Task', '2024-01-01', '2024-01-31', '#ff00ff');
+      }).not.toThrow();
+    });
+
+    it('should allow task without color', () => {
+      expect(() => {
+        new PlanTask('Task', '2024-01-01', '2024-01-31');
+      }).not.toThrow();
+    });
+
+    it('should accept equal start and end dates', () => {
+      expect(() => {
+        new PlanTask('Task', '2024-01-01', '2024-01-01');
+      }).not.toThrow();
+    });
   });
 });
 

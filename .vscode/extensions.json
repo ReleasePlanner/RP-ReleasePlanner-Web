@@ -1,0 +1,8 @@
+{
+  "recommendations": [
+    "orta.vscode-jest",
+    "ryanluker.vscode-coverage-gutters",
+    "firsttris.vscode-jest-runner"
+  ]
+}
+

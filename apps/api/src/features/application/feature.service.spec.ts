@@ -105,6 +105,15 @@ describe('FeatureService', () => {
       expect(result).toHaveLength(1);
       expect(repository.findByProductId).toHaveBeenCalledWith('prod-1');
     });
+
+    it('should return empty array when no features exist for product', async () => {
+      repository.findByProductId.mockResolvedValue([]);
+
+      const result = await service.findByProductId('prod-1');
+
+      expect(result).toEqual([]);
+      expect(repository.findByProductId).toHaveBeenCalledWith('prod-1');
+    });
   });
 
   describe('create', () => {
@@ -147,6 +156,30 @@ describe('FeatureService', () => {
       await expect(service.create(createDto)).rejects.toThrow(ConflictException);
       expect(repository.create).not.toHaveBeenCalled();
     });
+
+    it('should create feature with optional technicalDescription and businessDescription', async () => {
+      const createDtoWithoutOptional: CreateFeatureDto = {
+        name: 'New Feature',
+        description: 'Description',
+        category: { name: 'Category' },
+        status: FeatureStatus.PLANNED,
+        createdBy: { name: 'Owner' },
+        productId: 'prod-1',
+      };
+
+      const category = new FeatureCategory('Category');
+      const owner = new ProductOwner('Owner');
+      const mockFeature = new Feature('New Feature', 'Description', category, FeatureStatus.PLANNED, owner, undefined, undefined, 'prod-1');
+      mockFeature.id = 'new-id';
+
+      repository.findByName.mockResolvedValue(null);
+      repository.create.mockResolvedValue(mockFeature);
+
+      const result = await service.create(createDtoWithoutOptional);
+
+      expect(result).toHaveProperty('id', 'new-id');
+      expect(repository.create).toHaveBeenCalled();
+    });
   });
 
   describe('update', () => {
@@ -172,10 +205,71 @@ describe('FeatureService', () => {
       expect(repository.update).toHaveBeenCalled();
     });
 
+    it('should update category when provided', async () => {
+      const category = new FeatureCategory('Old Category');
+      const owner = new ProductOwner('Owner');
+      const existingFeature = new Feature('Feature', 'Desc', category, FeatureStatus.PLANNED, owner, 'Tech', 'Biz', 'prod-1');
+      existingFeature.id = 'id1';
+      const updatedFeature = new Feature('Feature', 'Desc', category, FeatureStatus.PLANNED, owner, 'Tech', 'Biz', 'prod-1');
+      updatedFeature.id = 'id1';
+
+      const updateDtoWithCategory: UpdateFeatureDto = {
+        category: { name: 'New Category' },
+      };
+
+      repository.findById.mockResolvedValue(existingFeature);
+      repository.update.mockResolvedValue(updatedFeature);
+
+      await service.update('id1', updateDtoWithCategory);
+
+      expect(existingFeature.category.name).toBe('New Category');
+    });
+
+    it('should update createdBy when provided', async () => {
+      const category = new FeatureCategory('Category');
+      const owner = new ProductOwner('Old Owner');
+      const existingFeature = new Feature('Feature', 'Desc', category, FeatureStatus.PLANNED, owner, 'Tech', 'Biz', 'prod-1');
+      existingFeature.id = 'id1';
+      const updatedFeature = new Feature('Feature', 'Desc', category, FeatureStatus.PLANNED, owner, 'Tech', 'Biz', 'prod-1');
+      updatedFeature.id = 'id1';
+
+      const updateDtoWithOwner: UpdateFeatureDto = {
+        createdBy: { name: 'New Owner' },
+      };
+
+      repository.findById.mockResolvedValue(existingFeature);
+      repository.update.mockResolvedValue(updatedFeature);
+
+      await service.update('id1', updateDtoWithOwner);
+
+      expect(existingFeature.createdBy.name).toBe('New Owner');
+    });
+
     it('should throw NotFoundException when feature does not exist', async () => {
       repository.findById.mockResolvedValue(null);
 
       await expect(service.update('non-existent', updateDto)).rejects.toThrow(NotFoundException);
+    });
+
+    it('should update feature without category and createdBy', async () => {
+      const category = new FeatureCategory('Category');
+      const owner = new ProductOwner('Owner');
+      const existingFeature = new Feature('Feature', 'Desc', category, FeatureStatus.PLANNED, owner, 'Tech', 'Biz', 'prod-1');
+      existingFeature.id = 'id1';
+      const updatedFeature = new Feature('Updated Feature', 'Desc', category, FeatureStatus.PLANNED, owner, 'Tech', 'Biz', 'prod-1');
+      updatedFeature.id = 'id1';
+
+      const updateDtoWithoutNested: UpdateFeatureDto = {
+        name: 'Updated Feature',
+      };
+
+      repository.findById.mockResolvedValue(existingFeature);
+      repository.update.mockResolvedValue(updatedFeature);
+
+      const result = await service.update('id1', updateDtoWithoutNested);
+
+      expect(result).toHaveProperty('name', 'Updated Feature');
+      expect(repository.update).toHaveBeenCalled();
     });
   });
 

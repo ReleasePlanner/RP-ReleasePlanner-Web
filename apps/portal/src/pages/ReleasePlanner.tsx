@@ -22,6 +22,8 @@ import {
   ListItemButton,
   ListItemText,
   ListItemIcon,
+  CircularProgress,
+  Alert,
 } from "@mui/material";
 import { formatCompactDate, getCurrentDateUTC } from "@/features/releasePlans/lib/date";
 import {
@@ -39,12 +41,13 @@ import {
   Assignment as TaskIcon,
 } from "@mui/icons-material";
 import AddPlanDialog from "../features/releasePlans/components/AddPlanDialog";
+import type { Plan as LocalPlan, PlanStatus } from "../features/releasePlans/types";
+import { useAppSelector, useAppDispatch } from "../store/hooks";
 import {
-  addPlan,
-  replaceAllPlansPhasesWithBase,
-} from "../features/releasePlans/slice";
-import type { Plan, PlanStatus } from "../features/releasePlans/types";
-import { useAppDispatch, useAppSelector } from "../store/hooks";
+  usePlans,
+  useCreatePlan,
+} from "../api/hooks";
+import { convertAPIPlanToLocal } from "../features/releasePlans/lib/planConverters";
 // Lazy load PlanCard for better performance - only load when expanded
 const PlanCard = lazy(() => import("../features/releasePlans/components/PlanCard/PlanCard"));
 import { setPlanExpanded } from "../store/store";
@@ -55,7 +58,14 @@ type FilterStatus = PlanStatus | "all";
 
 export default function ReleasePlanner() {
   const theme = useTheme();
-  const plans = useAppSelector((s) => s.releasePlans.plans);
+  
+  // API hooks
+  const { data: apiPlans = [], isLoading, error } = usePlans();
+  const createMutation = useCreatePlan();
+  
+  // Convert API plans to local format
+  const plans = useMemo(() => apiPlans.map(convertAPIPlanToLocal), [apiPlans]);
+  
   const basePhases = useAppSelector((s) => s.basePhases.phases);
   const dispatch = useAppDispatch();
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -67,38 +77,30 @@ export default function ReleasePlanner() {
   const [statusFilter, setStatusFilter] = useState<FilterStatus>("all");
   const [showFilters, setShowFilters] = useState(false);
 
-  // Replace all existing plans' phases with base phases on mount
-  useEffect(() => {
-    if (basePhases.length > 0 && plans.length > 0) {
-      dispatch(replaceAllPlansPhasesWithBase({ basePhases }));
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Only run once on mount to replace existing phases with base phases
-
   const handleAddButtonClick = () => setDialogOpen(true);
   const handleDialogClose = () => setDialogOpen(false);
-  const handleDialogSubmit = (name: string, description: string) => {
+  const handleDialogSubmit = async (name: string, description: string) => {
     // Use UTC dates for storage
     const nowUTC = getCurrentDateUTC();
     const year = parseInt(nowUTC.split("-")[0]);
-    const id = `plan-${Date.now()}`;
-    const newPlan: Plan = {
-      id,
-      metadata: {
-        id,
+    
+    try {
+      await createMutation.mutateAsync({
         name,
         owner: "Unassigned",
-        startDate: `${year}-01-01`, // UTC format
-        endDate: `${year}-12-31`, // UTC format
+        startDate: `${year}-01-01`,
+        endDate: `${year}-12-31`,
         status: "planned",
         description,
-        // phases will be loaded from basePhases in the reducer
-      },
-      tasks: [],
-    };
-    // Pass basePhases to load them by default
-    dispatch(addPlan({ plan: newPlan, basePhases }));
-    setDialogOpen(false);
+        phases: basePhases.map((bp) => ({
+          name: bp.name,
+          color: bp.color,
+        })),
+      });
+      setDialogOpen(false);
+    } catch (error) {
+      console.error('Error creating plan:', error);
+    }
   };
 
   // Filter and sort plans
@@ -150,15 +152,15 @@ export default function ReleasePlanner() {
   }, [plans, searchQuery, statusFilter, sortBy]);
 
   const handleExpandAll = () => {
-    plans.forEach((p) =>
-      dispatch(setPlanExpanded({ planId: p.id, expanded: true }))
-    );
+    plans.forEach((p) => {
+      dispatch(setPlanExpanded({ planId: p.id, expanded: true }));
+    });
   };
 
   const handleCollapseAll = () => {
-    plans.forEach((p) =>
-      dispatch(setPlanExpanded({ planId: p.id, expanded: false }))
-    );
+    plans.forEach((p) => {
+      dispatch(setPlanExpanded({ planId: p.id, expanded: false }));
+    });
   };
 
   // Get all expanded states at once
@@ -204,6 +206,61 @@ export default function ReleasePlanner() {
         return { label: status, color: "default" as const };
     }
   };
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          minHeight: "60vh",
+          px: { xs: 2, sm: 3 },
+          py: 4,
+        }}
+      >
+        <CircularProgress />
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+          Cargando planes...
+        </Typography>
+      </Box>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          minHeight: "60vh",
+          px: { xs: 2, sm: 3 },
+          py: 4,
+        }}
+      >
+        <Alert severity="error" sx={{ mb: 2 }}>
+          Error al cargar los planes: {error instanceof Error ? error.message : 'Error desconocido'}
+        </Alert>
+        <Fab
+          color="primary"
+          aria-label="Crear nuevo plan de release"
+          onClick={handleAddButtonClick}
+        >
+          <AddIcon />
+        </Fab>
+        <AddPlanDialog
+          open={dialogOpen}
+          onClose={handleDialogClose}
+          onSubmit={handleDialogSubmit}
+        />
+      </Box>
+    );
+  }
 
   if (!plans.length) {
     return (

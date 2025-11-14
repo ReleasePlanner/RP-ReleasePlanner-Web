@@ -3,7 +3,7 @@ import { ITOwner } from '../domain/it-owner.entity';
 import { CreateITOwnerDto } from './dto/create-it-owner.dto';
 import { UpdateITOwnerDto } from './dto/update-it-owner.dto';
 import { ITOwnerResponseDto } from './dto/it-owner-response.dto';
-import { IITOwnerRepository } from '../infrastructure/it-owner.repository';
+import type { IITOwnerRepository } from '../infrastructure/it-owner.repository';
 import { ConflictException, NotFoundException } from '../../common/exceptions/business-exception';
 
 @Injectable()

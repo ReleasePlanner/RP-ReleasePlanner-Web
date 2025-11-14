@@ -8,9 +8,9 @@ import { Logger } from '@nestjs/common';
 const logger = new Logger('Retry');
 
 export function Retry(
-  maxAttempts: number = 3,
-  delay: number = 1000,
-  backoff: number = 2,
+  maxAttempts = 3,
+  delay = 1000,
+  backoff = 2,
 ) {
   return function (
     target: any,
@@ -20,7 +20,7 @@ export function Retry(
     const method = descriptor.value;
 
     descriptor.value = async function (...args: any[]) {
-      let lastError: Error;
+      let lastError: Error | undefined;
       let currentDelay = delay;
 
       for (let attempt = 1; attempt <= maxAttempts; attempt++) {
@@ -29,7 +29,7 @@ export function Retry(
         } catch (error) {
           lastError = error as Error;
           logger.warn(
-            `Attempt ${attempt}/${maxAttempts} failed for ${propertyName}: ${error.message}`,
+            `Attempt ${attempt}/${maxAttempts} failed for ${propertyName}: ${(error as Error).message}`,
           );
 
           if (attempt < maxAttempts) {
@@ -39,9 +39,18 @@ export function Retry(
         }
       }
 
+      if (!lastError) {
+        const error = new Error(`All ${maxAttempts} attempts failed for ${propertyName}`);
+        logger.error(
+          `All ${maxAttempts} attempts failed for ${propertyName}`,
+          error.stack,
+        );
+        throw error;
+      }
+      
       logger.error(
         `All ${maxAttempts} attempts failed for ${propertyName}`,
-        lastError?.stack,
+        lastError.stack,
       );
       throw lastError;
     };

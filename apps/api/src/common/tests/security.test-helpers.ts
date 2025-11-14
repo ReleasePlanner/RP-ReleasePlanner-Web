@@ -173,8 +173,7 @@ export class SecurityTestHelpers {
     ];
 
     for (const attempt of xssAttempts) {
-      const response = await request(app.getHttpServer())
-        [method](url)
+      const response = await request(app.getHttpServer())[method](url)
         .set('Authorization', `Bearer ${token}`)
         .send({ name: attempt, description: attempt });
 

@@ -1,19 +1,29 @@
 {
-  "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "outDir": "dist",
-    "module": "nodenext",
+    "module": "commonjs",
     "types": [
       "node"
     ],
     "rootDir": "src",
-    "moduleResolution": "nodenext",
+    "moduleResolution": "node",
     "tsBuildInfoFile": "dist/tsconfig.app.tsbuildinfo",
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
     "target": "es2021",
     "baseUrl": ".",
-    "paths": {}
+    "paths": {},
+    "typeRoots": ["../../node_modules/@types", "node_modules/@types"],
+    "skipLibCheck": true,
+    "strictPropertyInitialization": false,
+    "strict": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": false,
+    "lib": ["es2022"]
   },
   "include": [
     "src/**/*.ts"
@@ -25,6 +35,8 @@
     "jest.config.cts",
     "src/**/*.spec.ts",
     "src/**/*.test.ts",
+    "src/**/*test*.ts",
+    "src/**/tests/**",
     "eslint.config.js",
     "eslint.config.cjs",
     "eslint.config.mjs"

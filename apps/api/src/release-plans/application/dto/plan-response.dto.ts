@@ -106,7 +106,14 @@ export class GanttCellDataResponseDto {
     this.isMilestone = entity.isMilestone;
     this.milestoneColor = entity.milestoneColor;
     this.comments = entity.comments;
-    this.files = entity.files;
+    this.files = entity.files?.map((file: any) => ({
+      id: file.id,
+      name: file.name,
+      url: file.url,
+      size: file.size,
+      mimeType: file.mimeType,
+      uploadedAt: file.createdAt || file.uploadedAt || new Date(),
+    })) || [];
     this.links = entity.links;
     this.createdAt = entity.createdAt;
     this.updatedAt = entity.updatedAt;

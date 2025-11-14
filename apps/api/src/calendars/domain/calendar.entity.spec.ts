@@ -61,7 +61,18 @@ describe('Calendar', () => {
 
       expect(calendar.days).toHaveLength(1);
       expect(calendar.days[0].name).toBe('Holiday');
+      expect(day.calendarId).toBe(calendar.id);
       expect(calendar.updatedAt.getTime()).toBeGreaterThanOrEqual(oldUpdatedAt.getTime());
+    });
+
+    it('should initialize days array if undefined', () => {
+      const calendar = new Calendar('Calendar');
+      calendar.days = undefined as any;
+      const day = new CalendarDay('Holiday', '2024-01-01', CalendarDayType.HOLIDAY, true);
+
+      calendar.addDay(day);
+
+      expect(calendar.days).toHaveLength(1);
     });
   });
 
@@ -73,6 +84,15 @@ describe('Calendar', () => {
       calendar.removeDay(day.id);
 
       expect(calendar.days).toHaveLength(0);
+    });
+
+    it('should throw error when days array is not initialized', () => {
+      const calendar = new Calendar('Calendar');
+      calendar.days = undefined as any;
+
+      expect(() => {
+        calendar.removeDay('any-id');
+      }).toThrow('No days available');
     });
 
     it('should throw error when day not found', () => {

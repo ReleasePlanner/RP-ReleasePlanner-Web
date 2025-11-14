@@ -124,8 +124,18 @@ export const authService = {
    * Get stored user
    */
   getUser(): User | null {
-    const userStr = localStorage.getItem(USER_STORAGE_KEY);
-    return userStr ? JSON.parse(userStr) : null;
+    try {
+      const userStr = localStorage.getItem(USER_STORAGE_KEY);
+      if (!userStr || userStr === 'undefined' || userStr === 'null') {
+        return null;
+      }
+      return JSON.parse(userStr);
+    } catch (error) {
+      // If JSON is invalid, clear the corrupted data
+      console.warn('Invalid user data in localStorage, clearing...', error);
+      localStorage.removeItem(USER_STORAGE_KEY);
+      return null;
+    }
   },
 
   /**

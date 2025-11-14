@@ -7,7 +7,6 @@ import {
   Injectable,
   UnauthorizedException,
   ConflictException,
-  BadRequestException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
@@ -132,7 +131,7 @@ export class AuthService {
       lastName: registerDto.lastName,
       role: registerDto.role || UserRole.USER,
       isActive: true,
-    });
+    } as Omit<User, 'id' | 'createdAt' | 'updatedAt'>);
 
     const tokens = await this.generateTokens(user);
     
@@ -211,14 +210,14 @@ export class AuthService {
       role: user.role,
     };
 
-    const accessToken = this.jwtService.sign(payload, {
-      expiresIn: this.configService.get<string>('JWT_EXPIRES_IN') || '15m',
-    });
+    const accessToken = this.jwtService.sign(payload as any, {
+      expiresIn: (this.configService.get<string>('JWT_EXPIRES_IN') || '15m') as string,
+    } as any);
 
-    const refreshToken = this.jwtService.sign(payload, {
-      expiresIn: this.configService.get<string>('JWT_REFRESH_EXPIRES_IN') || '7d',
+    const refreshToken = this.jwtService.sign(payload as any, {
+      expiresIn: (this.configService.get<string>('JWT_REFRESH_EXPIRES_IN') || '7d') as string,
       secret: this.configService.get<string>('JWT_REFRESH_SECRET') || 'your-refresh-secret-key-change-in-production',
-    });
+    } as any);
 
     return {
       accessToken,
@@ -245,8 +244,8 @@ export class AuthService {
    */
   async logout(userId: string): Promise<void> {
     await this.userRepository.update(userId, {
-      refreshToken: null,
-      refreshTokenExpiresAt: null,
+      refreshToken: null as any,
+      refreshTokenExpiresAt: null as any,
     });
   }
 }

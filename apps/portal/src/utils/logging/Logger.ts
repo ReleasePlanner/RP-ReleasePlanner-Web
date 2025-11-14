@@ -279,12 +279,17 @@ export class Logger {
 
     // Handle global JavaScript errors
     window.addEventListener("error", (event) => {
-      this.error("Global JavaScript error", new Error(event.message), {
+      const errorMessage = event.message || String(event.error) || 'Unknown error';
+      const error = event.error instanceof Error 
+        ? event.error 
+        : new Error(errorMessage);
+      this.error("Global JavaScript error", error, {
         action: "global_error",
         metadata: {
           filename: event.filename,
           lineno: event.lineno,
           colno: event.colno,
+          errorType: typeof event.error,
         },
       });
     });

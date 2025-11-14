@@ -42,6 +42,12 @@ describe('Product', () => {
       }).toThrow('Product name is required');
     });
 
+    it('should throw error when name is whitespace only', () => {
+      expect(() => {
+        new Product('   ', []);
+      }).toThrow('Product name is required');
+    });
+
     it('should throw error when duplicate component types exist', () => {
       expect(() => {
         new Product('Product', [
@@ -61,6 +67,17 @@ describe('Product', () => {
 
       expect(product.components).toHaveLength(1);
       expect(product.components[0].type).toBe(ComponentType.WEB);
+      expect(component.productId).toBe(product.id);
+    });
+
+    it('should initialize components array if undefined', () => {
+      const product = new Product('Product');
+      product.components = undefined as any;
+      const component = new ComponentVersion(ComponentType.WEB, '1.0.0', '0.9.0');
+
+      product.addComponent(component);
+
+      expect(product.components).toHaveLength(1);
     });
 
     it('should throw error when component type already exists', () => {
@@ -87,6 +104,15 @@ describe('Product', () => {
       expect(product.updatedAt.getTime()).toBeGreaterThanOrEqual(oldUpdatedAt.getTime());
     });
 
+    it('should throw error when components array is not initialized', () => {
+      const product = new Product('Product');
+      product.components = undefined as any;
+
+      expect(() => {
+        product.updateComponent('any-id', { currentVersion: '1.1.0' });
+      }).toThrow('No components available');
+    });
+
     it('should throw error when component not found', () => {
       const product = new Product('Product', []);
 
@@ -104,6 +130,15 @@ describe('Product', () => {
       product.removeComponent(component.id);
 
       expect(product.components).toHaveLength(0);
+    });
+
+    it('should throw error when components array is not initialized', () => {
+      const product = new Product('Product');
+      product.components = undefined as any;
+
+      expect(() => {
+        product.removeComponent('any-id');
+      }).toThrow('No components available');
     });
 
     it('should throw error when component not found', () => {

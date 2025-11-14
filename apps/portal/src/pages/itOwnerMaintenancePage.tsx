@@ -5,21 +5,24 @@
  */
 
 import { useMemo, useState } from "react";
-import { Box, Button } from "@mui/material";
+import { Box, Button, CircularProgress, Alert } from "@mui/material";
 import { Add as AddIcon } from "@mui/icons-material";
 import { PageLayout, PageToolbar, type ViewMode } from "@/components";
-import { useAppSelector, useAppDispatch } from "@/store/hooks";
 import {
-  addITOwner,
-  updateITOwner,
-  deleteITOwner,
-} from "@/state/itOwnersSlice";
-import type { ITOwner } from "@/features/releasePlans/constants/itOwners";
+  useITOwners,
+  useCreateITOwner,
+  useUpdateITOwner,
+  useDeleteITOwner,
+} from "../api/hooks";
+import type { ITOwner } from "../api/services/itOwners.service";
 import { ITOwnerCard, ITOwnerEditDialog } from "@/features/itOwner/components";
 
 export function ITOwnerMaintenancePage() {
-  const dispatch = useAppDispatch();
-  const itOwners = useAppSelector((state) => state.itOwners.itOwners);
+  // API hooks
+  const { data: itOwners = [], isLoading, error } = useITOwners();
+  const createMutation = useCreateITOwner();
+  const updateMutation = useUpdateITOwner();
+  const deleteMutation = useDeleteITOwner();
 
   const [editingOwner, setEditingOwner] = useState<ITOwner | null>(null);
   const [openDialog, setOpenDialog] = useState(false);
@@ -35,17 +38,13 @@ export function ITOwnerMaintenancePage() {
     if (searchQuery.trim()) {
       result = result.filter(
         (owner) =>
-          owner.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          (owner.email &&
-            owner.email.toLowerCase().includes(searchQuery.toLowerCase()))
+          owner.name.toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
 
     // Sort
     if (sortBy === "name") {
       result.sort((a, b) => a.name.localeCompare(b.name));
-    } else if (sortBy === "email") {
-      result.sort((a, b) => (a.email || "").localeCompare(b.email || ""));
     }
 
     return result;
@@ -55,8 +54,7 @@ export function ITOwnerMaintenancePage() {
     setEditingOwner({
       id: `owner-${Date.now()}`,
       name: "",
-      email: "",
-    });
+    } as ITOwner);
     setOpenDialog(true);
   };
 
@@ -65,22 +63,35 @@ export function ITOwnerMaintenancePage() {
     setOpenDialog(true);
   };
 
-  const handleDeleteOwner = (ownerId: string) => {
-    dispatch(deleteITOwner(ownerId));
+  const handleDeleteOwner = async (ownerId: string) => {
+    try {
+      await deleteMutation.mutateAsync(ownerId);
+    } catch (error) {
+      console.error('Error deleting IT owner:', error);
+    }
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!editingOwner) return;
 
-    // Check if this is a new owner or an update
-    const existingOwner = itOwners.find((o) => o.id === editingOwner.id);
-    if (existingOwner) {
-      dispatch(updateITOwner(editingOwner));
-    } else {
-      dispatch(addITOwner(editingOwner));
+    try {
+      const existingOwner = itOwners.find((o) => o.id === editingOwner.id);
+      if (existingOwner) {
+        await updateMutation.mutateAsync({
+          id: editingOwner.id,
+          data: {
+            name: editingOwner.name,
+          },
+        });
+      } else {
+        await createMutation.mutateAsync({
+          name: editingOwner.name,
+        });
+      }
+      handleCloseDialog();
+    } catch (error) {
+      console.error('Error saving IT owner:', error);
     }
-
-    handleCloseDialog();
   };
 
   const handleCloseDialog = () => {
@@ -90,8 +101,31 @@ export function ITOwnerMaintenancePage() {
 
   const sortOptions = [
     { value: "name", label: "Sort: Name" },
-    { value: "email", label: "Sort: Email" },
   ];
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <PageLayout title="IT Owner Maintenance" description="Manage IT Owners and their contact information">
+        <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
+          <CircularProgress />
+        </Box>
+      </PageLayout>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <PageLayout title="IT Owner Maintenance" description="Manage IT Owners and their contact information">
+        <Box p={3}>
+          <Alert severity="error">
+            Error al cargar los IT Owners: {error instanceof Error ? error.message : 'Error desconocido'}
+          </Alert>
+        </Box>
+      </PageLayout>
+    );
+  }
 
   return (
     <PageLayout
@@ -161,3 +195,4 @@ export function ITOwnerMaintenancePage() {
     </PageLayout>
   );
 }
+export default ITOwnerMaintenancePage;

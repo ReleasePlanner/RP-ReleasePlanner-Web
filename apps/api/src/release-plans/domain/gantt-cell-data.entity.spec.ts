@@ -50,6 +50,24 @@ describe('GanttCellData', () => {
         new GanttCellData('');
       }).toThrow('Valid date in YYYY-MM-DD format is required');
     });
+
+    it('should throw error when date is whitespace only', () => {
+      expect(() => {
+        new GanttCellData('   ');
+      }).toThrow('Valid date in YYYY-MM-DD format is required');
+    });
+
+    it('should throw error when date format is invalid (wrong format)', () => {
+      expect(() => {
+        new GanttCellData('01-01-2024');
+      }).toThrow('Valid date in YYYY-MM-DD format is required');
+    });
+
+    it('should throw error when date is invalid (invalid month)', () => {
+      expect(() => {
+        new GanttCellData('2024-13-01');
+      }).toThrow('Valid date in YYYY-MM-DD format is required');
+    });
   });
 });
 

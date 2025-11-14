@@ -20,15 +20,8 @@ import AddPhaseDialog from "../Plan/AddPhaseDialog";
 import PhaseEditDialog from "../Plan/PhaseEditDialog/PhaseEditDialog";
 import { ErrorBoundary } from "../../../../utils/logging/ErrorBoundary";
 import { L, useComponentLogger } from "../../../../utils/logging/simpleLogging";
-import { useAppDispatch } from "@/store/hooks";
-import {
-  updatePlan,
-  updateCellData,
-  toggleCellMilestone,
-  addCellComment,
-  addCellFile,
-  addCellLink,
-} from "../../slice";
+import { useUpdatePlan } from "../../../../api/hooks";
+import { createFullUpdateDto, createPartialUpdateDto } from "../../lib/planConverters";
 import { MilestoneEditDialog } from "../Plan/MilestoneEditDialog";
 import {
   CellCommentsDialog,
@@ -45,6 +38,9 @@ export default function PlanCard({ plan }: PlanCardProps) {
   const log = useComponentLogger("PlanCard");
   const theme = useTheme();
 
+  // API hook for updating plan
+  const updatePlanMutation = useUpdatePlan();
+
   // ⭐ Clean Architecture - Business logic separated in custom hook
   const {
     leftPercent,
@@ -59,9 +55,8 @@ export default function PlanCard({ plan }: PlanCardProps) {
     handlePhaseRangeChange,
     setPhaseOpen,
     setEditOpen,
-  } = usePlanCard(plan);
+  } = usePlanCard(plan, updatePlanMutation);
 
-  const dispatch = useAppDispatch();
   const { metadata, tasks } = plan;
 
   const [milestoneDialogOpen, setMilestoneDialogOpen] = useState(false);
@@ -99,21 +94,22 @@ export default function PlanCard({ plan }: PlanCardProps) {
     setMilestoneDialogOpen(true);
   };
 
-  const handleMilestoneDelete = (milestoneId: string) => {
+  const handleMilestoneDelete = async (milestoneId: string) => {
     const updatedMilestones =
       metadata.milestones?.filter((m) => m.id !== milestoneId) || [];
-    dispatch(
-      updatePlan({
-        ...plan,
-        metadata: {
-          ...metadata,
+    try {
+      await updatePlanMutation.mutateAsync({
+        id: plan.id,
+        data: createPartialUpdateDto(plan, {
           milestones: updatedMilestones,
-        },
-      })
-    );
+        }),
+      });
+    } catch (error) {
+      console.error('Error deleting milestone:', error);
+    }
   };
 
-  const handleMilestoneSave = (milestone: PlanMilestone) => {
+  const handleMilestoneSave = async (milestone: PlanMilestone) => {
     const existingMilestones = metadata.milestones || [];
     const existingIndex = existingMilestones.findIndex(
       (m) => m.id === milestone.id
@@ -126,40 +122,62 @@ export default function PlanCard({ plan }: PlanCardProps) {
           )
         : [...existingMilestones, milestone];
 
-    dispatch(
-      updatePlan({
-        ...plan,
-        metadata: {
-          ...metadata,
+    try {
+      await updatePlanMutation.mutateAsync({
+        id: plan.id,
+        data: createPartialUpdateDto(plan, {
           milestones: updatedMilestones,
-        },
-      })
-    );
+        }),
+      });
+    } catch (error) {
+      console.error('Error saving milestone:', error);
+    }
   };
 
-  const handleReferencesChange = (newReferences: PlanReference[]) => {
+  const handleReferencesChange = async (newReferences: PlanReference[]) => {
     // Only save plan-level references (without date/phaseId)
     // Auto-generated references from cellData and milestones are filtered out
     const planLevelReferences = newReferences.filter(
       (ref) => !ref.date && !ref.phaseId
     );
-    dispatch(
-      updatePlan({
-        ...plan,
-        metadata: {
-          ...metadata,
+    try {
+      await updatePlanMutation.mutateAsync({
+        id: plan.id,
+        data: createPartialUpdateDto(plan, {
           references: planLevelReferences,
-        },
-      })
-    );
+        }),
+      });
+    } catch (error) {
+      console.error('Error updating references:', error);
+    }
   };
 
   // Cell data handlers
   const handleCellDataChange = useCallback(
-    (data: GanttCellData) => {
-      dispatch(updateCellData({ planId: plan.id, cellData: data }));
+    async (data: GanttCellData) => {
+      // Find existing cellData and update or add the new one
+      const existingCellData = metadata.cellData || [];
+      const existingIndex = existingCellData.findIndex(
+        (cd) => cd.phaseId === data.phaseId && cd.date === data.date
+      );
+      
+      const updatedCellData =
+        existingIndex >= 0
+          ? existingCellData.map((cd, idx) => (idx === existingIndex ? data : cd))
+          : [...existingCellData, data];
+
+      try {
+        await updatePlanMutation.mutateAsync({
+          id: plan.id,
+          data: createPartialUpdateDto(plan, {
+            cellData: updatedCellData,
+          }),
+        });
+      } catch (error) {
+        console.error('Error updating cell data:', error);
+      }
     },
-    [dispatch, plan.id]
+    [plan, metadata.cellData, updatePlanMutation]
   );
 
   const handleAddCellComment = useCallback(
@@ -178,21 +196,55 @@ export default function PlanCard({ plan }: PlanCardProps) {
   }, []);
 
   const handleToggleCellMilestone = useCallback(
-    (phaseId: string, date: string) => {
-      dispatch(
-        toggleCellMilestone({
-          planId: plan.id,
-          phaseId: phaseId || undefined, // Convert empty string to undefined for day-level
-          date,
-          milestoneColor: theme.palette.warning.main,
-        })
+    async (phaseId: string, date: string) => {
+      const existingCellData = metadata.cellData || [];
+      const cellDataIndex = existingCellData.findIndex(
+        (cd) => cd.phaseId === (phaseId || undefined) && cd.date === date
       );
+
+      let updatedCellData: GanttCellData[];
+      if (cellDataIndex >= 0) {
+        // Toggle existing milestone
+        const existing = existingCellData[cellDataIndex];
+        updatedCellData = existingCellData.map((cd, idx) =>
+          idx === cellDataIndex
+            ? {
+                ...cd,
+                isMilestone: !cd.isMilestone,
+                milestoneColor: cd.isMilestone ? undefined : theme.palette.warning.main,
+              }
+            : cd
+        );
+      } else {
+        // Create new cell data with milestone
+        updatedCellData = [
+          ...existingCellData,
+          {
+            id: `cell-${Date.now()}`,
+            phaseId: phaseId || undefined,
+            date,
+            isMilestone: true,
+            milestoneColor: theme.palette.warning.main,
+          },
+        ];
+      }
+
+      try {
+        await updatePlanMutation.mutateAsync({
+          id: plan.id,
+          data: createPartialUpdateDto(plan, {
+            cellData: updatedCellData,
+          }),
+        });
+      } catch (error) {
+        console.error('Error toggling cell milestone:', error);
+      }
     },
-    [dispatch, plan.id, theme.palette.warning.main]
+    [plan, metadata.cellData, updatePlanMutation, theme.palette.warning.main]
   );
 
   const handleSaveComment = useCallback(
-    (text: string) => {
+    async (text: string) => {
       if (!cellDialogState.date) return; // date is required, phaseId can be null for day-level
       const comment: GanttCellComment = {
         id: `comment-${Date.now()}`,
@@ -200,20 +252,53 @@ export default function PlanCard({ plan }: PlanCardProps) {
         author: metadata.owner,
         createdAt: new Date().toISOString(),
       };
-      dispatch(
-        addCellComment({
-          planId: plan.id,
-          phaseId: cellDialogState.phaseId || undefined, // Convert null to undefined for day-level
-          date: cellDialogState.date,
-          comment,
-        })
+      
+      const existingCellData = metadata.cellData || [];
+      const cellDataIndex = existingCellData.findIndex(
+        (cd) => cd.phaseId === (cellDialogState.phaseId || undefined) && cd.date === cellDialogState.date
       );
+
+      let updatedCellData: GanttCellData[];
+      if (cellDataIndex >= 0) {
+        // Add comment to existing cell data
+        const existing = existingCellData[cellDataIndex];
+        updatedCellData = existingCellData.map((cd, idx) =>
+          idx === cellDataIndex
+            ? {
+                ...cd,
+                comments: [...(cd.comments || []), comment],
+              }
+            : cd
+        );
+      } else {
+        // Create new cell data with comment
+        updatedCellData = [
+          ...existingCellData,
+          {
+            id: `cell-${Date.now()}`,
+            phaseId: cellDialogState.phaseId || undefined,
+            date: cellDialogState.date,
+            comments: [comment],
+          },
+        ];
+      }
+
+      try {
+        await updatePlanMutation.mutateAsync({
+          id: plan.id,
+          data: createPartialUpdateDto(plan, {
+            cellData: updatedCellData,
+          }),
+        });
+      } catch (error) {
+        console.error('Error saving comment:', error);
+      }
     },
-    [dispatch, plan.id, cellDialogState, metadata.owner]
+    [plan, metadata.cellData, cellDialogState, metadata.owner, updatePlanMutation]
   );
 
   const handleSaveFile = useCallback(
-    (file: { name: string; url: string }) => {
+    async (file: { name: string; url: string }) => {
       if (!cellDialogState.date) return; // date is required, phaseId can be null for day-level
       const fileData: GanttCellFile = {
         id: `file-${Date.now()}`,
@@ -221,20 +306,53 @@ export default function PlanCard({ plan }: PlanCardProps) {
         url: file.url,
         uploadedAt: new Date().toISOString(),
       };
-      dispatch(
-        addCellFile({
-          planId: plan.id,
-          phaseId: cellDialogState.phaseId || undefined, // Convert null to undefined for day-level
-          date: cellDialogState.date,
-          file: fileData,
-        })
+      
+      const existingCellData = metadata.cellData || [];
+      const cellDataIndex = existingCellData.findIndex(
+        (cd) => cd.phaseId === (cellDialogState.phaseId || undefined) && cd.date === cellDialogState.date
       );
+
+      let updatedCellData: GanttCellData[];
+      if (cellDataIndex >= 0) {
+        // Add file to existing cell data
+        const existing = existingCellData[cellDataIndex];
+        updatedCellData = existingCellData.map((cd, idx) =>
+          idx === cellDataIndex
+            ? {
+                ...cd,
+                files: [...(cd.files || []), fileData],
+              }
+            : cd
+        );
+      } else {
+        // Create new cell data with file
+        updatedCellData = [
+          ...existingCellData,
+          {
+            id: `cell-${Date.now()}`,
+            phaseId: cellDialogState.phaseId || undefined,
+            date: cellDialogState.date,
+            files: [fileData],
+          },
+        ];
+      }
+
+      try {
+        await updatePlanMutation.mutateAsync({
+          id: plan.id,
+          data: createPartialUpdateDto(plan, {
+            cellData: updatedCellData,
+          }),
+        });
+      } catch (error) {
+        console.error('Error saving file:', error);
+      }
     },
-    [dispatch, plan.id, cellDialogState]
+    [plan, metadata.cellData, cellDialogState, updatePlanMutation]
   );
 
   const handleSaveLink = useCallback(
-    (link: { title: string; url: string; description?: string }) => {
+    async (link: { title: string; url: string; description?: string }) => {
       if (!cellDialogState.date) return; // date is required, phaseId can be null for day-level
       const linkData: GanttCellLink = {
         id: `link-${Date.now()}`,
@@ -243,91 +361,166 @@ export default function PlanCard({ plan }: PlanCardProps) {
         description: link.description,
         createdAt: new Date().toISOString(),
       };
-      dispatch(
-        addCellLink({
-          planId: plan.id,
-          phaseId: cellDialogState.phaseId || undefined, // Convert null to undefined for day-level
-          date: cellDialogState.date,
-          link: linkData,
-        })
+      
+      const existingCellData = metadata.cellData || [];
+      const cellDataIndex = existingCellData.findIndex(
+        (cd) => cd.phaseId === (cellDialogState.phaseId || undefined) && cd.date === cellDialogState.date
       );
+
+      let updatedCellData: GanttCellData[];
+      if (cellDataIndex >= 0) {
+        // Add link to existing cell data
+        const existing = existingCellData[cellDataIndex];
+        updatedCellData = existingCellData.map((cd, idx) =>
+          idx === cellDataIndex
+            ? {
+                ...cd,
+                links: [...(cd.links || []), linkData],
+              }
+            : cd
+        );
+      } else {
+        // Create new cell data with link
+        updatedCellData = [
+          ...existingCellData,
+          {
+            id: `cell-${Date.now()}`,
+            phaseId: cellDialogState.phaseId || undefined,
+            date: cellDialogState.date,
+            links: [linkData],
+          },
+        ];
+      }
+
+      try {
+        await updatePlanMutation.mutateAsync({
+          id: plan.id,
+          data: createPartialUpdateDto(plan, {
+            cellData: updatedCellData,
+          }),
+        });
+      } catch (error) {
+        console.error('Error saving link:', error);
+      }
     },
-    [dispatch, plan.id, cellDialogState]
+    [plan, metadata.cellData, cellDialogState, updatePlanMutation]
   );
 
   const handleDeleteComment = useCallback(
-    (commentId: string) => {
+    async (commentId: string) => {
       if (!cellDialogState.date) return;
-      const cellData = metadata.cellData?.find(
+      const existingCellData = metadata.cellData || [];
+      const cellDataIndex = existingCellData.findIndex(
         (cd) =>
           cd.phaseId === (cellDialogState.phaseId || undefined) &&
           cd.date === cellDialogState.date
       );
-      if (!cellData) return;
+      if (cellDataIndex < 0) return;
+      
+      const cellData = existingCellData[cellDataIndex];
       const updatedComments = (cellData.comments || []).filter(
         (c) => c.id !== commentId
       );
-      dispatch(
-        updateCellData({
-          planId: plan.id,
-          cellData: {
-            ...cellData,
-            comments: updatedComments,
-          },
-        })
+      
+      const updatedCellData = existingCellData.map((cd, idx) =>
+        idx === cellDataIndex
+          ? {
+              ...cd,
+              comments: updatedComments,
+            }
+          : cd
       );
+
+      try {
+        await updatePlanMutation.mutateAsync({
+          id: plan.id,
+          data: createPartialUpdateDto(plan, {
+            cellData: updatedCellData,
+          }),
+        });
+      } catch (error) {
+        console.error('Error deleting comment:', error);
+      }
     },
-    [dispatch, plan.id, cellDialogState, metadata.cellData]
+    [plan, metadata.cellData, cellDialogState, updatePlanMutation]
   );
 
   const handleDeleteFile = useCallback(
-    (fileId: string) => {
+    async (fileId: string) => {
       if (!cellDialogState.date) return;
-      const cellData = metadata.cellData?.find(
+      const existingCellData = metadata.cellData || [];
+      const cellDataIndex = existingCellData.findIndex(
         (cd) =>
           cd.phaseId === (cellDialogState.phaseId || undefined) &&
           cd.date === cellDialogState.date
       );
-      if (!cellData) return;
+      if (cellDataIndex < 0) return;
+      
+      const cellData = existingCellData[cellDataIndex];
       const updatedFiles = (cellData.files || []).filter(
         (f) => f.id !== fileId
       );
-      dispatch(
-        updateCellData({
-          planId: plan.id,
-          cellData: {
-            ...cellData,
-            files: updatedFiles,
-          },
-        })
+      
+      const updatedCellData = existingCellData.map((cd, idx) =>
+        idx === cellDataIndex
+          ? {
+              ...cd,
+              files: updatedFiles,
+            }
+          : cd
       );
+
+      try {
+        await updatePlanMutation.mutateAsync({
+          id: plan.id,
+          data: createPartialUpdateDto(plan, {
+            cellData: updatedCellData,
+          }),
+        });
+      } catch (error) {
+        console.error('Error deleting file:', error);
+      }
     },
-    [dispatch, plan.id, cellDialogState, metadata.cellData]
+    [plan, metadata.cellData, cellDialogState, updatePlanMutation]
   );
 
   const handleDeleteLink = useCallback(
-    (linkId: string) => {
+    async (linkId: string) => {
       if (!cellDialogState.date) return;
-      const cellData = metadata.cellData?.find(
+      const existingCellData = metadata.cellData || [];
+      const cellDataIndex = existingCellData.findIndex(
         (cd) =>
           cd.phaseId === (cellDialogState.phaseId || undefined) &&
           cd.date === cellDialogState.date
       );
-      if (!cellData) return;
+      if (cellDataIndex < 0) return;
+      
+      const cellData = existingCellData[cellDataIndex];
       const updatedLinks = (cellData.links || []).filter(
         (l) => l.id !== linkId
       );
-      dispatch(
-        updateCellData({
-          planId: plan.id,
-          cellData: {
-            ...cellData,
-            links: updatedLinks,
-          },
-        })
+      
+      const updatedCellData = existingCellData.map((cd, idx) =>
+        idx === cellDataIndex
+          ? {
+              ...cd,
+              links: updatedLinks,
+            }
+          : cd
       );
+
+      try {
+        await updatePlanMutation.mutateAsync({
+          id: plan.id,
+          data: createPartialUpdateDto(plan, {
+            cellData: updatedCellData,
+          }),
+        });
+      } catch (error) {
+        console.error('Error deleting link:', error);
+      }
     },
-    [dispatch, plan.id, cellDialogState, metadata.cellData]
+    [plan, metadata.cellData, cellDialogState, updatePlanMutation]
   );
 
   const currentCellData = cellDialogState.date
@@ -523,84 +716,90 @@ export default function PlanCard({ plan }: PlanCardProps) {
     );
   };
 
-  const handleProductChange = (productId: string) => {
+  const handleProductChange = async (productId: string) => {
     return L.track(
-      () => {
-        // Update plan metadata
-        dispatch(
-          updatePlan({
-            ...plan,
-            metadata: {
-              ...metadata,
+      async () => {
+        try {
+          await updatePlanMutation.mutateAsync({
+            id: plan.id,
+            data: createPartialUpdateDto(plan, {
               productId: productId || undefined,
-            },
-          })
-        );
-        return { planId: plan.id, productId };
+            }),
+          });
+          return { planId: plan.id, productId };
+        } catch (error) {
+          console.error('Error updating product:', error);
+          throw error;
+        }
       },
       "product_selected",
       "PlanCard"
     );
   };
 
-  const handleDescriptionChange = (description: string) => {
-    dispatch(
-      updatePlan({
-        ...plan,
-        metadata: {
-          ...metadata,
+  const handleDescriptionChange = async (description: string) => {
+    try {
+      await updatePlanMutation.mutateAsync({
+        id: plan.id,
+        data: createPartialUpdateDto(plan, {
           description: description || undefined,
-        },
-      })
-    );
+        }),
+      });
+    } catch (error) {
+      console.error('Error updating description:', error);
+    }
   };
 
-  const handleStatusChange = (status: PlanStatus) => {
-    dispatch(
-      updatePlan({
-        ...plan,
-        metadata: {
-          ...metadata,
+  const handleStatusChange = async (status: PlanStatus) => {
+    try {
+      await updatePlanMutation.mutateAsync({
+        id: plan.id,
+        data: createPartialUpdateDto(plan, {
           status,
-        },
-      })
-    );
+        }),
+      });
+    } catch (error) {
+      console.error('Error updating status:', error);
+    }
   };
 
-  const handleITOwnerChange = (itOwnerId: string) => {
-    dispatch(
-      updatePlan({
-        ...plan,
-        metadata: {
-          ...metadata,
+  const handleITOwnerChange = async (itOwnerId: string) => {
+    try {
+      await updatePlanMutation.mutateAsync({
+        id: plan.id,
+        data: createPartialUpdateDto(plan, {
           itOwner: itOwnerId || undefined,
-        },
-      })
-    );
+        }),
+      });
+    } catch (error) {
+      console.error('Error updating IT owner:', error);
+    }
   };
 
-  const handleStartDateChange = (date: string) => {
-    dispatch(
-      updatePlan({
-        ...plan,
-        metadata: {
-          ...metadata,
+  const handleStartDateChange = async (date: string) => {
+    try {
+      await updatePlanMutation.mutateAsync({
+        id: plan.id,
+        data: createPartialUpdateDto(plan, {
           startDate: date,
-        },
-      })
-    );
+        }),
+      });
+    } catch (error) {
+      console.error('Error updating start date:', error);
+    }
   };
 
-  const handleEndDateChange = (date: string) => {
-    dispatch(
-      updatePlan({
-        ...plan,
-        metadata: {
-          ...metadata,
+  const handleEndDateChange = async (date: string) => {
+    try {
+      await updatePlanMutation.mutateAsync({
+        id: plan.id,
+        data: createPartialUpdateDto(plan, {
           endDate: date,
-        },
-      })
-    );
+        }),
+      });
+    } catch (error) {
+      console.error('Error updating end date:', error);
+    }
   };
 
   const openEditOptimized = (phaseId: string) => {
@@ -636,40 +835,43 @@ export default function PlanCard({ plan }: PlanCardProps) {
     );
   };
 
-  const handleFeatureIdsChange = (newFeatureIds: string[]) => {
-    dispatch(
-      updatePlan({
-        ...plan,
-        metadata: {
-          ...metadata,
+  const handleFeatureIdsChange = async (newFeatureIds: string[]) => {
+    try {
+      await updatePlanMutation.mutateAsync({
+        id: plan.id,
+        data: createPartialUpdateDto(plan, {
           featureIds: newFeatureIds,
-        },
-      })
-    );
+        }),
+      });
+    } catch (error) {
+      console.error('Error updating feature IDs:', error);
+    }
   };
 
-  const handleComponentsChange = (newComponents: PlanComponent[]) => {
-    dispatch(
-      updatePlan({
-        ...plan,
-        metadata: {
-          ...metadata,
+  const handleComponentsChange = async (newComponents: PlanComponent[]) => {
+    try {
+      await updatePlanMutation.mutateAsync({
+        id: plan.id,
+        data: createPartialUpdateDto(plan, {
           components: newComponents,
-        },
-      })
-    );
+        }),
+      });
+    } catch (error) {
+      console.error('Error updating components:', error);
+    }
   };
 
-  const handleCalendarIdsChange = (newCalendarIds: string[]) => {
-    dispatch(
-      updatePlan({
-        ...plan,
-        metadata: {
-          ...metadata,
+  const handleCalendarIdsChange = async (newCalendarIds: string[]) => {
+    try {
+      await updatePlanMutation.mutateAsync({
+        id: plan.id,
+        data: createPartialUpdateDto(plan, {
           calendarIds: newCalendarIds,
-        },
-      })
-    );
+        }),
+      });
+    } catch (error) {
+      console.error('Error updating calendar IDs:', error);
+    }
   };
 
   // ⭐ Error Boundary with automatic error logging and recovery UI
@@ -771,20 +973,21 @@ export default function PlanCard({ plan }: PlanCardProps) {
         phase={editingPhase}
         planPhases={metadata.phases || []}
         onCancel={() => setEditOpen(false)}
-        onSave={(updatedPhase) => {
-          dispatch(
-            updatePhase({
-              planId: plan.id,
-              phaseId: updatedPhase.id,
-              changes: {
-                name: updatedPhase.name,
-                startDate: updatedPhase.startDate,
-                endDate: updatedPhase.endDate,
-                color: updatedPhase.color,
-              },
-            })
+        onSave={async (updatedPhase) => {
+          const updatedPhases = (metadata.phases || []).map((p) =>
+            p.id === updatedPhase.id ? updatedPhase : p
           );
-          setEditOpen(false);
+          try {
+            await updatePlanMutation.mutateAsync({
+              id: plan.id,
+              data: createPartialUpdateDto(plan, {
+                phases: updatedPhases,
+              }),
+            });
+            setEditOpen(false);
+          } catch (error) {
+            console.error('Error updating phase:', error);
+          }
         }}
       />
 

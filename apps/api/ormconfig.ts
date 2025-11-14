@@ -6,7 +6,7 @@
 import { DataSource } from 'typeorm';
 import * as path from 'path';
 
-export default new DataSource({
+const dataSource = new DataSource({
   type: 'postgres',
   host: process.env.DATABASE_HOST || 'localhost',
   port: parseInt(process.env.DATABASE_PORT || '5432', 10),
@@ -18,4 +18,6 @@ export default new DataSource({
   synchronize: false, // Never use synchronize in production
   logging: process.env.NODE_ENV === 'development',
 });
+
+export = dataSource;
 

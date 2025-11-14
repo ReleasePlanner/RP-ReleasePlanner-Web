@@ -25,6 +25,7 @@ import {
   CardActions,
   InputAdornment,
   Alert,
+  CircularProgress,
 } from "@mui/material";
 import {
   Add as AddIcon,
@@ -35,18 +36,22 @@ import {
   FilterList as FilterListIcon,
   ContentCopy as DuplicateIcon,
 } from "@mui/icons-material";
-import { useAppSelector, useAppDispatch } from "../store/hooks";
 import {
-  addBasePhase,
-  updateBasePhase,
-  removeBasePhase,
-} from "../features/releasePlans/basePhasesSlice";
-import type { BasePhase } from "../features/releasePlans/types";
+  useBasePhases,
+  useCreateBasePhase,
+  useUpdateBasePhase,
+  useDeleteBasePhase,
+} from "../api/hooks";
+import type { BasePhase } from "../api/services/basePhases.service";
 
 export function PhasesMaintenancePage() {
   const theme = useTheme();
-  const dispatch = useAppDispatch();
-  const phases = useAppSelector((state) => state.basePhases.phases);
+  
+  // API hooks
+  const { data: phases = [], isLoading, error } = useBasePhases();
+  const createMutation = useCreateBasePhase();
+  const updateMutation = useUpdateBasePhase();
+  const deleteMutation = useDeleteBasePhase();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [phaseToDelete, setPhaseToDelete] = useState<BasePhase | null>(null);
@@ -88,31 +93,31 @@ export function PhasesMaintenancePage() {
     });
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!formData.name?.trim()) return;
 
-    if (editingPhase) {
-      dispatch(
-        updateBasePhase({
+    try {
+      if (editingPhase) {
+        await updateMutation.mutateAsync({
           id: editingPhase.id,
-          changes: {
+          data: {
             name: formData.name.trim(),
             color: formData.color || "#1976D2",
             category: formData.category?.trim() || undefined,
           },
-        })
-      );
-    } else {
-      dispatch(
-        addBasePhase({
-          id: `base-${Date.now()}`,
+        });
+      } else {
+        await createMutation.mutateAsync({
           name: formData.name.trim(),
           color: formData.color || "#1976D2",
           category: formData.category?.trim() || undefined,
-        })
-      );
+        });
+      }
+      handleCloseDialog();
+    } catch (error) {
+      console.error('Error saving phase:', error);
+      // Error handling is done by React Query
     }
-    handleCloseDialog();
   };
 
   const handleDeleteClick = (phase: BasePhase) => {
@@ -120,11 +125,16 @@ export function PhasesMaintenancePage() {
     setDeleteDialogOpen(true);
   };
 
-  const handleDeleteConfirm = () => {
+  const handleDeleteConfirm = async () => {
     if (phaseToDelete) {
-      dispatch(removeBasePhase(phaseToDelete.id));
-      setDeleteDialogOpen(false);
-      setPhaseToDelete(null);
+      try {
+        await deleteMutation.mutateAsync(phaseToDelete.id);
+        setDeleteDialogOpen(false);
+        setPhaseToDelete(null);
+      } catch (error) {
+        console.error('Error deleting phase:', error);
+        // Error handling is done by React Query
+      }
     }
   };
 
@@ -190,6 +200,26 @@ export function PhasesMaintenancePage() {
     "Soporte",
     "Otros",
   ];
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <Box sx={{ p: { xs: 2, sm: 3 }, maxWidth: 1400, mx: "auto", display: "flex", justifyContent: "center", alignItems: "center", minHeight: "400px" }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <Box sx={{ p: { xs: 2, sm: 3 }, maxWidth: 1400, mx: "auto" }}>
+        <Alert severity="error">
+          Error al cargar las fases: {error instanceof Error ? error.message : 'Error desconocido'}
+        </Alert>
+      </Box>
+    );
+  }
 
   return (
     <Box sx={{ p: { xs: 2, sm: 3 }, maxWidth: 1400, mx: "auto" }}>
@@ -619,9 +649,12 @@ export function PhasesMaintenancePage() {
           <Button
             onClick={handleSave}
             variant="contained"
-            disabled={!formData.name?.trim()}
+            disabled={!formData.name?.trim() || createMutation.isPending || updateMutation.isPending}
             sx={{ textTransform: "none" }}
           >
+            {createMutation.isPending || updateMutation.isPending ? (
+              <CircularProgress size={20} sx={{ mr: 1 }} />
+            ) : null}
             {editingPhase ? "Guardar Cambios" : "Crear Fase"}
           </Button>
         </DialogActions>
@@ -698,8 +731,12 @@ export function PhasesMaintenancePage() {
             onClick={handleDeleteConfirm}
             variant="contained"
             color="error"
+            disabled={deleteMutation.isPending}
             sx={{ textTransform: "none" }}
           >
+            {deleteMutation.isPending ? (
+              <CircularProgress size={20} sx={{ mr: 1 }} color="inherit" />
+            ) : null}
             Eliminar
           </Button>
         </DialogActions>
@@ -708,3 +745,4 @@ export function PhasesMaintenancePage() {
   );
 }
 
+export default PhasesMaintenancePage;

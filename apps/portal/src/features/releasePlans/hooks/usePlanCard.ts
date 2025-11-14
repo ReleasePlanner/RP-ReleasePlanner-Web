@@ -1,14 +1,19 @@
 import { useCallback, useState } from "react";
-import { useAppDispatch, useAppSelector } from "../../../store/hooks";
-import { addPhase, updatePhase } from "../slice";
+import { useAppSelector, useAppDispatch } from "../../../store/hooks";
 import { setPlanLeftPercent, setPlanExpanded } from "../../../store/store";
 import type { Plan, PlanPhase } from "../types";
+import type { UseMutationResult } from "@tanstack/react-query";
+import type { UpdatePlanDto } from "../../../api/services/plans.service";
+import { createPartialUpdateDto } from "../lib/planConverters";
 
 /**
  * Custom hook for PlanCard business logic
  * Follows DRY principle - centralizes all plan card state management
  */
-export function usePlanCard(plan: Plan) {
+export function usePlanCard(
+  plan: Plan,
+  updatePlanMutation: UseMutationResult<any, Error, { id: string; data: UpdatePlanDto }, unknown>
+) {
   const dispatch = useAppDispatch();
 
   // Layout state
@@ -53,24 +58,44 @@ export function usePlanCard(plan: Plan) {
   );
 
   const handleAddPhase = useCallback(
-    (name: string) => {
-      dispatch(addPhase({ planId: plan.id, name }));
-      setPhaseOpen(false);
+    async (name: string) => {
+      const newPhase: PlanPhase = {
+        id: `phase-${Date.now()}`,
+        name,
+      };
+      const updatedPhases = [...(plan.metadata.phases || []), newPhase];
+      try {
+        await updatePlanMutation.mutateAsync({
+          id: plan.id,
+          data: createPartialUpdateDto(plan, {
+            phases: updatedPhases,
+          }),
+        });
+        setPhaseOpen(false);
+      } catch (error) {
+        console.error('Error adding phase:', error);
+      }
     },
-    [dispatch, plan.id]
+    [plan, updatePlanMutation]
   );
 
   const handlePhaseRangeChange = useCallback(
-    (phaseId: string, startDate: string, endDate: string) => {
-      dispatch(
-        updatePhase({
-          planId: plan.id,
-          phaseId,
-          changes: { startDate, endDate },
-        })
+    async (phaseId: string, startDate: string, endDate: string) => {
+      const updatedPhases = (plan.metadata.phases || []).map((p) =>
+        p.id === phaseId ? { ...p, startDate, endDate } : p
       );
+      try {
+        await updatePlanMutation.mutateAsync({
+          id: plan.id,
+          data: createPartialUpdateDto(plan, {
+            phases: updatedPhases,
+          }),
+        });
+      } catch (error) {
+        console.error('Error updating phase range:', error);
+      }
     },
-    [dispatch, plan.id]
+    [plan, updatePlanMutation]
   );
 
   return {

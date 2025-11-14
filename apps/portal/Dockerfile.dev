@@ -10,7 +10,7 @@ COPY nx.json ./
 COPY tsconfig.base.json ./
 
 # Instalar todas las dependencias (incluyendo dev dependencies)
-RUN npm ci
+RUN npm ci --legacy-peer-deps
 
 # Exponer puerto 5173 (Vite default)
 EXPOSE 5173

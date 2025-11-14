@@ -45,6 +45,48 @@ export class Feature extends BaseEntity {
   @Index()
   productId: string;
 
+  constructor(
+    name?: string,
+    description?: string,
+    category?: FeatureCategory,
+    status?: FeatureStatus,
+    createdBy?: ProductOwner,
+    technicalDescription?: string,
+    businessDescription?: string,
+    productId?: string,
+  ) {
+    super();
+    if (name !== undefined) {
+      this.name = name;
+    }
+    if (description !== undefined) {
+      this.description = description;
+    }
+    if (category !== undefined) {
+      this.category = category;
+      this.categoryId = category.id;
+    }
+    if (status !== undefined) {
+      this.status = status;
+    }
+    if (createdBy !== undefined) {
+      this.createdBy = createdBy;
+      this.createdById = createdBy.id;
+    }
+    if (technicalDescription !== undefined) {
+      this.technicalDescription = technicalDescription;
+    }
+    if (businessDescription !== undefined) {
+      this.businessDescription = businessDescription;
+    }
+    if (productId !== undefined) {
+      this.productId = productId;
+    }
+    if (name !== undefined && description !== undefined && productId !== undefined) {
+      this.validate();
+    }
+  }
+
   validate(): void {
     if (!this.name || this.name.trim().length === 0) {
       throw new Error('Feature name is required');

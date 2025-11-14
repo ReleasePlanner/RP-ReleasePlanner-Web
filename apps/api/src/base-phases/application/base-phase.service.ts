@@ -8,7 +8,7 @@ import { BasePhase } from '../domain/base-phase.entity';
 import { CreateBasePhaseDto } from './dto/create-base-phase.dto';
 import { UpdateBasePhaseDto } from './dto/update-base-phase.dto';
 import { BasePhaseResponseDto } from './dto/base-phase-response.dto';
-import { IBasePhaseRepository } from '../infrastructure/base-phase.repository';
+import type { IBasePhaseRepository } from '../infrastructure/base-phase.repository';
 import { ConflictException, NotFoundException } from '../../common/exceptions/business-exception';
 
 @Injectable()

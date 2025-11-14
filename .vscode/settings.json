@@ -1,0 +1,34 @@
+{
+  "jest.autoRun": "off",
+  "jest.showCoverageOnLoad": true,
+  "jest.coverageFormatter": "DefaultFormatter",
+  "jest.coverageColors": {
+    "covered": "rgba(9, 156, 65, 0.4)",
+    "uncovered": "rgba(121, 31, 10, 0.4)",
+    "partiallyCovered": "rgba(235, 198, 52, 0.4)"
+  },
+  "jest.jestCommandLine": "npx nx test api --coverage",
+  "jest.rootPath": "apps/api",
+  "jest.testExplorer": {
+    "enabled": true,
+    "showCoverageOnLoad": true
+  },
+  "coverage-gutters.showGutterCoverage": true,
+  "coverage-gutters.showLineCoverage": true,
+  "coverage-gutters.showRulerCoverage": true,
+  "coverage-gutters.coverageFileNames": [
+    "coverage/lcov.info",
+    "**/coverage/lcov.info",
+    "**/coverage/api/lcov.info",
+    "coverage/api/lcov.info"
+  ],
+  "coverage-gutters.lcovname": "lcov.info",
+  "jest-runner.jestCommand": "npx nx test api",
+  "jest-runner.runOptions": {
+    "updateSnapshot": false,
+    "verbose": false
+  },
+  "files.exclude": {
+    "**/coverage": false
+  }
+}

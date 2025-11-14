@@ -1,6 +1,5 @@
 import { Entity, Column, ManyToOne, JoinColumn, Index } from 'typeorm';
 import { BaseEntity } from '../../common/database/base.entity';
-import { Calendar } from './calendar.entity';
 
 export enum CalendarDayType {
   HOLIDAY = 'holiday',
@@ -28,9 +27,27 @@ export class CalendarDay extends BaseEntity {
   @Column({ type: 'uuid' })
   calendarId: string;
 
-  @ManyToOne(() => Calendar, (calendar) => calendar.days, { onDelete: 'CASCADE' })
+  @ManyToOne(() => require('./calendar.entity').Calendar, (calendar: any) => calendar.days, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'calendarId' })
-  calendar: Calendar;
+  calendar: any;
+
+  constructor(
+    name?: string,
+    date?: string,
+    type?: CalendarDayType,
+    recurring?: boolean,
+    description?: string,
+  ) {
+    super();
+    if (name !== undefined) this.name = name;
+    if (date !== undefined) this.date = date;
+    if (type !== undefined) this.type = type;
+    if (recurring !== undefined) this.recurring = recurring;
+    if (description !== undefined) this.description = description;
+    if (name || date || type !== undefined) {
+      this.validate();
+    }
+  }
 
   validate(): void {
     if (!this.name || this.name.trim().length === 0) {
