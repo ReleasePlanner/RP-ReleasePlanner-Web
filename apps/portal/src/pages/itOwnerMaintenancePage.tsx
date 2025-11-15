@@ -5,7 +5,7 @@
  */
 
 import { useMemo, useState } from "react";
-import { Box, Button, CircularProgress, Alert } from "@mui/material";
+import { Box, Button, CircularProgress, Alert, useTheme, alpha, Typography } from "@mui/material";
 import { Add as AddIcon } from "@mui/icons-material";
 import { PageLayout, PageToolbar, type ViewMode } from "@/components";
 import {
@@ -18,6 +18,8 @@ import type { ITOwner } from "../api/services/itOwners.service";
 import { ITOwnerCard, ITOwnerEditDialog } from "@/features/itOwner/components";
 
 export function ITOwnerMaintenancePage() {
+  const theme = useTheme();
+  
   // API hooks
   const { data: itOwners = [], isLoading, error } = useITOwners();
   const createMutation = useCreateITOwner();
@@ -154,6 +156,10 @@ export function ITOwnerMaintenancePage() {
             px: 3,
             py: 1.5,
             borderRadius: 2,
+            boxShadow: `0 2px 8px ${alpha(theme.palette.primary.main, 0.24)}`,
+            "&:hover": {
+              boxShadow: `0 4px 12px ${alpha(theme.palette.primary.main, 0.32)}`,
+            },
           }}
         >
           Add IT Owner
@@ -162,25 +168,63 @@ export function ITOwnerMaintenancePage() {
     >
       <Box
         sx={{
-          display: viewMode === "grid" ? "grid" : "flex",
-          flexDirection: viewMode === "list" ? "column" : undefined,
-          gridTemplateColumns: {
-            xs: "1fr",
-            sm: "repeat(2, 1fr)",
-            md: "repeat(3, 1fr)",
-            lg: "repeat(4, 1fr)",
-          },
+          display: "grid",
+          gridTemplateColumns:
+            viewMode === "grid"
+              ? {
+                  xs: "1fr",
+                  sm: "repeat(auto-fill, minmax(280px, 1fr))",
+                  md: "repeat(auto-fill, minmax(300px, 1fr))",
+                  lg: "repeat(3, 1fr)",
+                  xl: "repeat(4, 1fr)",
+                }
+              : "1fr",
           gap: 3,
+          pb: 2,
         }}
       >
-        {filteredAndSortedOwners.map((owner) => (
-          <ITOwnerCard
-            key={owner.id}
-            owner={owner}
-            onEdit={() => handleEditOwner(owner)}
-            onDelete={() => handleDeleteOwner(owner.id)}
-          />
-        ))}
+        {filteredAndSortedOwners.length === 0 ? (
+          <Box
+            sx={{
+              gridColumn: "1 / -1",
+              py: 12,
+              px: 3,
+              textAlign: "center",
+            }}
+          >
+            <Typography 
+              variant="h6" 
+              sx={{ 
+                fontSize: "1rem",
+                fontWeight: 600,
+                color: theme.palette.text.secondary,
+                mb: 1,
+              }}
+            >
+              {itOwners.length === 0 ? "No IT owners found" : "No IT owners found"}
+            </Typography>
+            <Typography 
+              variant="body2" 
+              sx={{ 
+                fontSize: "0.875rem",
+                color: theme.palette.text.disabled,
+              }}
+            >
+              {searchQuery 
+                ? "Try adjusting your search criteria."
+                : "Create your first IT owner to get started."}
+            </Typography>
+          </Box>
+        ) : (
+          filteredAndSortedOwners.map((owner) => (
+            <ITOwnerCard
+              key={owner.id}
+              owner={owner}
+              onEdit={() => handleEditOwner(owner)}
+              onDelete={() => handleDeleteOwner(owner.id)}
+            />
+          ))
+        )}
       </Box>
 
       {editingOwner && (

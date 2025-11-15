@@ -8,28 +8,19 @@ import { BasePhase } from './base-phase.entity';
 describe('BasePhase', () => {
   describe('constructor', () => {
     it('should create a BasePhase with all properties', () => {
-      const phase = new BasePhase('Test Phase', '#FF0000', 'Test Category');
-
-      expect(phase.name).toBe('Test Phase');
-      expect(phase.color).toBe('#FF0000');
-      expect(phase.category).toBe('Test Category');
-      expect(phase.id).toBeDefined();
-      expect(phase.createdAt).toBeInstanceOf(Date);
-      expect(phase.updatedAt).toBeInstanceOf(Date);
-    });
-
-    it('should create a BasePhase without category', () => {
       const phase = new BasePhase('Test Phase', '#FF0000');
 
       expect(phase.name).toBe('Test Phase');
       expect(phase.color).toBe('#FF0000');
-      expect(phase.category).toBeUndefined();
+      expect(phase.id).toBeDefined();
+      expect(phase.createdAt).toBeInstanceOf(Date);
+      expect(phase.updatedAt).toBeInstanceOf(Date);
     });
   });
 
   describe('validate', () => {
     it('should pass validation with valid data', () => {
-      const phase = new BasePhase('Valid Phase', '#FF0000', 'Category');
+      const phase = new BasePhase('Valid Phase', '#FF0000');
       expect(() => {
         phase.validate();
       }).not.toThrow();

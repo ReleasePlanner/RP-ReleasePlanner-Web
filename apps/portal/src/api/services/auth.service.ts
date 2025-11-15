@@ -49,6 +49,9 @@ export const authService = {
     this.setTokens(response.accessToken, response.refreshToken);
     this.setUser(response.user);
     
+    // Reset refresh failure state on successful login
+    this.resetRefreshState();
+    
     return response;
   },
 
@@ -65,6 +68,9 @@ export const authService = {
     this.setTokens(response.accessToken, response.refreshToken);
     this.setUser(response.user);
     
+    // Reset refresh failure state on successful registration
+    this.resetRefreshState();
+    
     return response;
   },
 
@@ -72,9 +78,11 @@ export const authService = {
    * Refresh access token
    */
   async refreshToken(refreshToken: string): Promise<AuthResponse> {
+    // Use skipRetry to prevent infinite loop if refresh token is invalid
     const response = await httpClient.post<AuthResponse>(
       `${API_ENDPOINTS.AUTH}/refresh`,
       { refreshToken },
+      { skipRetry: true },
     );
     
     // Update stored tokens and user
@@ -167,6 +175,17 @@ export const authService = {
     localStorage.removeItem(TOKEN_STORAGE_KEY);
     localStorage.removeItem(REFRESH_TOKEN_STORAGE_KEY);
     localStorage.removeItem(USER_STORAGE_KEY);
+  },
+
+  /**
+   * Reset refresh failure state (used after successful login/refresh)
+   */
+  resetRefreshState(): void {
+    // This will be called by httpClient to reset refresh state
+    // We expose it here so authService can reset it on login
+    if (typeof window !== 'undefined' && (window as any).__resetRefreshState) {
+      (window as any).__resetRefreshState();
+    }
   },
 };
 

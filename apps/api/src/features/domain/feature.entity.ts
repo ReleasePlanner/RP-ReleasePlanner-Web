@@ -1,6 +1,7 @@
 import { Entity, Column, ManyToOne, JoinColumn, Index } from 'typeorm';
 import { BaseEntity } from '../../common/database/base.entity';
-import { FeatureCategory } from './feature-category.entity';
+import { FeatureCategory } from '../../feature-categories/domain/feature-category.entity';
+import { Country } from '../../countries/domain/country.entity';
 import { ProductOwner } from './product-owner.entity';
 
 export enum FeatureStatus {
@@ -45,6 +46,13 @@ export class Feature extends BaseEntity {
   @Index()
   productId: string;
 
+  @Column({ type: 'uuid', nullable: true })
+  countryId?: string;
+
+  @ManyToOne(() => Country, { eager: true, nullable: true })
+  @JoinColumn({ name: 'countryId' })
+  country?: Country;
+
   constructor(
     name?: string,
     description?: string,
@@ -54,6 +62,7 @@ export class Feature extends BaseEntity {
     technicalDescription?: string,
     businessDescription?: string,
     productId?: string,
+    country?: Country,
   ) {
     super();
     if (name !== undefined) {
@@ -81,6 +90,10 @@ export class Feature extends BaseEntity {
     }
     if (productId !== undefined) {
       this.productId = productId;
+    }
+    if (country !== undefined) {
+      this.country = country;
+      this.countryId = country.id;
     }
     if (name !== undefined && description !== undefined && productId !== undefined) {
       this.validate();

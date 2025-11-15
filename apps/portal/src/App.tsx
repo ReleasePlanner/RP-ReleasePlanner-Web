@@ -11,6 +11,9 @@ const ProductMaintenancePage = lazy(() => import("./pages/productMaintenancePage
 const FeatureMaintenancePage = lazy(() => import("./pages/featureMaintenancePage"));
 const CalendarMaintenancePage = lazy(() => import("./pages/calendarMaintenancePage"));
 const ITOwnerMaintenancePage = lazy(() => import("./pages/itOwnerMaintenancePage"));
+const ComponentTypeMaintenancePage = lazy(() => import("./pages/componentTypeMaintenancePage"));
+const FeatureCategoryMaintenancePage = lazy(() => import("./pages/featureCategoryMaintenancePage"));
+const CountryMaintenancePage = lazy(() => import("./pages/countryMaintenancePage"));
 const PhasesMaintenancePage = lazy(() => import("./pages/phasesMaintenancePage"));
 
 // Loading fallback component
@@ -54,6 +57,9 @@ export default function App() {
           <Route path="features" element={<FeatureMaintenancePage />} />
           <Route path="calendars" element={<CalendarMaintenancePage />} />
           <Route path="it-owners" element={<ITOwnerMaintenancePage />} />
+          <Route path="component-types" element={<ComponentTypeMaintenancePage />} />
+          <Route path="feature-categories" element={<FeatureCategoryMaintenancePage />} />
+          <Route path="countries" element={<CountryMaintenancePage />} />
         </Route>
       </Routes>
     </Suspense>

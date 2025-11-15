@@ -65,11 +65,9 @@ export function PhasesMaintenancePage() {
   const [phaseToDelete, setPhaseToDelete] = useState<BasePhase | null>(null);
   const [editingPhase, setEditingPhase] = useState<BasePhase | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [formData, setFormData] = useState<Partial<BasePhase>>({
     name: "",
     color: "#1976D2",
-    category: "",
   });
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
     open: false,
@@ -83,14 +81,12 @@ export function PhasesMaintenancePage() {
       setFormData({
         name: phase.name,
         color: phase.color,
-        category: phase.category || "",
       });
     } else {
       setEditingPhase(null);
       setFormData({
         name: "",
         color: "#1976D2",
-        category: "",
       });
     }
     setDialogOpen(true);
@@ -116,7 +112,6 @@ export function PhasesMaintenancePage() {
           data: {
             name: formData.name.trim(),
             color: formData.color || "#1976D2",
-            category: formData.category?.trim() || undefined,
           },
         });
         setSnackbar({ open: true, message: 'Fase actualizada exitosamente', severity: 'success' });
@@ -124,7 +119,6 @@ export function PhasesMaintenancePage() {
         await createMutation.mutateAsync({
           name: formData.name.trim(),
           color: formData.color || "#1976D2",
-          category: formData.category?.trim() || undefined,
         });
         setSnackbar({ open: true, message: 'Fase creada exitosamente', severity: 'success' });
       }
@@ -164,7 +158,6 @@ export function PhasesMaintenancePage() {
     setFormData({
       name: `${phase.name} (Copia)`,
       color: phase.color,
-      category: phase.category || "",
     });
     setEditingPhase(null);
     setDialogOpen(true);
@@ -174,31 +167,16 @@ export function PhasesMaintenancePage() {
   const filteredPhases = useMemo(() => {
     let result = phases;
 
-    // Filter by category
-    if (categoryFilter !== "all") {
-      result = result.filter(
-        (p) => p.category === categoryFilter || (!p.category && categoryFilter === "none")
-      );
-    }
-
     // Filter by search query
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       result = result.filter(
-        (p) =>
-          p.name.toLowerCase().includes(query) ||
-          p.category?.toLowerCase().includes(query)
+        (p) => p.name.toLowerCase().includes(query)
       );
     }
 
     return result;
-  }, [phases, categoryFilter, searchQuery]);
-
-  // Get unique categories
-  const uniqueCategories = useMemo(() => {
-    const categories = new Set(phases.map((p) => p.category).filter(Boolean));
-    return Array.from(categories) as string[];
-  }, [phases]);
+  }, [phases, searchQuery]);
 
   if (isLoading) {
     return (
@@ -246,23 +224,6 @@ export function PhasesMaintenancePage() {
             sx={{ minWidth: 250 }}
           />
 
-          <FormControl size="small" sx={{ minWidth: 200 }}>
-            <InputLabel>Filtrar por categoría</InputLabel>
-            <Select
-              value={categoryFilter}
-              label="Filtrar por categoría"
-              onChange={(e) => setCategoryFilter(e.target.value)}
-            >
-              <MenuItem value="all">Todas</MenuItem>
-              <MenuItem value="none">Sin categoría</MenuItem>
-              {uniqueCategories.map((cat) => (
-                <MenuItem key={cat} value={cat}>
-                  {cat}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-
           <Box sx={{ flexGrow: 1 }} />
 
           <Button
@@ -295,15 +256,6 @@ export function PhasesMaintenancePage() {
                     {phase.name}
                   </Typography>
                 </Box>
-                {phase.category && (
-                  <Chip
-                    label={phase.category}
-                    size="small"
-                    sx={{ mt: 1 }}
-                    color="primary"
-                    variant="outlined"
-                  />
-                )}
               </CardContent>
               <CardActions>
                 <Tooltip title="Editar">
@@ -362,12 +314,6 @@ export function PhasesMaintenancePage() {
               fullWidth
               value={formData.color}
               onChange={(e) => setFormData({ ...formData, color: e.target.value })}
-            />
-            <TextField
-              label="Categoría"
-              fullWidth
-              value={formData.category}
-              onChange={(e) => setFormData({ ...formData, category: e.target.value })}
             />
           </Stack>
         </DialogContent>

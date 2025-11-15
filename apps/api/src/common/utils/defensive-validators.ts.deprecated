@@ -1,0 +1,15 @@
+/**
+ * DEPRECATED: This file has been moved to @rp-release-planner/rp-shared
+ * 
+ * Please update your imports:
+ * 
+ * OLD:
+ * import { validateString } from '../../common/utils/defensive-validators';
+ * 
+ * NEW:
+ * import { validateString } from '@rp-release-planner/rp-shared';
+ * 
+ * This file is kept temporarily for reference but should not be used.
+ * It will be removed in a future version.
+ */
+

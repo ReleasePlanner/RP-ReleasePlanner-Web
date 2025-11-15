@@ -20,6 +20,10 @@ export const queryClient = new QueryClient({
 			retry: (failureCount, error) => {
 				// Don't retry on client errors (4xx) except 408 (timeout) and 429 (rate limit)
 				if (error instanceof HttpClientError) {
+					// Never retry on 401 (Unauthorized) - token refresh is handled by httpClient
+					if (error.statusCode === 401) {
+						return false;
+					}
 					if (error.statusCode >= 400 && error.statusCode < 500) {
 						return error.statusCode === 408 || error.statusCode === 429;
 					}
@@ -48,6 +52,10 @@ export const queryClient = new QueryClient({
 			retry: (failureCount, error) => {
 				// Retry mutations only on network errors or server errors
 				if (error instanceof HttpClientError) {
+					// Never retry on 401 (Unauthorized) - token refresh is handled by httpClient
+					if (error.statusCode === 401) {
+						return false;
+					}
 					if (error.isNetworkError || error.statusCode >= 500) {
 						return failureCount < 2;
 					}

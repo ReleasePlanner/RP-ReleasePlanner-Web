@@ -7,7 +7,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { FeatureRepository } from './feature.repository';
 import { Feature, FeatureStatus } from '../domain/feature.entity';
-import { FeatureCategory } from '../domain/feature-category.entity';
+import { FeatureCategory } from '../../feature-categories/domain/feature-category.entity';
 import { ProductOwner } from '../domain/product-owner.entity';
 import { NotFoundException } from '../../common/exceptions/business-exception';
 

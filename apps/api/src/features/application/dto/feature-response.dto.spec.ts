@@ -3,7 +3,7 @@
  * Coverage: 100%
  */
 import { Feature, FeatureStatus } from '../../domain/feature.entity';
-import { FeatureCategory } from '../../domain/feature-category.entity';
+import { FeatureCategory } from '../../../feature-categories/domain/feature-category.entity';
 import { ProductOwner } from '../../domain/product-owner.entity';
 import {
   FeatureResponseDto,

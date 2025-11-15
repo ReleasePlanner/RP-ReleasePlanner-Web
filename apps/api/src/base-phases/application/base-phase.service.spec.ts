@@ -50,8 +50,8 @@ describe('BasePhaseService', () => {
   describe('findAll', () => {
     it('should return an array of BasePhaseResponseDto', async () => {
       const mockPhases = [
-        new BasePhase('Phase 1', '#FF0000', 'Category 1'),
-        new BasePhase('Phase 2', '#00FF00', 'Category 2'),
+        new BasePhase('Phase 1', '#FF0000'),
+        new BasePhase('Phase 2', '#00FF00'),
       ];
       mockPhases[0].id = 'id1';
       mockPhases[1].id = 'id2';
@@ -81,7 +81,7 @@ describe('BasePhaseService', () => {
 
   describe('findById', () => {
     it('should return a BasePhaseResponseDto when phase exists', async () => {
-      const mockPhase = new BasePhase('Phase 1', '#FF0000', 'Category 1');
+      const mockPhase = new BasePhase('Phase 1', '#FF0000');
       mockPhase.id = 'id1';
 
       repository.findById.mockResolvedValue(mockPhase);
@@ -111,11 +111,10 @@ describe('BasePhaseService', () => {
     const createDto: CreateBasePhaseDto = {
       name: 'New Phase',
       color: '#0000FF',
-      category: 'New Category',
     };
 
     it('should create and return a BasePhaseResponseDto', async () => {
-      const mockPhase = new BasePhase(createDto.name, createDto.color, createDto.category);
+      const mockPhase = new BasePhase(createDto.name, createDto.color);
       mockPhase.id = 'new-id';
 
       repository.findByName.mockResolvedValue(null);
@@ -127,7 +126,6 @@ describe('BasePhaseService', () => {
       expect(result).toHaveProperty('id', 'new-id');
       expect(result).toHaveProperty('name', 'New Phase');
       expect(result).toHaveProperty('color', '#0000FF');
-      expect(result).toHaveProperty('category', 'New Category');
       expect(repository.findByName).toHaveBeenCalledWith('New Phase');
       expect(repository.findByColor).toHaveBeenCalledWith('#0000FF');
       expect(repository.create).toHaveBeenCalledTimes(1);
@@ -164,23 +162,6 @@ describe('BasePhaseService', () => {
       expect(repository.create).not.toHaveBeenCalled();
     });
 
-    it('should create phase without category when category is not provided', async () => {
-      const createDtoWithoutCategory: CreateBasePhaseDto = {
-        name: 'New Phase',
-        color: '#0000FF',
-      };
-      const mockPhase = new BasePhase(createDtoWithoutCategory.name, createDtoWithoutCategory.color);
-      mockPhase.id = 'new-id';
-
-      repository.findByName.mockResolvedValue(null);
-      repository.findByColor.mockResolvedValue(null);
-      repository.create.mockResolvedValue(mockPhase);
-
-      const result = await service.create(createDtoWithoutCategory);
-
-      expect(result).toHaveProperty('name', 'New Phase');
-      expect(result.category).toBeUndefined();
-    });
   });
 
   describe('update', () => {
@@ -300,9 +281,9 @@ describe('BasePhaseService', () => {
     });
 
     it('should update partial fields', async () => {
-      const existingPhase = new BasePhase('Old Phase', '#FF0000', 'Old Category');
+      const existingPhase = new BasePhase('Old Phase', '#FF0000');
       existingPhase.id = 'id1';
-      const updatedPhase = new BasePhase('Updated Phase', '#FF0000', 'Old Category');
+      const updatedPhase = new BasePhase('Updated Phase', '#FF0000');
       updatedPhase.id = 'id1';
 
       const partialUpdateDto: UpdateBasePhaseDto = {

@@ -9,6 +9,7 @@ import { Repository } from 'typeorm';
 import { BaseRepository } from '../../common/database/base.repository';
 import { BasePhase } from '../domain/base-phase.entity';
 import { IRepository } from '../../common/interfaces/repository.interface';
+import { validateString } from '@rp-release-planner/rp-shared';
 
 export interface IBasePhaseRepository extends IRepository<BasePhase> {
   findByName(name: string): Promise<BasePhase | null>;
@@ -28,14 +29,26 @@ export class BasePhaseRepository
   }
 
   async findByName(name: string): Promise<BasePhase | null> {
-    return this.repository.findOne({
-      where: { name: name.toLowerCase() } as any,
-    });
+    // Defensive: Validate name before query
+    validateString(name, 'Phase name');
+    
+    return this.handleDatabaseOperation(
+      () => this.repository.findOne({
+        where: { name: name.toLowerCase() } as any,
+      }),
+      `findByName(${name})`,
+    );
   }
 
   async findByColor(color: string): Promise<BasePhase | null> {
-    return this.repository.findOne({
-      where: { color: color.toLowerCase() } as any,
-    });
+    // Defensive: Validate color before query
+    validateString(color, 'Phase color');
+    
+    return this.handleDatabaseOperation(
+      () => this.repository.findOne({
+        where: { color: color.toLowerCase() } as any,
+      }),
+      `findByColor(${color})`,
+    );
   }
 }

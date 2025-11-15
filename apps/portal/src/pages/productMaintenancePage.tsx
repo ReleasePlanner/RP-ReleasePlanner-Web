@@ -13,6 +13,7 @@ import {
   useUpdateProduct,
   useDeleteProduct,
 } from "../api/hooks";
+import { useComponentTypes } from "../api/hooks/useComponentTypes";
 import type {
   Product,
   ComponentVersion,
@@ -25,6 +26,7 @@ interface EditingProduct {
 
 export function ProductMaintenancePage() {
   const theme = useTheme();
+  const { data: componentTypes = [] } = useComponentTypes();
   
   // API hooks
   const { data: products = [], isLoading, error } = useProducts();
@@ -41,6 +43,13 @@ export function ProductMaintenancePage() {
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [sortBy, setSortBy] = useState("name");
   const [searchQuery, setSearchQuery] = useState("");
+
+  // Helper function to check if a string is a valid UUID
+  const isValidUUID = (str: string | undefined): boolean => {
+    if (!str) return false;
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    return uuidRegex.test(str);
+  };
 
   // Filter and sort products
   const filteredAndSortedProducts = useMemo(() => {
@@ -80,7 +89,31 @@ export function ProductMaintenancePage() {
     component: ComponentVersion
   ) => {
     setSelectedProduct(product);
-    setEditingProduct({ product, component });
+    // Map backend component format to dialog format
+    // Backend has: type, currentVersion, previousVersion, componentTypeId (if available)
+    // Dialog expects: name, type, version, description, componentTypeId
+    let componentTypeId = (component as any).componentTypeId || (component as any).componentType?.id;
+    
+    // If no componentTypeId but we have a type code, try to find the ComponentType by code
+    if (!componentTypeId && component.type) {
+      const foundType = componentTypes.find(
+        (ct) => ct.code?.toLowerCase() === component.type?.toLowerCase() || 
+                ct.name?.toLowerCase() === component.type?.toLowerCase()
+      );
+      if (foundType) {
+        componentTypeId = foundType.id;
+      }
+    }
+    
+    const mappedComponent = {
+      ...component,
+      name: component.name || component.type || '', // Use name if exists, fallback to type
+      type: component.type || '',
+      version: component.currentVersion || component.version || '', // Map currentVersion to version
+      description: component.description || '',
+      componentTypeId: componentTypeId,
+    };
+    setEditingProduct({ product, component: mappedComponent as any });
     setOpenDialog(true);
   };
 
@@ -94,6 +127,8 @@ export function ProductMaintenancePage() {
             components: product.components
               .filter((c: ComponentVersion) => c.id !== componentId)
               .map((c: ComponentVersion) => ({
+                // Only include id if it's a valid UUID (from database)
+                ...(c.id && isValidUUID(c.id) && { id: c.id }),
                 type: c.type,
                 currentVersion: c.currentVersion,
                 previousVersion: c.previousVersion,
@@ -115,7 +150,8 @@ export function ProductMaintenancePage() {
         name: "",
         type: "web",
         version: "",
-      },
+        description: "",
+      } as any,
     });
     setOpenDialog(true);
   };
@@ -131,6 +167,8 @@ export function ProductMaintenancePage() {
           data: {
             name: product.name,
             components: product.components?.map((c: ComponentVersion) => ({
+              // Only include id if it's a valid UUID (from database)
+              ...(c.id && isValidUUID(c.id) && { id: c.id }),
               type: c.type,
               currentVersion: c.currentVersion,
               previousVersion: c.previousVersion,
@@ -162,38 +200,132 @@ export function ProductMaintenancePage() {
     if (!existingProduct) return;
 
     try {
-      const componentExists = existingProduct.components.some(
-        (c: ComponentVersion) => c.id === editingProduct.component?.id
-      );
+      const editingComponentId = editingProduct.component.id;
+      
+      // Map component data - handle both version formats
+      const componentData = editingProduct.component as any;
+      
+      console.log('handleSaveComponent - componentData received:', JSON.stringify(componentData, null, 2));
+      
+      // Check if component exists by comparing valid UUIDs only
+      const componentExists = editingComponentId && 
+        isValidUUID(editingComponentId) &&
+        existingProduct.components.some(
+          (c: ComponentVersion) => c.id && isValidUUID(c.id) && c.id === editingComponentId
+        );
+      
+      // Get currentVersion - prefer version field (from dialog), then currentVersion, then fallback
+      // The dialog uses 'version' field which should be used as the new currentVersion
+      let currentVersion = componentData.version || componentData.currentVersion || '';
+      
+      console.log('handleSaveComponent - currentVersion extracted:', currentVersion, {
+        'componentData.version': componentData.version,
+        'componentData.currentVersion': componentData.currentVersion,
+        'componentExists': componentExists
+      });
+      
+      // For new components, if version is still empty, throw error
+      if (!currentVersion && !componentExists) {
+        // This shouldn't happen if dialog validation works, but add defensive check
+        console.error('Missing currentVersion for new component:', componentData);
+        throw new Error('Component currentVersion is required. Please enter a Current Version.');
+      }
+      
+      // For existing components, if version is empty, use existing currentVersion
+      if (!currentVersion && componentExists) {
+        const existingComp = existingProduct.components.find((c: ComponentVersion) => c.id === editingComponentId);
+        currentVersion = existingComp?.currentVersion || '';
+        if (!currentVersion) {
+          console.error('Missing currentVersion for existing component:', componentData);
+          throw new Error('Component currentVersion is required');
+        }
+      }
+      
+      // Determine previousVersion
+      let previousVersion = componentData.previousVersion || '';
+      
+      if (componentExists) {
+        const existingComp = existingProduct.components.find((c: ComponentVersion) => c.id === editingComponentId);
+        if (existingComp) {
+          // If version changed, use old currentVersion as previousVersion
+          if (currentVersion && existingComp.currentVersion !== currentVersion) {
+            previousVersion = existingComp.currentVersion || '';
+          } else if (!previousVersion) {
+            // Otherwise preserve existing previousVersion
+            previousVersion = existingComp.previousVersion || '';
+          }
+        }
+      } else {
+        // For new components, if previousVersion is empty, use currentVersion
+        if (!previousVersion) {
+          previousVersion = currentVersion; // For new components, previousVersion defaults to currentVersion
+        }
+      }
+      
+      // Final validation
+      if (!currentVersion) {
+        console.error('Missing currentVersion:', componentData);
+        throw new Error('Component currentVersion is required');
+      }
+      
+      // Ensure previousVersion is not empty (backend requires it)
+      if (!previousVersion) {
+        previousVersion = currentVersion; // Fallback to currentVersion
+      }
 
       const updatedComponents = componentExists
         ? existingProduct.components.map((c: ComponentVersion) =>
-            c.id === editingProduct.component?.id
+            c.id === editingComponentId
               ? {
                   ...c,
-                  type: editingProduct.component.type,
-                  currentVersion: editingProduct.component.currentVersion,
-                  previousVersion: editingProduct.component.previousVersion,
+                  name: componentData.name || c.name, // Include name if provided
+                  type: componentData.type,
+                  currentVersion: currentVersion,
+                  previousVersion: previousVersion || c.previousVersion, // Preserve previousVersion if not provided
+                  componentTypeId: (componentData as any).componentTypeId || (c as any).componentTypeId,
                 }
               : c
           )
         : [
             ...existingProduct.components,
             {
-              type: editingProduct.component.type,
-              currentVersion: editingProduct.component.currentVersion,
-              previousVersion: editingProduct.component.previousVersion,
+              // Don't include id for new components (backend will generate it)
+              name: componentData.name || '', // Include name for new components
+              type: componentData.type,
+              currentVersion: currentVersion,
+              previousVersion: previousVersion,
+              componentTypeId: (componentData as any).componentTypeId,
             },
           ];
+
+      console.log('handleSaveComponent - updatedComponents:', JSON.stringify(updatedComponents, null, 2));
+      console.log('handleSaveComponent - componentExists:', componentExists);
+      console.log('handleSaveComponent - currentVersion:', currentVersion);
+      console.log('handleSaveComponent - previousVersion:', previousVersion);
 
       await updateMutation.mutateAsync({
         id: product.id,
         data: {
-          components: updatedComponents.map((c: ComponentVersion) => ({
-            type: c.type,
-            currentVersion: c.currentVersion,
-            previousVersion: c.previousVersion,
-          })),
+          components: updatedComponents.map((c: ComponentVersion) => {
+            const componentPayload: any = {
+              name: (c as any).name || '', // Include name in payload
+              currentVersion: c.currentVersion,
+              previousVersion: c.previousVersion,
+            };
+            // Prefer componentTypeId if available, otherwise use type (normalized to lowercase)
+            if ((c as any).componentTypeId && isValidUUID((c as any).componentTypeId)) {
+              componentPayload.componentTypeId = (c as any).componentTypeId;
+            } else if (c.type) {
+              // Normalize type to lowercase for backend compatibility
+              componentPayload.type = c.type.toLowerCase(); // Fallback to enum type for backward compatibility
+            }
+            // Only include id if it's a valid UUID (from database)
+            if (c.id && isValidUUID(c.id)) {
+              componentPayload.id = c.id;
+            }
+            console.log('handleSaveComponent - componentPayload:', JSON.stringify(componentPayload, null, 2));
+            return componentPayload;
+          }),
         },
       });
 
@@ -215,7 +347,10 @@ export function ProductMaintenancePage() {
     setSelectedProduct(null);
   };
 
-  const isEditing = editingProduct?.component !== undefined;
+  // Determine if editing: component exists and has a valid UUID (from database)
+  const isEditing = editingProduct?.component !== undefined && 
+    editingProduct.component.id && 
+    isValidUUID(editingProduct.component.id);
 
   const sortOptions = [
     { value: "name", label: "Sort: Name" },
@@ -290,24 +425,46 @@ export function ProductMaintenancePage() {
             viewMode === "grid"
               ? {
                   xs: "1fr",
-                  sm: "repeat(auto-fill, minmax(380px, 1fr))",
+                  sm: "repeat(auto-fill, minmax(420px, 1fr))",
+                  md: "repeat(auto-fill, minmax(450px, 1fr))",
                   lg: "repeat(2, 1fr)",
+                  xl: "repeat(3, 1fr)",
                 }
               : "1fr",
-          gap: 2.5,
+          gap: 3,
+          pb: 2,
         }}
       >
         {filteredAndSortedProducts.length === 0 ? (
           <Box
             sx={{
               gridColumn: "1 / -1",
-              py: 8,
+              py: 12,
+              px: 3,
               textAlign: "center",
-              color: theme.palette.text.disabled,
             }}
           >
-            <Typography variant="body2" sx={{ fontSize: "0.875rem" }}>
-              No products found. Create your first product to get started.
+            <Typography 
+              variant="h6" 
+              sx={{ 
+                fontSize: "1rem",
+                fontWeight: 600,
+                color: theme.palette.text.secondary,
+                mb: 1,
+              }}
+            >
+              No products found
+            </Typography>
+            <Typography 
+              variant="body2" 
+              sx={{ 
+                fontSize: "0.875rem",
+                color: theme.palette.text.disabled,
+              }}
+            >
+              {searchQuery 
+                ? "Try adjusting your search criteria."
+                : "Create your first product to get started."}
             </Typography>
           </Box>
         ) : (

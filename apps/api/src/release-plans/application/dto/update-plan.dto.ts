@@ -4,141 +4,212 @@ import { IsEnum, IsOptional, IsArray, ValidateNested, IsString, IsDateString } f
 import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 import { PlanStatus } from '../../domain/plan.entity';
+import { PLAN_API_PROPERTY_DESCRIPTIONS, PLAN_API_PROPERTY_EXAMPLES } from '../../constants';
 
 export class UpdatePlanMilestoneDto {
-  @ApiProperty({ description: 'Nombre del milestone', example: 'Release Candidate' })
+  @ApiProperty({
+    description: PLAN_API_PROPERTY_DESCRIPTIONS.MILESTONE_NAME,
+    example: PLAN_API_PROPERTY_EXAMPLES.MILESTONE_NAME,
+  })
   @IsString()
   @IsOptional()
   name?: string;
 
-  @ApiProperty({ description: 'Fecha del milestone (YYYY-MM-DD)', example: '2024-03-15' })
+  @ApiProperty({
+    description: PLAN_API_PROPERTY_DESCRIPTIONS.MILESTONE_DATE,
+    example: PLAN_API_PROPERTY_EXAMPLES.MILESTONE_DATE,
+  })
   @IsDateString()
   @IsOptional()
   date?: string;
 
-  @ApiProperty({ description: 'Descripción del milestone', required: false })
+  @ApiProperty({
+    description: PLAN_API_PROPERTY_DESCRIPTIONS.MILESTONE_DESCRIPTION,
+    required: false,
+  })
   @IsString()
   @IsOptional()
   description?: string;
 }
 
 export class UpdatePlanReferenceDto {
-  @ApiProperty({ description: 'Tipo de referencia', enum: ['link', 'document', 'note', 'comment', 'file', 'milestone'] })
+  @ApiProperty({
+    description: PLAN_API_PROPERTY_DESCRIPTIONS.REFERENCE_TYPE,
+    enum: ['link', 'document', 'note', 'comment', 'file', 'milestone'],
+  })
   @IsString()
   @IsOptional()
   type?: string;
 
-  @ApiProperty({ description: 'Título de la referencia' })
+  @ApiProperty({
+    description: PLAN_API_PROPERTY_DESCRIPTIONS.REFERENCE_TITLE,
+  })
   @IsString()
   @IsOptional()
   title?: string;
 
-  @ApiProperty({ description: 'URL de la referencia', required: false })
+  @ApiProperty({
+    description: PLAN_API_PROPERTY_DESCRIPTIONS.REFERENCE_URL,
+    required: false,
+  })
   @IsString()
   @IsOptional()
   url?: string;
 
-  @ApiProperty({ description: 'Descripción de la referencia', required: false })
+  @ApiProperty({
+    description: PLAN_API_PROPERTY_DESCRIPTIONS.REFERENCE_DESCRIPTION,
+    required: false,
+  })
   @IsString()
   @IsOptional()
   description?: string;
 
-  @ApiProperty({ description: 'Fecha asociada (YYYY-MM-DD)', required: false })
+  @ApiProperty({
+    description: PLAN_API_PROPERTY_DESCRIPTIONS.REFERENCE_DATE,
+    required: false,
+  })
   @IsDateString()
   @IsOptional()
   date?: string;
 
-  @ApiProperty({ description: 'ID de la fase asociada', required: false })
+  @ApiProperty({
+    description: PLAN_API_PROPERTY_DESCRIPTIONS.REFERENCE_PHASE_ID,
+    required: false,
+  })
   @IsString()
   @IsOptional()
   phaseId?: string;
 }
 
 export class UpdateGanttCellCommentDto {
-  @ApiProperty({ description: 'Texto del comentario' })
+  @ApiProperty({
+    description: PLAN_API_PROPERTY_DESCRIPTIONS.COMMENT_TEXT,
+  })
   @IsString()
   @IsOptional()
   text?: string;
 
-  @ApiProperty({ description: 'Autor del comentario' })
+  @ApiProperty({
+    description: PLAN_API_PROPERTY_DESCRIPTIONS.COMMENT_AUTHOR,
+  })
   @IsString()
   @IsOptional()
   author?: string;
 }
 
 export class UpdateGanttCellFileDto {
-  @ApiProperty({ description: 'Nombre del archivo' })
+  @ApiProperty({
+    description: PLAN_API_PROPERTY_DESCRIPTIONS.FILE_NAME,
+  })
   @IsString()
   @IsOptional()
   name?: string;
 
-  @ApiProperty({ description: 'URL del archivo' })
+  @ApiProperty({
+    description: PLAN_API_PROPERTY_DESCRIPTIONS.FILE_URL,
+  })
   @IsString()
   @IsOptional()
   url?: string;
 
-  @ApiProperty({ description: 'Tamaño del archivo en bytes', required: false })
+  @ApiProperty({
+    description: PLAN_API_PROPERTY_DESCRIPTIONS.FILE_SIZE,
+    required: false,
+  })
   @IsOptional()
   size?: number;
 
-  @ApiProperty({ description: 'Tipo MIME del archivo', required: false })
+  @ApiProperty({
+    description: PLAN_API_PROPERTY_DESCRIPTIONS.FILE_MIME_TYPE,
+    required: false,
+  })
   @IsString()
   @IsOptional()
   mimeType?: string;
 }
 
 export class UpdateGanttCellLinkDto {
-  @ApiProperty({ description: 'Título del enlace' })
+  @ApiProperty({
+    description: PLAN_API_PROPERTY_DESCRIPTIONS.LINK_TITLE,
+  })
   @IsString()
   @IsOptional()
   title?: string;
 
-  @ApiProperty({ description: 'URL del enlace' })
+  @ApiProperty({
+    description: PLAN_API_PROPERTY_DESCRIPTIONS.LINK_URL,
+  })
   @IsString()
   @IsOptional()
   url?: string;
 
-  @ApiProperty({ description: 'Descripción del enlace', required: false })
+  @ApiProperty({
+    description: PLAN_API_PROPERTY_DESCRIPTIONS.LINK_DESCRIPTION,
+    required: false,
+  })
   @IsString()
   @IsOptional()
   description?: string;
 }
 
 export class UpdateGanttCellDataDto {
-  @ApiProperty({ description: 'ID de la fase asociada', required: false })
+  @ApiProperty({
+    description: PLAN_API_PROPERTY_DESCRIPTIONS.LINK_PHASE_ID,
+    required: false,
+  })
   @IsString()
   @IsOptional()
   phaseId?: string;
 
-  @ApiProperty({ description: 'Fecha de la celda (YYYY-MM-DD)' })
+  @ApiProperty({
+    description: PLAN_API_PROPERTY_DESCRIPTIONS.CELL_DATE,
+  })
   @IsDateString()
   @IsOptional()
   date?: string;
 
-  @ApiProperty({ description: 'Indica si es un milestone', required: false })
+  @ApiProperty({
+    description: PLAN_API_PROPERTY_DESCRIPTIONS.CELL_IS_MILESTONE,
+    required: false,
+  })
   @IsOptional()
   isMilestone?: boolean;
 
-  @ApiProperty({ description: 'Color del milestone', required: false })
+  @ApiProperty({
+    description: PLAN_API_PROPERTY_DESCRIPTIONS.CELL_MILESTONE_COLOR,
+    required: false,
+  })
   @IsString()
   @IsOptional()
   milestoneColor?: string;
 
-  @ApiProperty({ description: 'Comentarios de la celda', type: [UpdateGanttCellCommentDto], required: false })
+  @ApiProperty({
+    description: PLAN_API_PROPERTY_DESCRIPTIONS.CELL_COMMENTS,
+    type: [UpdateGanttCellCommentDto],
+    required: false,
+  })
   @IsArray()
   @IsOptional()
   @ValidateNested({ each: true })
   @Type(() => UpdateGanttCellCommentDto)
   comments?: UpdateGanttCellCommentDto[];
 
-  @ApiProperty({ description: 'Archivos de la celda', type: [UpdateGanttCellFileDto], required: false })
+  @ApiProperty({
+    description: PLAN_API_PROPERTY_DESCRIPTIONS.CELL_FILES,
+    type: [UpdateGanttCellFileDto],
+    required: false,
+  })
   @IsArray()
   @IsOptional()
   @ValidateNested({ each: true })
   @Type(() => UpdateGanttCellFileDto)
   files?: UpdateGanttCellFileDto[];
 
-  @ApiProperty({ description: 'Enlaces de la celda', type: [UpdateGanttCellLinkDto], required: false })
+  @ApiProperty({
+    description: PLAN_API_PROPERTY_DESCRIPTIONS.CELL_LINKS,
+    type: [UpdateGanttCellLinkDto],
+    required: false,
+  })
   @IsArray()
   @IsOptional()
   @ValidateNested({ each: true })
@@ -151,35 +222,54 @@ export class UpdatePlanDto extends PartialType(CreatePlanDto) {
   @IsOptional()
   override status?: PlanStatus;
 
-  @ApiProperty({ description: 'Tareas del plan', type: [CreatePlanTaskDto], required: false })
+  @ApiProperty({
+    description: PLAN_API_PROPERTY_DESCRIPTIONS.TASKS_LIST,
+    type: [CreatePlanTaskDto],
+    required: false,
+  })
   @IsArray()
   @IsOptional()
   @ValidateNested({ each: true })
   @Type(() => CreatePlanTaskDto)
   tasks?: CreatePlanTaskDto[];
 
-  @ApiProperty({ description: 'Milestones del plan', type: [UpdatePlanMilestoneDto], required: false })
+  @ApiProperty({
+    description: PLAN_API_PROPERTY_DESCRIPTIONS.MILESTONES_LIST,
+    type: [UpdatePlanMilestoneDto],
+    required: false,
+  })
   @IsArray()
   @IsOptional()
   @ValidateNested({ each: true })
   @Type(() => UpdatePlanMilestoneDto)
   milestones?: UpdatePlanMilestoneDto[];
 
-  @ApiProperty({ description: 'Referencias del plan', type: [UpdatePlanReferenceDto], required: false })
+  @ApiProperty({
+    description: PLAN_API_PROPERTY_DESCRIPTIONS.REFERENCES_LIST,
+    type: [UpdatePlanReferenceDto],
+    required: false,
+  })
   @IsArray()
   @IsOptional()
   @ValidateNested({ each: true })
   @Type(() => UpdatePlanReferenceDto)
   references?: UpdatePlanReferenceDto[];
 
-  @ApiProperty({ description: 'Datos de celdas del Gantt', type: [UpdateGanttCellDataDto], required: false })
+  @ApiProperty({
+    description: PLAN_API_PROPERTY_DESCRIPTIONS.CELL_DATA_LIST,
+    type: [UpdateGanttCellDataDto],
+    required: false,
+  })
   @IsArray()
   @IsOptional()
   @ValidateNested({ each: true })
   @Type(() => UpdateGanttCellDataDto)
   cellData?: UpdateGanttCellDataDto[];
 
-  @ApiProperty({ description: 'Componentes del plan', required: false })
+  @ApiProperty({
+    description: PLAN_API_PROPERTY_DESCRIPTIONS.COMPONENTS_LIST,
+    required: false,
+  })
   @IsArray()
   @IsOptional()
   components?: Array<{ componentId: string; finalVersion: string }>;

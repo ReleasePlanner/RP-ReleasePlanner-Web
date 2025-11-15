@@ -10,6 +10,7 @@ import { IRepository } from '../interfaces/repository.interface';
 import { BaseEntity } from './base.entity';
 import { DatabaseException } from '../exceptions/database-exception';
 import { NotFoundException } from '../exceptions/business-exception';
+import { validateId, validateObject } from '@rp-release-planner/rp-shared';
 
 @Injectable()
 export abstract class BaseRepository<T extends BaseEntity, ID = string>
@@ -62,6 +63,13 @@ export abstract class BaseRepository<T extends BaseEntity, ID = string>
   }
 
   async findById(id: ID): Promise<T | null> {
+    // Defensive: Validate ID before query
+    if (typeof id === 'string') {
+      validateId(id, 'Entity');
+    } else if (id === null || id === undefined) {
+      throw new Error('ID cannot be null or undefined');
+    }
+    
     return this.handleDatabaseOperation(
       () => this.repository.findOne({
         where: { id } as FindOptionsWhere<T>,
@@ -71,6 +79,11 @@ export abstract class BaseRepository<T extends BaseEntity, ID = string>
   }
 
   async findMany(criteria: Partial<T>): Promise<T[]> {
+    // Defensive: Validate criteria
+    if (criteria === null || criteria === undefined) {
+      throw new Error('Criteria cannot be null or undefined');
+    }
+    
     return this.handleDatabaseOperation(
       () => {
         const options: FindManyOptions<T> = {
@@ -83,16 +96,36 @@ export abstract class BaseRepository<T extends BaseEntity, ID = string>
   }
 
   async create(entityData: Omit<T, 'id' | 'createdAt' | 'updatedAt'>): Promise<T> {
+    // Defensive: Validate entity data
+    validateObject(entityData, 'Entity data');
+    
     return this.handleDatabaseOperation(
       async () => {
         const entity = this.repository.create(entityData as T);
-        return this.repository.save(entity);
+        if (!entity) {
+          throw new Error('Failed to create entity');
+        }
+        const saved = await this.repository.save(entity);
+        if (!saved) {
+          throw new Error('Failed to save entity');
+        }
+        return saved;
       },
       'create',
     );
   }
 
   async update(id: ID, updates: Partial<T>): Promise<T> {
+    // Defensive: Validate inputs
+    if (typeof id === 'string') {
+      validateId(id, 'Entity');
+    } else if (id === null || id === undefined) {
+      throw new Error('ID cannot be null or undefined');
+    }
+    if (updates === null || updates === undefined) {
+      throw new Error('Updates cannot be null or undefined');
+    }
+    
     return this.handleDatabaseOperation(
       async () => {
         const entity = await this.repository.findOne({
@@ -104,13 +137,24 @@ export abstract class BaseRepository<T extends BaseEntity, ID = string>
         }
 
         Object.assign(entity, updates);
-        return this.repository.save(entity);
+        const saved = await this.repository.save(entity);
+        if (!saved) {
+          throw new Error('Failed to save updated entity');
+        }
+        return saved;
       },
       `update(${id})`,
     );
   }
 
   async delete(id: ID): Promise<void> {
+    // Defensive: Validate ID
+    if (typeof id === 'string') {
+      validateId(id, 'Entity');
+    } else if (id === null || id === undefined) {
+      throw new Error('ID cannot be null or undefined');
+    }
+    
     return this.handleDatabaseOperation(
       async () => {
         const result = await this.repository.delete(id as any);
@@ -123,6 +167,13 @@ export abstract class BaseRepository<T extends BaseEntity, ID = string>
   }
 
   async exists(id: ID): Promise<boolean> {
+    // Defensive: Validate ID
+    if (typeof id === 'string') {
+      validateId(id, 'Entity');
+    } else if (id === null || id === undefined) {
+      return false;
+    }
+    
     return this.handleDatabaseOperation(
       () => this.repository.count({
         where: { id } as FindOptionsWhere<T>,
@@ -149,8 +200,17 @@ export abstract class BaseRepository<T extends BaseEntity, ID = string>
    * Save entity (useful for complex operations)
    */
   async save(entity: T): Promise<T> {
+    // Defensive: Validate entity
+    validateObject(entity, 'Entity');
+    
     return this.handleDatabaseOperation(
-      () => this.repository.save(entity),
+      async () => {
+        const saved = await this.repository.save(entity);
+        if (!saved) {
+          throw new Error('Failed to save entity');
+        }
+        return saved;
+      },
       'save',
     );
   }
@@ -159,6 +219,11 @@ export abstract class BaseRepository<T extends BaseEntity, ID = string>
    * Find one by criteria
    */
   async findOne(criteria: Partial<T>): Promise<T | null> {
+    // Defensive: Validate criteria
+    if (criteria === null || criteria === undefined) {
+      throw new Error('Criteria cannot be null or undefined');
+    }
+    
     return this.handleDatabaseOperation(
       () => this.repository.findOne({
         where: criteria as FindOptionsWhere<T>,

@@ -6,7 +6,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { FeatureService } from './feature.service';
 import { IFeatureRepository } from '../infrastructure/feature.repository';
 import { Feature, FeatureStatus } from '../domain/feature.entity';
-import { FeatureCategory } from '../domain/feature-category.entity';
+import { FeatureCategory } from '../../feature-categories/domain/feature-category.entity';
 import { ProductOwner } from '../domain/product-owner.entity';
 import { CreateFeatureDto } from './dto/create-feature.dto';
 import { UpdateFeatureDto } from './dto/update-feature.dto';

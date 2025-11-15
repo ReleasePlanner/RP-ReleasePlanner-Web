@@ -88,8 +88,8 @@ describe('BasePhaseRepository', () => {
 
   describe('CRUD operations', () => {
     it('should create a new phase', async () => {
-      const phaseData = { name: 'Test Phase', color: '#FF0000', category: 'Test Category' } as BasePhase;
-      const savedPhase = new BasePhase('Test Phase', '#FF0000', 'Test Category');
+      const phaseData = { name: 'Test Phase', color: '#FF0000' } as BasePhase;
+      const savedPhase = new BasePhase('Test Phase', '#FF0000');
       savedPhase.id = 'test-id';
       
       mockTypeOrmRepository.create.mockReturnValue(phaseData as BasePhase);
@@ -209,15 +209,15 @@ describe('BasePhaseRepository', () => {
 
     it('should find many phases by criteria', async () => {
       const phases = [
-        new BasePhase('Phase 1', '#FF0000', 'Category 1'),
-        new BasePhase('Phase 2', '#00FF00', 'Category 1'),
+        new BasePhase('Phase 1', '#FF0000'),
+        new BasePhase('Phase 2', '#00FF00'),
       ];
       mockTypeOrmRepository.find.mockResolvedValue(phases);
 
-      const found = await repository.findMany({ category: 'Category 1' });
+      const found = await repository.findMany({ name: 'Phase 1' });
 
       expect(mockTypeOrmRepository.find).toHaveBeenCalledWith({
-        where: { category: 'Category 1' },
+        where: { name: 'Phase 1' },
       });
       expect(found).toEqual(phases);
     });

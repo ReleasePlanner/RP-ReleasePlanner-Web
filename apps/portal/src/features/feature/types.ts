@@ -21,6 +21,15 @@ export interface FeatureCategory {
 }
 
 /**
+ * Country information
+ */
+export interface Country {
+  id: string;
+  name: string;
+  code: string;
+}
+
+/**
  * Feature Status enumeration
  */
 export type FeatureStatus = "planned" | "in-progress" | "completed" | "on-hold";
@@ -38,6 +47,7 @@ export interface Feature {
   technicalDescription: string;
   businessDescription: string;
   productId: string;
+  country?: Country;
   createdAt?: string; // ISO date string (YYYY-MM-DD or ISO 8601)
   updatedAt?: string; // ISO date string (YYYY-MM-DD or ISO 8601)
 }

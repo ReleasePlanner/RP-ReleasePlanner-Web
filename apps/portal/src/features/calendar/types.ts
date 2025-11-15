@@ -25,6 +25,11 @@ export interface Calendar {
   id: string;
   name: string;
   description?: string;
+  country?: {
+    id: string;
+    name: string;
+    code: string;
+  };
   days: CalendarDay[];
   createdAt: string;
   updatedAt: string;

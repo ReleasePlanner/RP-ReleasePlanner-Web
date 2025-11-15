@@ -22,6 +22,7 @@ export {
   CalendarDaysList,
   CalendarToolbar,
   CalendarDayEditDialog,
+  CalendarCard,
 } from "./components";
 export { useCalendars } from "./hooks";
 export {

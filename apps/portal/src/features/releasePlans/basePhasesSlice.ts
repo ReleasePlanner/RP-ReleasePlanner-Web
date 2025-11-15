@@ -12,37 +12,31 @@ const initialState: BasePhasesState = {
       id: "base-1",
       name: "Análisis",
       color: "#1976D2",
-      category: "Requerimientos",
     },
     {
       id: "base-2",
       name: "Diseño",
       color: "#388E3C",
-      category: "Arquitectura",
     },
     {
       id: "base-3",
       name: "Desarrollo",
       color: "#FBC02D",
-      category: "Construcción",
     },
     {
       id: "base-4",
       name: "Pruebas",
       color: "#D32F2F",
-      category: "Calidad",
     },
     {
       id: "base-5",
       name: "Implementación",
       color: "#7B1FA2",
-      category: "Despliegue",
     },
     {
       id: "base-6",
       name: "Mantenimiento",
       color: "#455A64",
-      category: "Soporte",
     },
   ],
 };

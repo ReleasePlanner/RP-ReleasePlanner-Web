@@ -4,6 +4,7 @@
  * Custom exception for business rule violations
  */
 import { HttpException, HttpStatus } from '@nestjs/common';
+import { ERROR_CODES, FIELD_ERROR_CODES, ERROR_MESSAGES } from '../constants';
 
 export class BusinessException extends HttpException {
   constructor(
@@ -25,26 +26,24 @@ export class BusinessException extends HttpException {
 
 export class NotFoundException extends BusinessException {
   constructor(resource: string, id?: string) {
-    const message = id
-      ? `${resource} with id ${id} not found`
-      : `${resource} not found`;
-    super(message, HttpStatus.NOT_FOUND, 'RESOURCE_NOT_FOUND');
+    const message = ERROR_MESSAGES.RESOURCE_NOT_FOUND(resource, id);
+    super(message, HttpStatus.NOT_FOUND, ERROR_CODES.RESOURCE_NOT_FOUND);
   }
 }
 
 export class ConflictException extends BusinessException {
   constructor(message: string, code?: string) {
-    super(message, HttpStatus.CONFLICT, code || 'RESOURCE_CONFLICT');
+    super(message, HttpStatus.CONFLICT, code || ERROR_CODES.RESOURCE_CONFLICT);
   }
 }
 
 export class ValidationException extends BusinessException {
   constructor(message: string, field?: string) {
-    super(
-      message,
-      HttpStatus.BAD_REQUEST,
-      field ? `VALIDATION_ERROR_${field.toUpperCase()}` : 'VALIDATION_ERROR',
-    );
+    const errorCode = field
+      ? (FIELD_ERROR_CODES[field.toUpperCase() as keyof typeof FIELD_ERROR_CODES] ||
+          `VALIDATION_ERROR_${field.toUpperCase()}`)
+      : ERROR_CODES.VALIDATION_ERROR;
+    super(message, HttpStatus.BAD_REQUEST, errorCode);
   }
 }
 

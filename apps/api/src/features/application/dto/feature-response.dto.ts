@@ -1,5 +1,6 @@
 import { Feature, FeatureStatus } from '../../domain/feature.entity';
-import { FeatureCategory } from '../../domain/feature-category.entity';
+import { FeatureCategory } from '../../../feature-categories/domain/feature-category.entity';
+import { Country } from '../../../countries/domain/country.entity';
 import { ProductOwner } from '../../domain/product-owner.entity';
 
 export class FeatureCategoryResponseDto {
@@ -22,6 +23,22 @@ export class ProductOwnerResponseDto {
   }
 }
 
+export class CountryResponseDto {
+  id: string;
+  name: string;
+  code: string;
+  isoCode?: string;
+  region?: string;
+
+  constructor(entity: Country) {
+    this.id = entity.id;
+    this.name = entity.name;
+    this.code = entity.code;
+    this.isoCode = entity.isoCode;
+    this.region = entity.region;
+  }
+}
+
 export class FeatureResponseDto {
   id: string;
   name: string;
@@ -32,6 +49,7 @@ export class FeatureResponseDto {
   technicalDescription: string;
   businessDescription: string;
   productId: string;
+  country?: CountryResponseDto;
   createdAt: Date;
   updatedAt: Date;
 
@@ -45,6 +63,7 @@ export class FeatureResponseDto {
     this.technicalDescription = entity.technicalDescription;
     this.businessDescription = entity.businessDescription;
     this.productId = entity.productId;
+    this.country = entity.country ? new CountryResponseDto(entity.country) : undefined;
     this.createdAt = entity.createdAt;
     this.updatedAt = entity.updatedAt;
   }

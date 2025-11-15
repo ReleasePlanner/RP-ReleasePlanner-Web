@@ -21,7 +21,8 @@
     "paths": {
       "@rp-release-planner/shared/types": ["libs/shared/types/src/index.ts"],
       "@rp-release-planner/shared/utils": ["libs/shared/utils/src/index.ts"],
-      "@rp-release-planner/api/common": ["libs/api/common/src/index.ts"]
+      "@rp-release-planner/api/common": ["libs/api/common/src/index.ts"],
+      "@rp-release-planner/rp-shared": ["./libs/rp-shared/src/index.ts"]
     }
   },
   "files": [],
@@ -41,6 +42,9 @@
     },
     {
       "path": "./libs/api/common"
+    },
+    {
+      "path": "./libs/rp-shared"
     }
   ]
 }

@@ -33,12 +33,26 @@ export class HttpExceptionFilter implements ExceptionFilter {
 
     // Handle different exception types
     if (exception instanceof DatabaseException) {
-      status = exception.getStatus();
-      const exceptionResponse = exception.getResponse();
-      message = typeof exceptionResponse === 'string' 
-        ? exceptionResponse 
-        : exceptionResponse;
-      errorCode = exception.code;
+      // Convert UNIQUE_VIOLATION to ConflictException for better error messages
+      if (exception.code === 'UNIQUE_VIOLATION') {
+        status = HttpStatus.CONFLICT;
+        const errorMessage = exception.message.toLowerCase();
+        if (errorMessage.includes('username') || errorMessage.includes('users_username')) {
+          message = 'Username already exists';
+        } else if (errorMessage.includes('email') || errorMessage.includes('users_email')) {
+          message = 'Email already exists';
+        } else {
+          message = 'Username or email already exists';
+        }
+        errorCode = 'UNIQUE_VIOLATION';
+      } else {
+        status = exception.getStatus();
+        const exceptionResponse = exception.getResponse();
+        message = typeof exceptionResponse === 'string' 
+          ? exceptionResponse 
+          : exceptionResponse;
+        errorCode = exception.code;
+      }
     } else if (exception instanceof QueryFailedError) {
       // Convert TypeORM errors to DatabaseException
       const dbException = DatabaseException.fromTypeORMError(exception);

@@ -1,5 +1,6 @@
 import { Calendar } from '../../domain/calendar.entity';
 import { CalendarDay } from '../../domain/calendar-day.entity';
+import { Country } from '../../../countries/domain/country.entity';
 
 export class CalendarDayResponseDto {
   id: string;
@@ -23,10 +24,27 @@ export class CalendarDayResponseDto {
   }
 }
 
+export class CountryResponseDto {
+  id: string;
+  name: string;
+  code: string;
+  isoCode?: string;
+  region?: string;
+
+  constructor(entity: Country) {
+    this.id = entity.id;
+    this.name = entity.name;
+    this.code = entity.code;
+    this.isoCode = entity.isoCode;
+    this.region = entity.region;
+  }
+}
+
 export class CalendarResponseDto {
   id: string;
   name: string;
   description?: string;
+  country?: CountryResponseDto;
   days: CalendarDayResponseDto[];
   createdAt: Date;
   updatedAt: Date;
@@ -35,7 +53,8 @@ export class CalendarResponseDto {
     this.id = entity.id;
     this.name = entity.name;
     this.description = entity.description;
-    this.days = entity.days.map((day) => new CalendarDayResponseDto(day));
+    this.country = entity.country ? new CountryResponseDto(entity.country) : undefined;
+    this.days = entity.days ? entity.days.map((day) => new CalendarDayResponseDto(day)) : [];
     this.createdAt = entity.createdAt;
     this.updatedAt = entity.updatedAt;
   }

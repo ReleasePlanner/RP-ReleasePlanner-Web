@@ -2,23 +2,18 @@
  * Health Controller Unit Tests
  * Coverage: 100%
  */
-import { Test, TestingModule } from '@nestjs/testing';
-import { HealthController } from './health.controller';
+import { Test, TestingModule } from "@nestjs/testing";
+import { HealthController } from "./health.controller";
 import {
   HealthCheckService,
   TypeOrmHealthIndicator,
   MemoryHealthIndicator,
   DiskHealthIndicator,
-} from '@nestjs/terminus';
-import { CacheService } from '../common/cache/cache.service';
+} from "@nestjs/terminus";
+import { CacheService } from "../common/cache/cache.service";
 
-describe('HealthController', () => {
+describe("HealthController", () => {
   let controller: HealthController;
-  let healthCheckService: jest.Mocked<HealthCheckService>;
-  let db: jest.Mocked<TypeOrmHealthIndicator>;
-  let memory: jest.Mocked<MemoryHealthIndicator>;
-  let disk: jest.Mocked<DiskHealthIndicator>;
-  let cacheService: jest.Mocked<CacheService>;
 
   const mockHealthCheckService = {
     check: jest.fn(),
@@ -71,34 +66,29 @@ describe('HealthController', () => {
     }).compile();
 
     controller = module.get<HealthController>(HealthController);
-    healthCheckService = module.get(HealthCheckService);
-    db = module.get(TypeOrmHealthIndicator);
-    memory = module.get(MemoryHealthIndicator);
-    disk = module.get(DiskHealthIndicator);
-    cacheService = module.get(CacheService);
   });
 
   afterEach(() => {
     jest.clearAllMocks();
   });
 
-  describe('check', () => {
-    it('should return health check results', () => {
+  describe("check", () => {
+    it("should return health check results", () => {
       const mockResult = {
-        status: 'ok',
+        status: "ok",
         info: {
-          database: { status: 'up' },
-          memory_heap: { status: 'up' },
-          memory_rss: { status: 'up' },
-          storage: { status: 'up' },
+          database: { status: "up" },
+          memory_heap: { status: "up" },
+          memory_rss: { status: "up" },
+          storage: { status: "up" },
         },
       };
 
       mockHealthCheckService.check.mockReturnValue(mockResult);
-      mockDb.pingCheck.mockReturnValue({ database: { status: 'up' } });
-      mockMemory.checkHeap.mockReturnValue({ memory_heap: { status: 'up' } });
-      mockMemory.checkRSS.mockReturnValue({ memory_rss: { status: 'up' } });
-      mockDisk.checkStorage.mockReturnValue({ storage: { status: 'up' } });
+      mockDb.pingCheck.mockReturnValue({ database: { status: "up" } });
+      mockMemory.checkHeap.mockReturnValue({ memory_heap: { status: "up" } });
+      mockMemory.checkRSS.mockReturnValue({ memory_rss: { status: "up" } });
+      mockDisk.checkStorage.mockReturnValue({ storage: { status: "up" } });
 
       const result = controller.check();
 
@@ -107,28 +97,30 @@ describe('HealthController', () => {
     });
   });
 
-  describe('liveness', () => {
-    it('should return liveness status', () => {
+  describe("liveness", () => {
+    it("should return liveness status", () => {
       const result = controller.liveness();
 
-      expect(result).toHaveProperty('status', 'ok');
-      expect(result).toHaveProperty('timestamp');
-      expect(typeof result.timestamp).toBe('string');
-      expect(new Date(result.timestamp).getTime()).toBeLessThanOrEqual(Date.now());
+      expect(result).toHaveProperty("status", "ok");
+      expect(result).toHaveProperty("timestamp");
+      expect(typeof result.timestamp).toBe("string");
+      expect(new Date(result.timestamp).getTime()).toBeLessThanOrEqual(
+        Date.now()
+      );
     });
   });
 
-  describe('readiness', () => {
-    it('should return readiness check results', () => {
+  describe("readiness", () => {
+    it("should return readiness check results", () => {
       const mockResult = {
-        status: 'ok',
+        status: "ok",
         info: {
-          database: { status: 'up' },
+          database: { status: "up" },
         },
       };
 
       mockHealthCheckService.check.mockReturnValue(mockResult);
-      mockDb.pingCheck.mockReturnValue({ database: { status: 'up' } });
+      mockDb.pingCheck.mockReturnValue({ database: { status: "up" } });
 
       const result = controller.readiness();
 
@@ -137,75 +129,75 @@ describe('HealthController', () => {
     });
   });
 
-  describe('cacheStatus', () => {
-    it('should return ok when cache is working', async () => {
+  describe("cacheStatus", () => {
+    it("should return ok when cache is working", async () => {
       let storedValue: string | undefined;
-      
+
       // Mock set to store the value that was passed
-      mockCacheService.set.mockImplementation(async (key: string, value: any) => {
-        if (key.includes('health:check')) {
-          storedValue = value;
+      mockCacheService.set.mockImplementation(
+        async (key: string, value: string) => {
+          if (key.includes("health:check")) {
+            storedValue = value;
+          }
+          return undefined;
         }
-        return undefined;
-      });
-      
+      );
+
       // Mock get to return the stored value
       mockCacheService.get.mockImplementation(async (key: string) => {
-        if (key.includes('health:check')) {
+        if (key.includes("health:check")) {
           return storedValue;
         }
         return undefined;
       });
-      
+
       mockCacheService.del.mockResolvedValue(undefined);
 
       const result = await controller.cacheStatus();
 
       expect(result).toEqual({
-        status: 'ok',
-        message: 'Cache is working',
+        status: "ok",
+        message: "Cache is working",
       });
       expect(mockCacheService.set).toHaveBeenCalled();
       expect(mockCacheService.get).toHaveBeenCalled();
       expect(mockCacheService.del).toHaveBeenCalled();
     });
 
-    it('should return error when cache test fails', async () => {
-      const testValue = Date.now().toString();
+    it("should return error when cache test fails", async () => {
       mockCacheService.set.mockResolvedValue(undefined);
-      mockCacheService.get.mockResolvedValue('different-value');
+      mockCacheService.get.mockResolvedValue("different-value");
       mockCacheService.del.mockResolvedValue(undefined);
 
       const result = await controller.cacheStatus();
 
       expect(result).toEqual({
-        status: 'error',
-        message: 'Cache test failed',
+        status: "error",
+        message: "Cache test failed",
       });
     });
 
-    it('should handle cache errors', async () => {
-      const error = new Error('Cache connection failed');
+    it("should handle cache errors", async () => {
+      const error = new Error("Cache connection failed");
       mockCacheService.set.mockRejectedValue(error);
 
       const result = await controller.cacheStatus();
 
       expect(result).toEqual({
-        status: 'error',
-        message: 'Cache connection failed',
+        status: "error",
+        message: "Cache connection failed",
       });
     });
 
-    it('should handle non-Error objects', async () => {
-      mockCacheService.set.mockRejectedValue('String error');
+    it("should handle non-Error objects", async () => {
+      mockCacheService.set.mockRejectedValue("String error");
 
       const result = await controller.cacheStatus();
 
       expect(result).toEqual({
-        status: 'error',
-        message: 'Cache error',
+        status: "error",
+        message: "Cache error",
       });
     });
   });
 });
-

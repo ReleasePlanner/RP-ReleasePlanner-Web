@@ -11,6 +11,9 @@ import { ProductModule } from '../products/product.module';
 import { FeatureModule } from '../features/feature.module';
 import { CalendarModule } from '../calendars/calendar.module';
 import { ITOwnerModule } from '../it-owners/it-owner.module';
+import { ComponentTypeModule } from '../component-types/component-type.module';
+import { FeatureCategoryModule } from '../feature-categories/feature-category.module';
+import { CountryModule } from '../countries/country.module';
 import { PlanModule } from '../release-plans/plan.module';
 import { AuthModule } from '../auth/auth.module';
 import { UsersModule } from '../users/users.module';
@@ -68,6 +71,9 @@ import { HealthController } from './health.controller';
     FeatureModule,
     CalendarModule,
     ITOwnerModule,
+    ComponentTypeModule,
+    FeatureCategoryModule,
+    CountryModule,
     PlanModule,
   ],
   controllers: [AppController, HealthController],

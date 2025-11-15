@@ -1,26 +1,28 @@
 /**
  * Calendar Maintenance Page - Elegant, Material UI compliant page
  *
- * Main page for managing calendars, holidays, and special days
+ * Main page for managing holidays and special days by country
  */
 
 import { useState, useMemo, useEffect } from "react";
-import { 
-  Box, 
-  Button, 
-  CircularProgress, 
+import {
+  Box,
+  CircularProgress,
   Alert,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  IconButton,
-  Tooltip,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  useTheme,
+  alpha,
+  Typography,
+  Card,
+  CardContent,
+  Chip,
 } from "@mui/material";
-import AddIcon from "@mui/icons-material/Add";
-import DeleteIcon from "@mui/icons-material/Delete";
-import EditIcon from "@mui/icons-material/Edit";
+import {
+  CalendarMonth as CalendarIcon,
+} from "@mui/icons-material";
 import { PageLayout } from "@/components";
 import type {
   CalendarDay,
@@ -29,7 +31,6 @@ import type {
   SortBy,
 } from "@/features/calendar/types";
 import {
-  CalendarSelector,
   CalendarDaysList,
   CalendarDayEditDialog,
   generateCalendarDayId,
@@ -38,9 +39,14 @@ import {
   useCalendars,
   useCreateCalendar,
   useUpdateCalendar,
-  useDeleteCalendar,
 } from "../api/hooks";
-import type { Calendar, CalendarDay as APICalendarDay, CreateCalendarDto } from "../api/services/calendars.service";
+import { useCountries } from "../api/hooks/useCountries";
+import { useQueryClient } from "@tanstack/react-query";
+import type {
+  Calendar,
+  CalendarDay as APICalendarDay,
+  CreateCalendarDto,
+} from "../api/services/calendars.service";
 
 interface EditingState {
   calendarId: string;
@@ -48,15 +54,22 @@ interface EditingState {
 }
 
 export function CalendarMaintenancePage() {
-  // API hooks
-  const { data: apiCalendars = [], isLoading, error } = useCalendars();
+  const theme = useTheme();
+  const queryClient = useQueryClient();
+
+  // State for country selection
+  const [selectedCountryId, setSelectedCountryId] = useState<string | undefined>(undefined);
+
+  // API hooks - filter calendars by selected country
+  const { data: apiCalendars = [], isLoading, error } = useCalendars(selectedCountryId);
   const createMutation = useCreateCalendar();
   const updateMutation = useUpdateCalendar();
-  const deleteMutation = useDeleteCalendar();
 
-  const [selectedCalendarId, setSelectedCalendarId] = useState<string>(
-    apiCalendars[0]?.id || ""
-  );
+  // Load countries
+  const { data: countries = [], isLoading: countriesLoading } = useCountries();
+
+  // Get selected country
+  const selectedCountry = countries.find((c) => c.id === selectedCountryId);
 
   // Convert API calendar to local format
   const convertAPICalendarToLocal = (apiCalendar: Calendar): any => {
@@ -64,6 +77,7 @@ export function CalendarMaintenancePage() {
       id: apiCalendar.id,
       name: apiCalendar.name,
       description: apiCalendar.description,
+      country: apiCalendar.country,
       days: apiCalendar.days.map((day: APICalendarDay) => ({
         id: day.id,
         name: day.name,
@@ -77,97 +91,76 @@ export function CalendarMaintenancePage() {
     };
   };
 
-  const calendars = useMemo(() => apiCalendars.map(convertAPICalendarToLocal), [apiCalendars]);
-  const selectedCalendar = calendars.find((c) => c.id === selectedCalendarId);
+  // Get the calendar for the selected country (or create one if it doesn't exist)
+  const currentCalendar = useMemo(() => {
+    if (!selectedCountryId) return null;
+    const calendars = apiCalendars.map(convertAPICalendarToLocal);
+    // Find calendar for the selected country
+    let calendar = calendars.find((c) => c.country?.id === selectedCountryId);
+    
+    // If no calendar exists, create a default one
+    if (!calendar && selectedCountry) {
+      // Return a placeholder calendar object that will be created when first day is added
+      return {
+        id: "",
+        name: `${selectedCountry.name} Calendar`,
+        description: `Holidays and special days for ${selectedCountry.name}`,
+        country: {
+          id: selectedCountry.id,
+          name: selectedCountry.name,
+          code: selectedCountry.code,
+        },
+        days: [],
+      };
+    }
+    
+    return calendar || null;
+  }, [apiCalendars, selectedCountryId, selectedCountry]);
 
   const [editingState, setEditingState] = useState<EditingState | null>(null);
   const [openDialog, setOpenDialog] = useState(false);
-  const [openCalendarDialog, setOpenCalendarDialog] = useState(false);
-  const [editingCalendar, setEditingCalendar] = useState<{ name: string; description: string } | null>(null);
-  const [editingCalendarId, setEditingCalendarId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [filterType, setFilterType] = useState<FilterType>("all");
   const [sortBy, setSortBy] = useState<SortBy>("date");
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Calendar CRUD handlers
-  const handleAddCalendar = () => {
-    setEditingCalendarId(null);
-    setEditingCalendar({ name: "", description: "" });
-    setOpenCalendarDialog(true);
-  };
-
-  const handleEditCalendar = (calendar: any) => {
-    setEditingCalendarId(calendar.id);
-    setEditingCalendar({ name: calendar.name, description: calendar.description || "" });
-    setOpenCalendarDialog(true);
-  };
-
-  const handleDeleteCalendar = async (calendarId: string) => {
-    if (window.confirm("¿Estás seguro de que deseas eliminar este calendario? Esta acción no se puede deshacer.")) {
-      try {
-        await deleteMutation.mutateAsync(calendarId);
-        // If deleted calendar was selected, select first available calendar
-        if (selectedCalendarId === calendarId && apiCalendars.length > 1) {
-          const remainingCalendars = apiCalendars.filter(c => c.id !== calendarId);
-          if (remainingCalendars.length > 0) {
-            setSelectedCalendarId(remainingCalendars[0].id);
-          } else {
-            setSelectedCalendarId("");
-          }
-        }
-      } catch (error) {
-        console.error('Error deleting calendar:', error);
-      }
+  // Ensure calendar exists when country is selected
+  useEffect(() => {
+    if (selectedCountryId && currentCalendar && !currentCalendar.id && selectedCountry) {
+      // Calendar doesn't exist yet, but we'll create it when first day is added
+      // No need to create it now
     }
-  };
-
-  const handleSaveCalendar = async () => {
-    if (!editingCalendar || !editingCalendar.name.trim()) return;
-
-    try {
-      if (editingCalendarId) {
-        // Update existing calendar
-        await updateMutation.mutateAsync({
-          id: editingCalendarId,
-          data: {
-            name: editingCalendar.name.trim(),
-            description: editingCalendar.description?.trim() || undefined,
-          },
-        });
-      } else {
-        // Create new calendar
-        const calendarData: CreateCalendarDto = {
-          name: editingCalendar.name.trim(),
-          description: editingCalendar.description?.trim() || undefined,
-        };
-
-        const createdCalendar = await createMutation.mutateAsync(calendarData);
-        // Select the newly created calendar
-        if (createdCalendar) {
-          setSelectedCalendarId(createdCalendar.id);
-        }
-      }
-      setOpenCalendarDialog(false);
-      setEditingCalendar(null);
-      setEditingCalendarId(null);
-    } catch (error) {
-      console.error('Error saving calendar:', error);
-    }
-  };
-
-  const handleCloseCalendarDialog = () => {
-    setOpenCalendarDialog(false);
-    setEditingCalendar(null);
-    setEditingCalendarId(null);
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedCountryId, currentCalendar?.id, selectedCountry?.id]);
 
   // Day handlers
-  const handleAddDay = () => {
-    if (!selectedCalendarId) return;
+  const handleAddDay = async () => {
+    if (!selectedCountryId || !selectedCountry) return;
+
+    // If calendar doesn't exist, create it first
+    let calendarId = currentCalendar?.id;
+    if (!calendarId || calendarId === "") {
+      try {
+        const calendarData: CreateCalendarDto = {
+          name: `${selectedCountry.name} Calendar`,
+          description: `Holidays and special days for ${selectedCountry.name}`,
+          countryId: selectedCountryId,
+        };
+        const createdCalendar = await createMutation.mutateAsync(calendarData);
+        calendarId = createdCalendar.id;
+        
+        // Refresh calendars data to update currentCalendar
+        await queryClient.refetchQueries({
+          queryKey: ['calendars', 'list', selectedCountryId || 'all'],
+        });
+      } catch (error) {
+        console.error("Error creating calendar:", error);
+        return;
+      }
+    }
 
     setEditingState({
-      calendarId: selectedCalendarId,
+      calendarId: calendarId!,
       day: {
         id: generateCalendarDayId(),
         name: "",
@@ -183,19 +176,20 @@ export function CalendarMaintenancePage() {
   };
 
   const handleEditDay = (day: CalendarDay) => {
-    if (!selectedCalendarId) return;
+    if (!currentCalendar?.id) return;
 
     setEditingState({
-      calendarId: selectedCalendarId,
+      calendarId: currentCalendar.id,
       day,
     });
     setOpenDialog(true);
   };
 
   const handleDeleteDay = async (dayId: string) => {
-    if (!selectedCalendarId || !selectedCalendar) return;
+    if (!currentCalendar?.id) return;
+    
     try {
-      const updatedDays = selectedCalendar.days
+      const updatedDays = (currentCalendar.days || [])
         .filter((d: CalendarDay) => d.id !== dayId)
         .map((d: CalendarDay) => ({
           name: d.name,
@@ -205,60 +199,101 @@ export function CalendarMaintenancePage() {
           recurring: d.recurring,
         }));
       await updateMutation.mutateAsync({
-        id: selectedCalendarId,
+        id: currentCalendar.id,
         data: {
           days: updatedDays,
         },
       });
     } catch (error) {
-      console.error('Error deleting day:', error);
+      console.error("Error deleting day:", error);
     }
   };
 
   const handleSaveDay = async () => {
-    if (!editingState || !selectedCalendar) return;
+    if (!editingState || !selectedCountryId || !selectedCountry) return;
+
+    // Ensure calendar exists before saving
+    let calendarId = editingState.calendarId;
+    let existingDays: CalendarDay[] = [];
+
+    if (!calendarId || calendarId === "" || !currentCalendar?.id) {
+      // Calendar doesn't exist, create it first
+      try {
+        const calendarData: CreateCalendarDto = {
+          name: `${selectedCountry.name} Calendar`,
+          description: `Holidays and special days for ${selectedCountry.name}`,
+          countryId: selectedCountryId,
+        };
+        const createdCalendar = await createMutation.mutateAsync(calendarData);
+        calendarId = createdCalendar.id;
+        
+        // Update editingState with the new calendarId
+        setEditingState({
+          ...editingState,
+          calendarId: calendarId,
+        });
+        
+        // Newly created calendar has no days yet, so existingDays is empty
+        existingDays = [];
+        
+        // Refresh calendars data to update the UI
+        await queryClient.refetchQueries({
+          queryKey: ['calendars', 'list', selectedCountryId || 'all'],
+        });
+      } catch (error) {
+        console.error("Error creating calendar:", error);
+        return;
+      }
+    } else {
+      // Calendar exists, use its current days
+      existingDays = currentCalendar?.days || [];
+    }
 
     const day = editingState.day;
-    const isNew = !selectedCalendar.days.some((d: CalendarDay) => d.id === day.id);
+    const isNew = !existingDays.some((d: CalendarDay) => d.id === day.id);
 
     try {
       const updatedDays = isNew
         ? [
-            ...selectedCalendar.days.map((d: CalendarDay) => ({
+            ...existingDays.map((d: CalendarDay) => ({
+              id: d.id, // Include id for existing days
               name: d.name,
               date: d.date,
               type: d.type,
-              description: d.description,
+              description: d.description || undefined,
               recurring: d.recurring,
             })),
             {
-              name: day.name,
+              // New day without id - backend will create it
+              name: day.name.trim(),
               date: day.date,
               type: day.type,
-              description: day.description,
+              description: day.description?.trim() || undefined,
               recurring: day.recurring,
             },
           ]
-        : selectedCalendar.days.map((d: CalendarDay) =>
+        : existingDays.map((d: CalendarDay) =>
             d.id === day.id
               ? {
-                  name: day.name,
+                  id: d.id, // Include id for updated day
+                  name: day.name.trim(),
                   date: day.date,
                   type: day.type,
-                  description: day.description,
+                  description: day.description?.trim() || undefined,
                   recurring: day.recurring,
                 }
               : {
+                  id: d.id, // Include id for unchanged days
                   name: d.name,
                   date: d.date,
                   type: d.type,
-                  description: d.description,
+                  description: d.description || undefined,
                   recurring: d.recurring,
                 }
           );
 
       await updateMutation.mutateAsync({
-        id: editingState.calendarId,
+        id: calendarId,
         data: {
           days: updatedDays,
         },
@@ -266,7 +301,8 @@ export function CalendarMaintenancePage() {
 
       handleCloseDialog();
     } catch (error) {
-      console.error('Error saving day:', error);
+      console.error("Error saving day:", error);
+      throw error; // Re-throw to let React Query handle it
     }
   };
 
@@ -275,17 +311,13 @@ export function CalendarMaintenancePage() {
     setEditingState(null);
   };
 
-  // Update selectedCalendarId when calendars load
-  useEffect(() => {
-    if (apiCalendars.length > 0 && !selectedCalendarId) {
-      setSelectedCalendarId(apiCalendars[0].id);
-    }
-  }, [apiCalendars, selectedCalendarId]);
-
   // Loading state
-  if (isLoading) {
+  if (isLoading || countriesLoading) {
     return (
-      <PageLayout title="Calendar Management" description="Manage holidays and special days across multiple calendars">
+      <PageLayout
+        title="Calendar Management"
+        description="Manage holidays and special days by country"
+      >
         <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
           <CircularProgress />
         </Box>
@@ -296,10 +328,14 @@ export function CalendarMaintenancePage() {
   // Error state
   if (error) {
     return (
-      <PageLayout title="Calendar Management" description="Manage holidays and special days across multiple calendars">
+      <PageLayout
+        title="Calendar Management"
+        description="Manage holidays and special days by country"
+      >
         <Box p={3}>
           <Alert severity="error">
-            Error al cargar los calendarios: {error instanceof Error ? error.message : 'Error desconocido'}
+            Error al cargar los calendarios:{" "}
+            {error instanceof Error ? error.message : "Error desconocido"}
           </Alert>
         </Box>
       </PageLayout>
@@ -309,185 +345,193 @@ export function CalendarMaintenancePage() {
   return (
     <PageLayout
       title="Calendar Management"
-      description="Manage holidays and special days across multiple calendars"
-      actions={
-        <Box sx={{ display: "flex", gap: 1 }}>
-          <Button
-            variant="outlined"
-            startIcon={<AddIcon />}
-            onClick={handleAddCalendar}
-            sx={{
-              textTransform: "none",
-              fontWeight: 600,
-              px: 2,
-            }}
-          >
-            New Calendar
-          </Button>
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={handleAddDay}
-            disabled={!selectedCalendarId}
-            sx={{
-              textTransform: "none",
-              fontWeight: 600,
-              px: 3,
-              boxShadow: 2,
-              "&:hover": {
-                boxShadow: 4,
-              },
-            }}
-          >
-            Add Holiday/Day
-          </Button>
-        </Box>
-      }
+      description="Manage holidays and special days by country"
     >
       {/* Content Grid */}
       <Box
         sx={{
           display: "grid",
-          gridTemplateColumns: { xs: "1fr", md: "280px 1fr" },
+          gridTemplateColumns: { xs: "1fr", lg: "380px 1fr" },
           gap: 3,
-          height: "100%",
+          mt: 1,
         }}
       >
-        {/* Sidebar: Calendar Selector */}
-        <Box sx={{ display: { xs: "none", md: "block" } }}>
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 2, mb: 3 }}>
-            <CalendarSelector
-              calendars={calendars}
-              selectedCalendarId={selectedCalendarId}
-              onSelectCalendar={setSelectedCalendarId}
-            />
-            {selectedCalendar && (
-              <Box sx={{ display: "flex", gap: 1, mt: 1 }}>
-                <Tooltip title="Edit Calendar">
-                  <IconButton
-                    size="small"
-                    onClick={() => handleEditCalendar(selectedCalendar)}
-                    sx={{ color: "primary.main" }}
+        {/* Sidebar: Country Selector */}
+        <Box>
+          <Card
+            elevation={0}
+            sx={{
+              border: `1px solid ${alpha(theme.palette.divider, 0.12)}`,
+              borderRadius: 3,
+              overflow: "hidden",
+            }}
+          >
+            <CardContent sx={{ p: 2.5 }}>
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                {/* Header */}
+                <Box>
+                  <Typography variant="h6" sx={{ fontWeight: 600, mb: 0.5, fontSize: "1.125rem" }}>
+                    Select Country
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ fontSize: "0.875rem" }}>
+                    Choose a country to manage its holidays and special days. The calendar will be created automatically when you add the first day.
+                  </Typography>
+                </Box>
+
+                {/* Country Selector */}
+                <FormControl fullWidth>
+                  <InputLabel>Country</InputLabel>
+                  <Select
+                    value={selectedCountryId || ""}
+                    label="Country"
+                    onChange={(e) => {
+                      const countryId = e.target.value || undefined;
+                      setSelectedCountryId(countryId);
+                    }}
+                    renderValue={(value) => {
+                      if (!value) return "Select a country";
+                      const country = countries.find((c) => c.id === value);
+                      return country ? `${country.name} (${country.code})` : "";
+                    }}
+                    sx={{
+                      borderRadius: 1.5,
+                      "& .MuiOutlinedInput-notchedOutline": {
+                        borderColor: alpha(theme.palette.divider, 0.3),
+                      },
+                    }}
                   >
-                    <EditIcon fontSize="small" />
-                  </IconButton>
-                </Tooltip>
-                <Tooltip title="Delete Calendar">
-                  <IconButton
-                    size="small"
-                    onClick={() => handleDeleteCalendar(selectedCalendar.id)}
-                    sx={{ color: "error.main" }}
+                    {countries.map((country) => (
+                      <MenuItem key={country.id} value={country.id}>
+                        <Box sx={{ display: "flex", alignItems: "center", gap: 1, width: "100%" }}>
+                          <Typography variant="body2">{country.name}</Typography>
+                          <Chip
+                            label={country.code}
+                            size="small"
+                            sx={{
+                              height: 20,
+                              fontSize: "0.6875rem",
+                              fontWeight: 600,
+                              bgcolor: alpha(theme.palette.primary.main, 0.08),
+                              color: theme.palette.primary.main,
+                              border: `1px solid ${alpha(theme.palette.primary.main, 0.2)}`,
+                              px: 0.5,
+                            }}
+                          />
+                          {country.region && (
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                              sx={{ ml: "auto", fontSize: "0.75rem" }}
+                            >
+                              {country.region}
+                            </Typography>
+                          )}
+                        </Box>
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+
+                {/* Country Info */}
+                {selectedCountry && (
+                  <Box
+                    sx={{
+                      p: 2,
+                      backgroundColor: alpha(theme.palette.primary.main, 0.04),
+                      borderRadius: 2,
+                      border: `1px solid ${alpha(theme.palette.divider, 0.12)}`,
+                    }}
                   >
-                    <DeleteIcon fontSize="small" />
-                  </IconButton>
-                </Tooltip>
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 1 }}>
+                      <Typography variant="body1" sx={{ fontWeight: 600, fontSize: "0.9375rem" }}>
+                        {selectedCountry.name}
+                      </Typography>
+                      <Chip
+                        label={selectedCountry.code}
+                        size="small"
+                        sx={{
+                          height: 24,
+                          fontSize: "0.75rem",
+                          fontWeight: 500,
+                          bgcolor: alpha(theme.palette.primary.main, 0.08),
+                          color: theme.palette.primary.main,
+                        }}
+                      />
+                    </Box>
+                    {selectedCountry.region && (
+                      <Typography variant="caption" color="text.secondary" display="block">
+                        Region: {selectedCountry.region}
+                      </Typography>
+                    )}
+                    {currentCalendar && (
+                      <Typography
+                        variant="caption"
+                        display="block"
+                        color="text.secondary"
+                        sx={{ mt: 1, fontSize: "0.75rem" }}
+                      >
+                        Total days: {currentCalendar.days?.length || 0}
+                      </Typography>
+                    )}
+                  </Box>
+                )}
               </Box>
-            )}
-          </Box>
+            </CardContent>
+          </Card>
         </Box>
 
         {/* Main: Days List */}
         <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
-          {/* Mobile Calendar Selector */}
-          <Box sx={{ display: { xs: "block", md: "none" } }}>
-            <Box sx={{ display: "flex", flexDirection: "column", gap: 2, mb: 2 }}>
-              <CalendarSelector
-                calendars={calendars}
-                selectedCalendarId={selectedCalendarId}
-                onSelectCalendar={setSelectedCalendarId}
+          {!selectedCountryId ? (
+            <Card
+              elevation={0}
+              sx={{
+                border: `1px solid ${alpha(theme.palette.divider, 0.12)}`,
+                borderRadius: 3,
+                p: 6,
+                textAlign: "center",
+              }}
+            >
+              <CalendarIcon
+                sx={{
+                  fontSize: 64,
+                  color: "text.secondary",
+                  mb: 2,
+                  opacity: 0.5,
+                }}
               />
-              {selectedCalendar && (
-                <Box sx={{ display: "flex", gap: 1 }}>
-                  <Button
-                    size="small"
-                    startIcon={<EditIcon />}
-                    onClick={() => handleEditCalendar(selectedCalendar)}
-                    sx={{ textTransform: "none" }}
-                  >
-                    Edit Calendar
-                  </Button>
-                  <Button
-                    size="small"
-                    startIcon={<DeleteIcon />}
-                    onClick={() => handleDeleteCalendar(selectedCalendar.id)}
-                    color="error"
-                    sx={{ textTransform: "none" }}
-                  >
-                    Delete Calendar
-                  </Button>
-                </Box>
-              )}
-            </Box>
-          </Box>
-
-          {/* Calendar Days List */}
-          <CalendarDaysList
-            calendar={selectedCalendar}
-            viewMode={viewMode}
-            onViewModeChange={setViewMode}
-            filterType={filterType}
-            onFilterChange={setFilterType}
-            sortBy={sortBy}
-            onSortChange={setSortBy}
-            searchQuery={searchQuery}
-            onSearchChange={setSearchQuery}
-            onAddDay={handleAddDay}
-            onEditDay={handleEditDay}
-            onDeleteDay={handleDeleteDay}
-          />
+              <Typography variant="h6" sx={{ mb: 1, fontWeight: 600 }}>
+                Select a Country
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Choose a country from the sidebar to view and manage its holidays and special days
+              </Typography>
+            </Card>
+          ) : (
+            <CalendarDaysList
+              calendar={currentCalendar}
+              viewMode={viewMode}
+              onViewModeChange={setViewMode}
+              filterType={filterType}
+              onFilterChange={setFilterType}
+              sortBy={sortBy}
+              onSortChange={setSortBy}
+              searchQuery={searchQuery}
+              onSearchChange={setSearchQuery}
+              onAddDay={handleAddDay}
+              onEditDay={handleEditDay}
+              onDeleteDay={handleDeleteDay}
+            />
+          )}
         </Box>
       </Box>
-
-      {/* Calendar Edit Dialog */}
-      <Dialog open={openCalendarDialog} onClose={handleCloseCalendarDialog} maxWidth="sm" fullWidth>
-        <DialogTitle>
-          {editingCalendarId ? "Edit Calendar" : "New Calendar"}
-        </DialogTitle>
-        <DialogContent>
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 2, pt: 1 }}>
-            <TextField
-              label="Calendar Name"
-              value={editingCalendar?.name || ""}
-              onChange={(e) =>
-                setEditingCalendar({ ...editingCalendar!, name: e.target.value })
-              }
-              fullWidth
-              required
-              autoFocus
-            />
-            <TextField
-              label="Description"
-              value={editingCalendar?.description || ""}
-              onChange={(e) =>
-                setEditingCalendar({ ...editingCalendar!, description: e.target.value })
-              }
-              fullWidth
-              multiline
-              rows={3}
-            />
-          </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseCalendarDialog} sx={{ textTransform: "none" }}>
-            Cancel
-          </Button>
-          <Button
-            onClick={handleSaveCalendar}
-            variant="contained"
-            disabled={!editingCalendar?.name?.trim()}
-            sx={{ textTransform: "none" }}
-          >
-            Save
-          </Button>
-        </DialogActions>
-      </Dialog>
 
       {/* Day Edit Dialog */}
       <CalendarDayEditDialog
         open={openDialog}
         editing={editingState?.day !== undefined}
         day={editingState?.day || null}
-        calendarName={selectedCalendar?.name || null}
+        calendarName={currentCalendar?.name || selectedCountry?.name || null}
         onClose={handleCloseDialog}
         onSave={handleSaveDay}
         onDayChange={(day: CalendarDay) => {

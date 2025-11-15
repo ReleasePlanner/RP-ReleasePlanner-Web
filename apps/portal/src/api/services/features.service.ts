@@ -18,6 +18,16 @@ export interface ProductOwner {
   updatedAt: string;
 }
 
+export interface Country {
+  id: string;
+  name: string;
+  code: string;
+  isoCode?: string;
+  region?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Feature {
   id: string;
   name: string;
@@ -28,6 +38,7 @@ export interface Feature {
   technicalDescription: string;
   businessDescription: string;
   productId: string;
+  country?: Country;
   createdAt: string;
   updatedAt: string;
 }
@@ -43,12 +54,14 @@ export interface CreateProductOwnerDto {
 export interface CreateFeatureDto {
   name: string;
   description: string;
-  category: CreateFeatureCategoryDto;
+  categoryId?: string;
+  category?: CreateFeatureCategoryDto;
   status: 'planned' | 'in-progress' | 'completed' | 'on-hold';
   createdBy: CreateProductOwnerDto;
   technicalDescription: string;
   businessDescription: string;
   productId: string;
+  countryId?: string;
 }
 
 export interface UpdateFeatureCategoryDto {
@@ -62,11 +75,13 @@ export interface UpdateProductOwnerDto {
 export interface UpdateFeatureDto {
   name?: string;
   description?: string;
+  categoryId?: string;
   category?: UpdateFeatureCategoryDto;
   status?: 'planned' | 'in-progress' | 'completed' | 'on-hold';
   createdBy?: UpdateProductOwnerDto;
   technicalDescription?: string;
   businessDescription?: string;
+  countryId?: string;
 }
 
 export const featuresService = {

@@ -21,3 +21,4 @@ export class FeatureCategory extends BaseEntity {
     }
   }
 }
+

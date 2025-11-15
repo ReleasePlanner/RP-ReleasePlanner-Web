@@ -3,7 +3,7 @@
  * Coverage: 100%
  */
 import { Feature, FeatureStatus } from './feature.entity';
-import { FeatureCategory } from './feature-category.entity';
+import { FeatureCategory } from '../../feature-categories/domain/feature-category.entity';
 import { ProductOwner } from './product-owner.entity';
 
 describe('Feature', () => {

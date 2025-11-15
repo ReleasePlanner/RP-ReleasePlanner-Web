@@ -79,7 +79,6 @@ describe('BasePhaseController', () => {
           id: 'id1',
           name: 'Phase 1',
           color: '#FF0000',
-          category: 'Category 1',
           createdAt: new Date(),
           updatedAt: new Date(),
         },
@@ -87,7 +86,6 @@ describe('BasePhaseController', () => {
           id: 'id2',
           name: 'Phase 2',
           color: '#00FF00',
-          category: 'Category 2',
           createdAt: new Date(),
           updatedAt: new Date(),
         },
@@ -118,7 +116,6 @@ describe('BasePhaseController', () => {
         id: 'id1',
         name: 'Phase 1',
         color: '#FF0000',
-        category: 'Category 1',
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -147,7 +144,6 @@ describe('BasePhaseController', () => {
     const createDto: CreateBasePhaseDto = {
       name: 'New Phase',
       color: '#0000FF',
-      category: 'New Category',
     };
 
     it('should create and return a BasePhaseResponseDto', async () => {
@@ -155,7 +151,6 @@ describe('BasePhaseController', () => {
         id: 'new-id',
         name: 'New Phase',
         color: '#0000FF',
-        category: 'New Category',
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -204,7 +199,6 @@ describe('BasePhaseController', () => {
         id: 'id1',
         name: 'Updated Phase',
         color: '#00FF00',
-        category: 'Category 1',
         createdAt: new Date(),
         updatedAt: new Date(),
       };

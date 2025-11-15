@@ -12,7 +12,12 @@
     "emitDecoratorMetadata": true,
     "target": "es2021",
     "baseUrl": ".",
-    "paths": {},
+    "paths": {
+      "@rp-release-planner/shared/types": ["../../libs/shared/types/src/index.ts"],
+      "@rp-release-planner/shared/utils": ["../../libs/shared/utils/src/index.ts"],
+      "@rp-release-planner/api/common": ["../../libs/api/common/src/index.ts"],
+      "@rp-release-planner/rp-shared": ["../../libs/rp-shared/src/index.ts"]
+    },
     "typeRoots": ["../../node_modules/@types", "node_modules/@types"],
     "skipLibCheck": true,
     "strictPropertyInitialization": false,
@@ -23,7 +28,8 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": false,
-    "lib": ["es2022"]
+    "lib": ["es2022"],
+    "composite": true
   },
   "include": [
     "src/**/*.ts"
@@ -40,5 +46,10 @@
     "eslint.config.js",
     "eslint.config.cjs",
     "eslint.config.mjs"
+  ],
+  "references": [
+    {
+      "path": "../../libs/rp-shared/tsconfig.lib.json"
+    }
   ]
 }

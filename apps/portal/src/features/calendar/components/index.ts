@@ -7,3 +7,4 @@ export { CalendarSelector } from "./CalendarSelector";
 export { CalendarDaysList } from "./CalendarDaysList";
 export { CalendarToolbar } from "./CalendarToolbar";
 export { CalendarDayEditDialog } from "./CalendarDayEditDialog";
+export { CalendarCard } from "./CalendarCard";

@@ -3,24 +3,23 @@
  */
 import { ApiProperty } from '@nestjs/swagger';
 import { UserRole } from '../../../users/domain/user.entity';
+import { AUTH_API_PROPERTY_DESCRIPTIONS, AUTH_API_PROPERTY_EXAMPLES } from '../../constants';
 
 export class AuthResponseDto {
   @ApiProperty({
-    description: 'JWT access token',
-    example:
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c',
+    description: AUTH_API_PROPERTY_DESCRIPTIONS.ACCESS_TOKEN,
+    example: AUTH_API_PROPERTY_EXAMPLES.TOKEN,
   })
   accessToken: string;
 
   @ApiProperty({
-    description: 'Refresh token',
-    example:
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c',
+    description: AUTH_API_PROPERTY_DESCRIPTIONS.REFRESH_TOKEN,
+    example: AUTH_API_PROPERTY_EXAMPLES.TOKEN,
   })
   refreshToken: string;
 
   @ApiProperty({
-    description: 'User information',
+    description: AUTH_API_PROPERTY_DESCRIPTIONS.USER_INFO,
   })
   user: {
     id: string;

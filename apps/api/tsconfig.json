@@ -4,6 +4,9 @@
   "include": [],
   "references": [
     {
+      "path": "../../libs/rp-shared"
+    },
+    {
       "path": "./tsconfig.app.json"
     },
     {

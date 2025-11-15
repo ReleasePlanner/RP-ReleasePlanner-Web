@@ -5,7 +5,7 @@
  */
 
 import { useState, useMemo } from "react";
-import { Box, Button, CircularProgress, Alert } from "@mui/material";
+import { Box, Button, CircularProgress, Alert, useTheme, alpha } from "@mui/material";
 import { Add as AddIcon } from "@mui/icons-material";
 import { PageLayout } from "@/components";
 import type { Feature, ProductWithFeatures } from "@/features/feature/types";
@@ -15,8 +15,6 @@ import {
   FeatureEditDialog,
   type ViewMode,
   type SortBy,
-  FEATURE_CATEGORIES,
-  PRODUCT_OWNERS,
   generateFeatureId,
 } from "@/features/feature";
 import {
@@ -26,6 +24,8 @@ import {
   useUpdateFeature,
   useDeleteFeature,
 } from "../api/hooks";
+import { useITOwners } from "../api/hooks/useITOwners";
+import { useFeatureCategories } from "../api/hooks/useFeatureCategories";
 import type { Feature as APIFeature } from "../api/services/features.service";
 
 interface EditingState {
@@ -40,9 +40,13 @@ interface EditingState {
  * Features are stored in Redux store and loaded from there.
  */
 export function FeatureMaintenancePage() {
+  const theme = useTheme();
+  
   // API hooks
   const { data: apiProducts = [], isLoading: productsLoading, error: productsError } = useProducts();
   const { data: allFeatures = [], isLoading: featuresLoading, error: featuresError } = useFeatures();
+  const { data: itOwners = [] } = useITOwners();
+  const { data: featureCategories = [] } = useFeatureCategories();
   const createMutation = useCreateFeature();
   const updateMutation = useUpdateFeature();
   const deleteMutation = useDeleteFeature();
@@ -53,12 +57,21 @@ export function FeatureMaintenancePage() {
       id: apiFeature.id,
       name: apiFeature.name,
       description: apiFeature.description,
-      category: apiFeature.category.name,
+      category: typeof apiFeature.category === 'string' 
+        ? { id: '', name: apiFeature.category }
+        : { id: apiFeature.category.id, name: apiFeature.category.name },
       status: apiFeature.status === 'in-progress' ? 'in-progress' : apiFeature.status as any,
-      createdBy: apiFeature.createdBy.name,
+      createdBy: typeof apiFeature.createdBy === 'string'
+        ? { id: '', name: apiFeature.createdBy }
+        : { id: apiFeature.createdBy.id, name: apiFeature.createdBy.name },
       technicalDescription: apiFeature.technicalDescription,
       businessDescription: apiFeature.businessDescription,
       productId: apiFeature.productId,
+      country: apiFeature.country ? {
+        id: apiFeature.country.id,
+        name: apiFeature.country.name,
+        code: apiFeature.country.code,
+      } : undefined,
     };
   };
 
@@ -91,15 +104,25 @@ export function FeatureMaintenancePage() {
   const handleAddFeature = () => {
     if (!selectedProductId) return;
 
+    // Use first IT Owner if available, otherwise create a placeholder
+    const defaultOwner = itOwners.length > 0 
+      ? { id: itOwners[0].id, name: itOwners[0].name }
+      : { id: "", name: "" };
+
+    // Use first Feature Category if available, otherwise create a placeholder
+    const defaultCategory = featureCategories.length > 0
+      ? { id: featureCategories[0].id, name: featureCategories[0].name }
+      : { id: "", name: "" };
+
     setEditingState({
       productId: selectedProductId,
       feature: {
         id: generateFeatureId(),
         name: "",
         description: "",
-        category: FEATURE_CATEGORIES[0],
+        category: defaultCategory,
         status: "planned",
-        createdBy: PRODUCT_OWNERS[0],
+        createdBy: defaultOwner,
         technicalDescription: "",
         businessDescription: "",
         productId: selectedProductId,
@@ -127,36 +150,81 @@ export function FeatureMaintenancePage() {
     }
   };
 
-  const handleSaveFeature = async () => {
-    if (!editingState || !editingState.feature) return;
+  const handleSaveFeature = async (feature: Feature) => {
+    if (!editingState) return;
 
-    const feature = editingState.feature;
     const isNew = !selectedProduct?.features.some((f) => f.id === feature.id);
 
+    // Validate required fields
+    const name = feature.name?.trim();
+    const description = feature.description?.trim();
+    const technicalDescription = feature.technicalDescription?.trim();
+    const businessDescription = feature.businessDescription?.trim();
+
+    if (!name) {
+      console.error('Feature name is required');
+      return;
+    }
+
+    if (!description) {
+      console.error('Feature description is required');
+      return;
+    }
+
+    if (!technicalDescription) {
+      console.error('Technical description is required');
+      return;
+    }
+
+    if (!businessDescription) {
+      console.error('Business description is required');
+      return;
+    }
+
+    // Ensure createdBy has a name (from IT Owner)
+    if (!feature.createdBy?.name) {
+      console.error('IT Owner is required');
+      return;
+    }
+
     try {
+      // Prepare payload - prioritize categoryId if available
+      const payload: any = {
+        name,
+        description,
+        status: feature.status as any,
+        createdBy: { name: feature.createdBy.name },
+        technicalDescription,
+        businessDescription,
+      };
+
+      // Handle category - prefer categoryId, fallback to category.name
+      if (feature.category?.id && !feature.category.id.startsWith('cat-')) {
+        // Valid UUID category ID
+        payload.categoryId = feature.category.id;
+      } else if (feature.category?.name) {
+        // Fallback to category name
+        payload.category = { name: feature.category.name };
+      } else if (typeof feature.category === 'string') {
+        // Legacy string category
+        payload.category = { name: feature.category };
+      }
+
+      // Handle country - prefer countryId
+      if (feature.country?.id && !feature.country.id.startsWith('country-')) {
+        // Valid UUID country ID
+        payload.countryId = feature.country.id;
+      }
+
       if (isNew) {
-        await createMutation.mutateAsync({
-          name: feature.name,
-          description: feature.description,
-          category: { name: feature.category },
-          status: feature.status as any,
-          createdBy: { name: feature.createdBy },
-          technicalDescription: feature.technicalDescription,
-          businessDescription: feature.businessDescription,
-          productId: editingState.productId,
-        });
+        payload.productId = editingState.productId;
+        console.log('Creating feature with payload:', payload);
+        await createMutation.mutateAsync(payload);
       } else {
+        console.log('Updating feature with payload:', payload);
         await updateMutation.mutateAsync({
           id: feature.id,
-          data: {
-            name: feature.name,
-            description: feature.description,
-            category: { name: feature.category },
-            status: feature.status as any,
-            createdBy: { name: feature.createdBy },
-            technicalDescription: feature.technicalDescription,
-            businessDescription: feature.businessDescription,
-          },
+          data: payload,
         });
       }
       handleCloseDialog();
@@ -204,16 +272,20 @@ export function FeatureMaintenancePage() {
       actions={
         <Button
           variant="contained"
-          startIcon={<AddIcon sx={{ fontSize: { xs: 18, sm: 20 } }} />}
+          startIcon={<AddIcon />}
           onClick={handleAddFeature}
           disabled={!selectedProductId}
           sx={{
             textTransform: "none",
             fontWeight: 600,
-            px: 3,
-            boxShadow: 2,
+            px: 2.5,
+            py: 1,
+            boxShadow: `0 2px 4px ${alpha(theme.palette.primary.main, 0.2)}`,
             "&:hover": {
-              boxShadow: 4,
+              boxShadow: `0 4px 8px ${alpha(theme.palette.primary.main, 0.3)}`,
+            },
+            "&:disabled": {
+              boxShadow: "none",
             },
           }}
         >

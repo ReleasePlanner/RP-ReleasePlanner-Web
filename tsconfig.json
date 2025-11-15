@@ -17,6 +17,12 @@
     },
     {
       "path": "./libs/api/common"
+    },
+    {
+      "path": "./apps/mobile"
+    },
+    {
+      "path": "./libs/rp-shared"
     }
   ]
 }

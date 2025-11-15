@@ -42,32 +42,36 @@ export function ProductCard({
     <Card
       elevation={0}
       sx={{
-        border: `1px solid ${alpha(theme.palette.divider, 0.5)}`,
-        borderRadius: 2,
+        border: `1px solid ${alpha(theme.palette.divider, 0.12)}`,
+        borderRadius: 3,
+        overflow: "hidden",
         transition: theme.transitions.create(
           ["box-shadow", "border-color", "transform"],
           {
             duration: theme.transitions.duration.shorter,
+            easing: theme.transitions.easing.easeInOut,
           }
         ),
         "&:hover": {
-          borderColor: alpha(theme.palette.primary.main, 0.3),
-          boxShadow: `0 2px 8px ${alpha(theme.palette.common.black, 0.08)}`,
-          transform: "translateY(-1px)",
+          borderColor: alpha(theme.palette.primary.main, 0.4),
+          boxShadow: `0 4px 20px ${alpha(theme.palette.common.black, 0.1)}, 0 0 0 1px ${alpha(theme.palette.primary.main, 0.08)}`,
+          transform: "translateY(-2px)",
         },
       }}
     >
-      <CardContent sx={{ p: 2.5 }}>
+      <CardContent sx={{ p: 3 }}>
         {/* Product Header */}
-        <Stack spacing={1} sx={{ mb: 2.5 }}>
+        <Stack spacing={1.5} sx={{ mb: 3 }}>
           <Box>
             <Typography
-              variant="subtitle1"
+              variant="h6"
               sx={{
-                fontWeight: 600,
+                fontWeight: 700,
+                fontSize: "1.125rem",
                 color: theme.palette.text.primary,
-                lineHeight: 1.3,
-                mb: 0.5,
+                lineHeight: 1.4,
+                mb: 1,
+                letterSpacing: "-0.01em",
               }}
             >
               {product.name}
@@ -77,8 +81,8 @@ export function ProductCard({
                 variant="body2"
                 sx={{
                   color: theme.palette.text.secondary,
-                  fontSize: "0.8125rem",
-                  lineHeight: 1.4,
+                  fontSize: "0.875rem",
+                  lineHeight: 1.6,
                   display: "-webkit-box",
                   WebkitLineClamp: 2,
                   WebkitBoxOrient: "vertical",
@@ -93,7 +97,7 @@ export function ProductCard({
             sx={{
               display: "flex",
               alignItems: "center",
-              gap: 1,
+              gap: 1.5,
               flexWrap: "wrap",
             }}
           >
@@ -103,13 +107,14 @@ export function ProductCard({
               }`}
               size="small"
               sx={{
-                height: 20,
-                fontSize: "0.6875rem",
-                fontWeight: 500,
-                bgcolor: alpha(theme.palette.primary.main, 0.08),
+                height: 24,
+                fontSize: "0.75rem",
+                fontWeight: 600,
+                bgcolor: alpha(theme.palette.primary.main, 0.1),
                 color: theme.palette.primary.main,
+                border: `1px solid ${alpha(theme.palette.primary.main, 0.2)}`,
                 "& .MuiChip-label": {
-                  px: 1,
+                  px: 1.5,
                 },
               }}
             />
@@ -119,6 +124,7 @@ export function ProductCard({
                 color: theme.palette.text.disabled,
                 fontFamily: "monospace",
                 fontSize: "0.6875rem",
+                fontWeight: 400,
               }}
             >
               {product.id}
@@ -127,13 +133,22 @@ export function ProductCard({
         </Stack>
 
         <Divider
-          sx={{ mb: 2, borderColor: alpha(theme.palette.divider, 0.5) }}
+          sx={{ 
+            mb: 3, 
+            borderColor: alpha(theme.palette.divider, 0.12),
+            borderWidth: 1,
+          }}
         />
 
         {/* Components Table */}
-        <Box sx={{ mb: 2 }}>
+        <Box sx={{ mb: 3 }}>
           <ComponentsTable
-            components={product.components}
+            components={product.components.map((c: ComponentVersion) => ({
+              ...c,
+              // Map backend format to frontend format
+              name: (c as any).name || c.type || '', // Use name if exists, fallback to type
+              version: (c as any).currentVersion || (c as any).version || '', // Map currentVersion to version
+            }))}
             onEditComponent={(component: ComponentVersion) =>
               onEditComponent(product, component)
             }
@@ -146,21 +161,32 @@ export function ProductCard({
         {/* Add Component Button */}
         <Button
           variant="outlined"
-          size="small"
-          startIcon={<AddIcon fontSize="small" />}
+          size="medium"
+          startIcon={<AddIcon />}
           onClick={() => onAddComponent(product)}
           fullWidth
           sx={{
             textTransform: "none",
-            fontWeight: 500,
-            fontSize: "0.8125rem",
-            py: 0.75,
-            borderColor: alpha(theme.palette.divider, 0.5),
+            fontWeight: 600,
+            fontSize: "0.875rem",
+            py: 1.25,
+            borderRadius: 2,
+            borderColor: alpha(theme.palette.divider, 0.3),
+            borderWidth: 1.5,
             color: theme.palette.text.secondary,
+            bgcolor: alpha(theme.palette.action.hover, 0.3),
+            transition: theme.transitions.create(
+              ["border-color", "background-color", "color", "transform"],
+              {
+                duration: theme.transitions.duration.shorter,
+              }
+            ),
             "&:hover": {
               borderColor: theme.palette.primary.main,
-              bgcolor: alpha(theme.palette.primary.main, 0.04),
+              borderWidth: 1.5,
+              bgcolor: alpha(theme.palette.primary.main, 0.08),
               color: theme.palette.primary.main,
+              transform: "scale(1.01)",
             },
           }}
         >

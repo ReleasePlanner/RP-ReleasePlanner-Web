@@ -10,6 +10,9 @@ export const API_ENDPOINTS = {
   FEATURES: '/features',
   CALENDARS: '/calendars',
   IT_OWNERS: '/it-owners',
+  COMPONENT_TYPES: '/component-types',
+  FEATURE_CATEGORIES: '/feature-categories',
+  COUNTRIES: '/countries',
   PLANS: '/plans',
 } as const;
 

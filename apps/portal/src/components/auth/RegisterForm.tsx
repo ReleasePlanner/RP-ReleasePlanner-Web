@@ -65,14 +65,27 @@ export function RegisterForm({ onSuccess, onSwitchToLogin }: RegisterFormProps) 
       return;
     }
 
+    // Normalize data before sending (trim whitespace)
+    const normalizedData = {
+      username: formData.username.trim(),
+      email: formData.email.trim().toLowerCase(),
+      password: formData.password,
+      firstName: formData.firstName?.trim() || undefined,
+      lastName: formData.lastName?.trim() || undefined,
+    };
+
+    // Double-check that required fields are not empty after normalization
+    if (!normalizedData.username || normalizedData.username.length === 0) {
+      setErrors({ ...errors, username: 'El usuario no puede estar vacío' });
+      return;
+    }
+    if (!normalizedData.email || normalizedData.email.length === 0) {
+      setErrors({ ...errors, email: 'El email no puede estar vacío' });
+      return;
+    }
+
     try {
-      await register.mutateAsync({
-        username: formData.username,
-        email: formData.email,
-        password: formData.password,
-        firstName: formData.firstName || undefined,
-        lastName: formData.lastName || undefined,
-      });
+      await register.mutateAsync(normalizedData);
       onSuccess?.();
     } catch (error) {
       // Error is handled by the hook and logged
@@ -102,6 +115,7 @@ export function RegisterForm({ onSuccess, onSwitchToLogin }: RegisterFormProps) 
           required
           error={!!errors.username}
           helperText={errors.username}
+          autoComplete="username"
           disabled={register.isPending}
         />
 
@@ -115,6 +129,7 @@ export function RegisterForm({ onSuccess, onSwitchToLogin }: RegisterFormProps) 
           required
           error={!!errors.email}
           helperText={errors.email}
+          autoComplete="email"
           disabled={register.isPending}
         />
 
@@ -124,6 +139,7 @@ export function RegisterForm({ onSuccess, onSwitchToLogin }: RegisterFormProps) 
           value={formData.firstName}
           onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
           margin="normal"
+          autoComplete="given-name"
           disabled={register.isPending}
         />
 
@@ -133,6 +149,7 @@ export function RegisterForm({ onSuccess, onSwitchToLogin }: RegisterFormProps) 
           value={formData.lastName}
           onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
           margin="normal"
+          autoComplete="family-name"
           disabled={register.isPending}
         />
 
@@ -146,6 +163,7 @@ export function RegisterForm({ onSuccess, onSwitchToLogin }: RegisterFormProps) 
           required
           error={!!errors.password}
           helperText={errors.password}
+          autoComplete="new-password"
           disabled={register.isPending}
         />
 
@@ -159,6 +177,7 @@ export function RegisterForm({ onSuccess, onSwitchToLogin }: RegisterFormProps) 
           required
           error={!!errors.confirmPassword}
           helperText={errors.confirmPassword}
+          autoComplete="new-password"
           disabled={register.isPending}
         />
 

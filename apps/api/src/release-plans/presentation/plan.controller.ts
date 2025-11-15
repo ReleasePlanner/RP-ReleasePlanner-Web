@@ -20,17 +20,24 @@ import { PlanService } from '../application/plan.service';
 import { CreatePlanDto } from '../application/dto/create-plan.dto';
 import { UpdatePlanDto } from '../application/dto/update-plan.dto';
 import { PlanResponseDto } from '../application/dto/plan-response.dto';
+import {
+  PLAN_API_OPERATION_SUMMARIES,
+  PLAN_API_RESPONSE_DESCRIPTIONS,
+  PLAN_HTTP_STATUS_CODES,
+  PLAN_API_PARAM_DESCRIPTIONS,
+} from '../constants';
+import { API_TAGS } from '../../common/constants';
 
-@ApiTags('plans')
+@ApiTags(API_TAGS.PLANS)
 @Controller('plans')
 export class PlanController {
   constructor(private readonly service: PlanService) {}
 
   @Get()
-  @ApiOperation({ summary: 'Obtener todos los planes de release' })
+  @ApiOperation({ summary: PLAN_API_OPERATION_SUMMARIES.GET_ALL })
   @ApiResponse({
-    status: 200,
-    description: 'Lista de planes obtenida exitosamente',
+    status: PLAN_HTTP_STATUS_CODES.OK,
+    description: PLAN_API_RESPONSE_DESCRIPTIONS.LIST_RETRIEVED,
     type: [PlanResponseDto],
   })
   async findAll(): Promise<PlanResponseDto[]> {
@@ -38,44 +45,67 @@ export class PlanController {
   }
 
   @Get(':id')
-  @ApiOperation({ summary: 'Obtener un plan de release por ID' })
-  @ApiParam({ name: 'id', description: 'ID del plan', example: 'plan-1' })
+  @ApiOperation({ summary: PLAN_API_OPERATION_SUMMARIES.GET_BY_ID })
+  @ApiParam({
+    name: 'id',
+    description: PLAN_API_PARAM_DESCRIPTIONS.ID,
+    example: PLAN_API_PARAM_DESCRIPTIONS.EXAMPLE_ID,
+  })
   @ApiResponse({
-    status: 200,
-    description: 'Plan obtenido exitosamente',
+    status: PLAN_HTTP_STATUS_CODES.OK,
+    description: PLAN_API_RESPONSE_DESCRIPTIONS.RETRIEVED,
     type: PlanResponseDto,
   })
-  @ApiResponse({ status: 404, description: 'Plan no encontrado' })
+  @ApiResponse({
+    status: PLAN_HTTP_STATUS_CODES.NOT_FOUND,
+    description: PLAN_API_RESPONSE_DESCRIPTIONS.NOT_FOUND,
+  })
   async findById(@Param('id') id: string): Promise<PlanResponseDto> {
     return this.service.findById(id);
   }
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: 'Crear un nuevo plan de release' })
+  @ApiOperation({ summary: PLAN_API_OPERATION_SUMMARIES.CREATE })
   @ApiBody({ type: CreatePlanDto })
   @ApiResponse({
-    status: 201,
-    description: 'Plan creado exitosamente',
+    status: PLAN_HTTP_STATUS_CODES.CREATED,
+    description: PLAN_API_RESPONSE_DESCRIPTIONS.CREATED,
     type: PlanResponseDto,
   })
-  @ApiResponse({ status: 400, description: 'Datos de entrada inválidos' })
-  @ApiResponse({ status: 409, description: 'Conflicto: nombre ya existe' })
+  @ApiResponse({
+    status: PLAN_HTTP_STATUS_CODES.BAD_REQUEST,
+    description: PLAN_API_RESPONSE_DESCRIPTIONS.INVALID_INPUT,
+  })
+  @ApiResponse({
+    status: PLAN_HTTP_STATUS_CODES.CONFLICT,
+    description: PLAN_API_RESPONSE_DESCRIPTIONS.CONFLICT,
+  })
   async create(@Body() dto: CreatePlanDto): Promise<PlanResponseDto> {
     return this.service.create(dto);
   }
 
   @Put(':id')
-  @ApiOperation({ summary: 'Actualizar un plan de release existente' })
-  @ApiParam({ name: 'id', description: 'ID del plan', example: 'plan-1' })
+  @ApiOperation({ summary: PLAN_API_OPERATION_SUMMARIES.UPDATE })
+  @ApiParam({
+    name: 'id',
+    description: PLAN_API_PARAM_DESCRIPTIONS.ID,
+    example: PLAN_API_PARAM_DESCRIPTIONS.EXAMPLE_ID,
+  })
   @ApiBody({ type: UpdatePlanDto })
   @ApiResponse({
-    status: 200,
-    description: 'Plan actualizado exitosamente',
+    status: PLAN_HTTP_STATUS_CODES.OK,
+    description: PLAN_API_RESPONSE_DESCRIPTIONS.UPDATED,
     type: PlanResponseDto,
   })
-  @ApiResponse({ status: 404, description: 'Plan no encontrado' })
-  @ApiResponse({ status: 409, description: 'Conflicto: nombre ya existe' })
+  @ApiResponse({
+    status: PLAN_HTTP_STATUS_CODES.NOT_FOUND,
+    description: PLAN_API_RESPONSE_DESCRIPTIONS.NOT_FOUND,
+  })
+  @ApiResponse({
+    status: PLAN_HTTP_STATUS_CODES.CONFLICT,
+    description: PLAN_API_RESPONSE_DESCRIPTIONS.CONFLICT,
+  })
   async update(
     @Param('id') id: string,
     @Body() dto: UpdatePlanDto,
@@ -85,10 +115,20 @@ export class PlanController {
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiOperation({ summary: 'Eliminar un plan de release' })
-  @ApiParam({ name: 'id', description: 'ID del plan', example: 'plan-1' })
-  @ApiResponse({ status: 204, description: 'Plan eliminado exitosamente' })
-  @ApiResponse({ status: 404, description: 'Plan no encontrado' })
+  @ApiOperation({ summary: PLAN_API_OPERATION_SUMMARIES.DELETE })
+  @ApiParam({
+    name: 'id',
+    description: PLAN_API_PARAM_DESCRIPTIONS.ID,
+    example: PLAN_API_PARAM_DESCRIPTIONS.EXAMPLE_ID,
+  })
+  @ApiResponse({
+    status: PLAN_HTTP_STATUS_CODES.NO_CONTENT,
+    description: PLAN_API_RESPONSE_DESCRIPTIONS.DELETED,
+  })
+  @ApiResponse({
+    status: PLAN_HTTP_STATUS_CODES.NOT_FOUND,
+    description: PLAN_API_RESPONSE_DESCRIPTIONS.NOT_FOUND,
+  })
   async delete(@Param('id') id: string): Promise<void> {
     return this.service.delete(id);
   }

@@ -13,6 +13,7 @@ import {
 } from '@nestjs/terminus';
 import { Public } from '../auth/decorators/public.decorator';
 import { CacheService } from '../common/cache/cache.service';
+import { HEALTH_STATUS, HEALTH_MESSAGES } from '../common/constants';
 
 @Controller('health')
 export class HealthController {
@@ -43,7 +44,7 @@ export class HealthController {
   @Get('liveness')
   @Public()
   liveness() {
-    return { status: 'ok', timestamp: new Date().toISOString() };
+    return { status: HEALTH_STATUS.OK, timestamp: new Date().toISOString() };
   }
 
   @Get('readiness')
@@ -65,13 +66,13 @@ export class HealthController {
       await this.cacheService.del(testKey);
 
       return {
-        status: retrieved === testValue ? 'ok' : 'error',
-        message: retrieved === testValue ? 'Cache is working' : 'Cache test failed',
+        status: retrieved === testValue ? HEALTH_STATUS.OK : HEALTH_STATUS.ERROR,
+        message: retrieved === testValue ? HEALTH_MESSAGES.CACHE_WORKING : HEALTH_MESSAGES.CACHE_TEST_FAILED,
       };
     } catch (error) {
       return {
-        status: 'error',
-        message: error instanceof Error ? error.message : 'Cache error',
+        status: HEALTH_STATUS.ERROR,
+        message: error instanceof Error ? error.message : HEALTH_MESSAGES.CACHE_ERROR,
       };
     }
   }

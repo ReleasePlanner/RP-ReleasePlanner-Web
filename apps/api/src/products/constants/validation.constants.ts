@@ -1,0 +1,17 @@
+/**
+ * Products Module Validation Constants
+ * 
+ * Constants specific to the Products module for validation messages
+ */
+
+import { FIELD_VALIDATION_MESSAGES } from '../../common/constants';
+
+/**
+ * Products Module Field Validation Messages
+ */
+export const PRODUCT_VALIDATION_MESSAGES = {
+  PRODUCT_NAME_REQUIRED: FIELD_VALIDATION_MESSAGES.PRODUCT_NAME_REQUIRED,
+  COMPONENT_CURRENT_VERSION_REQUIRED: FIELD_VALIDATION_MESSAGES.COMPONENT_CURRENT_VERSION_REQUIRED,
+  COMPONENT_PREVIOUS_VERSION_REQUIRED: FIELD_VALIDATION_MESSAGES.COMPONENT_PREVIOUS_VERSION_REQUIRED,
+} as const;
+

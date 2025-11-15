@@ -17,10 +17,11 @@ const QUERY_KEYS = {
   detail: (id: string) => [...QUERY_KEYS.details(), id] as const,
 };
 
-export function useCalendars() {
+export function useCalendars(countryId?: string) {
   return useQuery({
-    queryKey: QUERY_KEYS.list(),
-    queryFn: () => calendarsService.getAll(),
+    queryKey: [...QUERY_KEYS.list(), countryId || 'all'],
+    queryFn: () => calendarsService.getAll(countryId),
+    enabled: true, // Always enabled, but will filter by countryId if provided
   });
 }
 

@@ -18,7 +18,6 @@ export function PhaseMaintenancePage() {
         id: `base-${Date.now()}`,
         name: "Nueva fase",
         color: "#185ABD",
-        category: "",
       })
     );
   };
@@ -78,13 +77,6 @@ export function PhaseMaintenancePage() {
               />
               <Box sx={{ flex: 1 }}>
                 <strong>{phase.name}</strong>
-                {phase.category && (
-                  <span
-                    style={{ color: "#888", fontSize: "0.9em", marginLeft: 8 }}
-                  >
-                    {phase.category}
-                  </span>
-                )}
               </Box>
               <Button
                 size="small"

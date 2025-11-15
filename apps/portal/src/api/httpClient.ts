@@ -66,6 +66,28 @@ const DEFAULT_TIMEOUT = 30000; // 30 seconds
 const DEFAULT_RETRIES = 3;
 const DEFAULT_RETRY_DELAY = 1000; // 1 second
 
+// Flag to prevent recursive refresh token attempts
+let isRefreshing = false;
+let refreshPromise: Promise<{ accessToken: string } | null> | null = null;
+let refreshFailed = false; // Flag to prevent immediate retry after refresh failure
+let refreshFailureTime = 0; // Timestamp of last refresh failure
+const REFRESH_FAILURE_COOLDOWN = 5000; // 5 seconds cooldown after refresh failure
+
+/**
+ * Reset refresh state (exposed for authService to call after successful login)
+ */
+function resetRefreshState(): void {
+  isRefreshing = false;
+  refreshPromise = null;
+  refreshFailed = false;
+  refreshFailureTime = 0;
+}
+
+// Expose reset function globally so authService can call it
+if (typeof window !== 'undefined') {
+  (window as any).__resetRefreshState = resetRefreshState;
+}
+
 /**
  * Check if the browser is online
  */
@@ -288,73 +310,145 @@ async function executeRequest<T>(
       }
 
       // Handle 401 Unauthorized - try to refresh token
-      if (response.status === 401 && attempt === 0 && !skipRetry) {
+      // Skip refresh if this is already a refresh token request to avoid infinite loop
+      const isRefreshEndpoint = fullUrl.includes('/auth/refresh');
+      const canAttemptRefresh = 
+        response.status === 401 && 
+        attempt === 0 && 
+        !skipRetry && 
+        !isRefreshEndpoint &&
+        !refreshFailed && // Don't attempt if refresh recently failed
+        (Date.now() - refreshFailureTime) > REFRESH_FAILURE_COOLDOWN; // Respect cooldown period
+
+      if (canAttemptRefresh) {
         const refreshToken = authService.getRefreshToken();
         if (refreshToken) {
           try {
-            logger.debug("Attempting to refresh token after 401", {
-              component: "httpClient",
-              action: "executeRequest",
-              metadata: { url: fullUrl, method },
-            });
-
-            const refreshResponse = await authService.refreshToken(
-              refreshToken
-            );
-
-            // Retry original request with new token
-            const retryHeaders: Record<string, string> = {
-              "Content-Type": "application/json",
-              "X-Correlation-ID": correlationId,
-              Authorization: `Bearer ${refreshResponse.accessToken}`,
-              ...(fetchOptions.headers as Record<string, string>),
-            };
-
-            const retryResponse = await fetch(fullUrl, {
-              method,
-              headers: retryHeaders,
-              body: data ? JSON.stringify(data) : undefined,
-              signal: controller.signal,
-              ...fetchOptions,
-            });
-
-            if (retryResponse.ok) {
-              const result = await handleResponse<T>(
-                retryResponse,
-                correlationId
-              );
-              logger.debug(
-                `API request succeeded after token refresh: ${method} ${url}`,
-                {
-                  component: "httpClient",
-                  action: "executeRequest",
-                  metadata: {
-                    method,
-                    url: fullUrl,
-                    correlationId,
-                    attempt: attempt + 1,
-                    statusCode: retryResponse.status,
-                  },
-                }
-              );
-              return result;
-            }
-          } catch (refreshError) {
-            // Refresh failed, clear auth and throw original error
-            authService.clearAuth();
-            logger.error(
-              "Token refresh failed",
-              refreshError instanceof Error
-                ? refreshError
-                : new Error(String(refreshError)),
-              {
+            // Use existing refresh promise if one is in progress
+            if (!refreshPromise && !isRefreshing) {
+              isRefreshing = true;
+              refreshFailed = false; // Reset failure flag when starting new refresh
+              
+              logger.debug("Attempting to refresh token after 401", {
                 component: "httpClient",
                 action: "executeRequest",
                 metadata: { url: fullUrl, method },
+              });
+
+              refreshPromise = authService.refreshToken(refreshToken)
+                .then((refreshResponse) => {
+                  // Success - reset all refresh state
+                  resetRefreshState();
+                  return { accessToken: refreshResponse.accessToken };
+                })
+                .catch((error) => {
+                  isRefreshing = false;
+                  refreshPromise = null;
+                  refreshFailed = true; // Mark as failed
+                  refreshFailureTime = Date.now();
+                  
+                  // Refresh failed, clear auth
+                  authService.clearAuth();
+                  
+                  // Only log error once, not for every waiting request
+                  logger.error(
+                    "Token refresh failed - clearing authentication",
+                    error instanceof Error
+                      ? error
+                      : new Error(String(error)),
+                    {
+                      component: "httpClient",
+                      action: "executeRequest",
+                      metadata: { 
+                        url: fullUrl, 
+                        method,
+                        note: "This error may appear multiple times if multiple requests failed simultaneously"
+                      },
+                    }
+                  );
+                  
+                  throw error;
+                });
+            }
+
+            // Wait for refresh (either new or existing)
+            if (refreshPromise) {
+              const refreshResult = await refreshPromise;
+              
+              if (refreshResult) {
+                // Retry original request with new token
+                const retryHeaders: Record<string, string> = {
+                  "Content-Type": "application/json",
+                  "X-Correlation-ID": correlationId,
+                  Authorization: `Bearer ${refreshResult.accessToken}`,
+                  ...(fetchOptions.headers as Record<string, string>),
+                };
+
+                const retryResponse = await fetch(fullUrl, {
+                  method,
+                  headers: retryHeaders,
+                  body: data ? JSON.stringify(data) : undefined,
+                  signal: controller.signal,
+                  ...fetchOptions,
+                });
+
+                if (retryResponse.ok) {
+                  const result = await handleResponse<T>(
+                    retryResponse,
+                    correlationId
+                  );
+                  logger.debug(
+                    `API request succeeded after token refresh: ${method} ${url}`,
+                    {
+                      component: "httpClient",
+                      action: "executeRequest",
+                      metadata: {
+                        method,
+                        url: fullUrl,
+                        correlationId,
+                        attempt: attempt + 1,
+                        statusCode: retryResponse.status,
+                      },
+                    }
+                  );
+                  return result;
+                }
               }
+            }
+          } catch (refreshError) {
+            // If refresh failed and we're here, it means the promise was rejected
+            // Don't log again or clear auth again - it's already done in the catch handler
+            // Just throw the error to prevent retry
+            throw new HttpClientError(
+              "Authentication failed: Token refresh unsuccessful",
+              response.status,
+              "UNAUTHORIZED",
+              "TOKEN_REFRESH_FAILED",
+              correlationId
             );
           }
         }
+      } else if (isRefreshEndpoint && response.status === 401) {
+        // If refresh endpoint itself returns 401, clear auth and throw
+        refreshFailed = true;
+        refreshFailureTime = Date.now();
+        authService.clearAuth();
+        throw new HttpClientError(
+          "Authentication failed: Refresh token expired or invalid",
+          response.status,
+          "UNAUTHORIZED",
+          "REFRESH_TOKEN_INVALID",
+          correlationId
+        );
+      } else if (refreshFailed && response.status === 401) {
+        // If refresh recently failed, don't attempt again - just throw error
+        throw new HttpClientError(
+          "Authentication failed: Token refresh recently failed",
+          response.status,
+          "UNAUTHORIZED",
+          "TOKEN_REFRESH_FAILED",
+          correlationId
+        );
       }
 
       const result = await handleResponse<T>(response, correlationId);

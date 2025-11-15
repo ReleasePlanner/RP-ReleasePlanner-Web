@@ -2,7 +2,6 @@ export type BasePhase = {
   id: string;
   name: string;
   color: string;
-  category?: string;
 };
 export type PlanStatus = "planned" | "in_progress" | "done" | "paused";
 

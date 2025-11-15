@@ -17,6 +17,7 @@ import {
   IconButton,
   Tooltip,
   alpha,
+  Chip,
 } from "@mui/material";
 import { Edit as EditIcon, Delete as DeleteIcon } from "@mui/icons-material";
 import type { ComponentVersion } from "@/features/releasePlans/components/Plan/CommonDataCard";
@@ -52,47 +53,50 @@ export function ComponentsTable({
 
   return (
     <TableContainer>
-      <Table size="small" sx={{ borderCollapse: "separate", borderSpacing: 0 }}>
+      <Table size="medium" sx={{ borderCollapse: "separate", borderSpacing: 0 }}>
         <TableHead>
           <TableRow>
             <TableCell
               sx={{
-                fontWeight: 600,
+                fontWeight: 700,
                 fontSize: "0.75rem",
                 color: theme.palette.text.secondary,
                 textTransform: "uppercase",
-                letterSpacing: "0.5px",
-                pb: 1,
+                letterSpacing: "1px",
+                pb: 1.5,
                 pt: 0,
-                borderBottom: `1px solid ${alpha(theme.palette.divider, 0.5)}`,
+                borderBottom: `2px solid ${alpha(theme.palette.divider, 0.2)}`,
+                bgcolor: alpha(theme.palette.action.hover, 0.3),
               }}
             >
               Component
             </TableCell>
             <TableCell
               sx={{
-                fontWeight: 600,
+                fontWeight: 700,
                 fontSize: "0.75rem",
                 color: theme.palette.text.secondary,
                 textTransform: "uppercase",
-                letterSpacing: "0.5px",
-                pb: 1,
+                letterSpacing: "1px",
+                pb: 1.5,
                 pt: 0,
-                borderBottom: `1px solid ${alpha(theme.palette.divider, 0.5)}`,
+                borderBottom: `2px solid ${alpha(theme.palette.divider, 0.2)}`,
+                bgcolor: alpha(theme.palette.action.hover, 0.3),
               }}
             >
               Version
             </TableCell>
             <TableCell
               sx={{
-                fontWeight: 600,
+                fontWeight: 700,
                 fontSize: "0.75rem",
                 color: theme.palette.text.secondary,
                 textTransform: "uppercase",
-                letterSpacing: "0.5px",
-                pb: 1,
+                letterSpacing: "1px",
+                pb: 1.5,
                 pt: 0,
-                borderBottom: `1px solid ${alpha(theme.palette.divider, 0.5)}`,
+                borderBottom: `2px solid ${alpha(theme.palette.divider, 0.2)}`,
+                bgcolor: alpha(theme.palette.action.hover, 0.3),
               }}
             >
               Type
@@ -100,15 +104,16 @@ export function ComponentsTable({
             <TableCell
               align="right"
               sx={{
-                fontWeight: 600,
+                fontWeight: 700,
                 fontSize: "0.75rem",
                 color: theme.palette.text.secondary,
                 textTransform: "uppercase",
-                letterSpacing: "0.5px",
-                pb: 1,
+                letterSpacing: "1px",
+                pb: 1.5,
                 pt: 0,
-                borderBottom: `1px solid ${alpha(theme.palette.divider, 0.5)}`,
-                width: 80,
+                borderBottom: `2px solid ${alpha(theme.palette.divider, 0.2)}`,
+                bgcolor: alpha(theme.palette.action.hover, 0.3),
+                width: 100,
               }}
             >
               Actions
@@ -116,32 +121,34 @@ export function ComponentsTable({
           </TableRow>
         </TableHead>
         <TableBody>
-          {components.map((component) => (
+          {components.map((component, index) => (
             <TableRow
               key={component.id}
               sx={{
+                transition: theme.transitions.create(["background-color"], {
+                  duration: theme.transitions.duration.shorter,
+                }),
                 "&:hover": {
-                  bgcolor: alpha(theme.palette.action.hover, 0.3),
+                  bgcolor: alpha(theme.palette.primary.main, 0.04),
                 },
                 "&:last-child td": {
                   borderBottom: "none",
+                },
+                "& td": {
+                  borderBottom: `1px solid ${alpha(theme.palette.divider, 0.12)}`,
                 },
               }}
             >
               <TableCell
                 sx={{
-                  py: 1.5,
-                  borderBottom: `1px solid ${alpha(
-                    theme.palette.divider,
-                    0.3
-                  )}`,
+                  py: 2,
                 }}
               >
                 <Typography
                   variant="body2"
                   sx={{
-                    fontWeight: 500,
-                    fontSize: "0.8125rem",
+                    fontWeight: 600,
+                    fontSize: "0.875rem",
                     color: theme.palette.text.primary,
                   }}
                 >
@@ -150,30 +157,26 @@ export function ComponentsTable({
               </TableCell>
               <TableCell
                 sx={{
-                  py: 1.5,
-                  borderBottom: `1px solid ${alpha(
-                    theme.palette.divider,
-                    0.3
-                  )}`,
+                  py: 2,
                 }}
               >
                 {component.version ? (
-                  <Typography
-                    variant="body2"
+                  <Chip
+                    label={component.version}
+                    size="small"
                     sx={{
                       fontWeight: 600,
                       fontSize: "0.8125rem",
                       fontFamily: "monospace",
-                      color: theme.palette.text.primary,
-                      display: "inline-block",
-                      px: 1,
-                      py: 0.25,
-                      borderRadius: 0.5,
-                      bgcolor: alpha(theme.palette.primary.main, 0.08),
+                      height: 26,
+                      bgcolor: alpha(theme.palette.primary.main, 0.12),
+                      color: theme.palette.primary.main,
+                      border: `1px solid ${alpha(theme.palette.primary.main, 0.2)}`,
+                      "& .MuiChip-label": {
+                        px: 1.5,
+                      },
                     }}
-                  >
-                    {component.version}
-                  </Typography>
+                  />
                 ) : (
                   <Typography
                     variant="body2"
@@ -189,65 +192,70 @@ export function ComponentsTable({
               </TableCell>
               <TableCell
                 sx={{
-                  py: 1.5,
-                  borderBottom: `1px solid ${alpha(
-                    theme.palette.divider,
-                    0.3
-                  )}`,
+                  py: 2,
                 }}
               >
-                <Typography
-                  variant="body2"
+                <Chip
+                  label={component.type}
+                  size="small"
                   sx={{
                     fontSize: "0.8125rem",
-                    color: theme.palette.text.secondary,
+                    fontWeight: 500,
                     textTransform: "capitalize",
+                    height: 24,
+                    bgcolor: alpha(theme.palette.text.secondary, 0.08),
+                    color: theme.palette.text.secondary,
+                    "& .MuiChip-label": {
+                      px: 1.5,
+                    },
                   }}
-                >
-                  {component.type}
-                </Typography>
+                />
               </TableCell>
               <TableCell
                 align="right"
                 sx={{
-                  py: 1.5,
-                  borderBottom: `1px solid ${alpha(
-                    theme.palette.divider,
-                    0.3
-                  )}`,
+                  py: 2,
                 }}
               >
                 <Box
                   sx={{
                     display: "flex",
-                    gap: 0.25,
+                    gap: 0.5,
                     justifyContent: "flex-end",
                   }}
                 >
-                  <Tooltip title="Edit" arrow placement="top">
+                  <Tooltip title="Edit Component" arrow placement="top">
                     <IconButton
                       size="small"
                       onClick={() => onEditComponent(component)}
                       sx={{
                         color: theme.palette.text.secondary,
+                        transition: theme.transitions.create(["color", "background-color", "transform"], {
+                          duration: theme.transitions.duration.shorter,
+                        }),
                         "&:hover": {
                           color: theme.palette.primary.main,
-                          bgcolor: alpha(theme.palette.primary.main, 0.08),
+                          bgcolor: alpha(theme.palette.primary.main, 0.12),
+                          transform: "scale(1.1)",
                         },
                       }}
                     >
                       <EditIcon fontSize="small" />
                     </IconButton>
                   </Tooltip>
-                  <Tooltip title="Delete" arrow placement="top">
+                  <Tooltip title="Delete Component" arrow placement="top">
                     <IconButton
                       size="small"
                       onClick={() => onDeleteComponent(component.id)}
                       sx={{
                         color: theme.palette.text.secondary,
+                        transition: theme.transitions.create(["color", "background-color", "transform"], {
+                          duration: theme.transitions.duration.shorter,
+                        }),
                         "&:hover": {
                           color: theme.palette.error.main,
-                          bgcolor: alpha(theme.palette.error.main, 0.08),
+                          bgcolor: alpha(theme.palette.error.main, 0.12),
+                          transform: "scale(1.1)",
                         },
                       }}
                     >

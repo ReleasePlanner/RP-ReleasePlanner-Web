@@ -15,10 +15,19 @@ export interface CalendarDay {
   updatedAt: string;
 }
 
+export interface Country {
+  id: string;
+  name: string;
+  code: string;
+  isoCode?: string;
+  region?: string;
+}
+
 export interface Calendar {
   id: string;
   name: string;
   description?: string;
+  country?: Country;
   days: CalendarDay[];
   createdAt: string;
   updatedAt: string;
@@ -36,17 +45,22 @@ export interface CreateCalendarDto {
   name: string;
   description?: string;
   days?: CreateCalendarDayDto[];
+  countryId?: string;
 }
 
 export interface UpdateCalendarDto {
   name?: string;
   description?: string;
   days?: CreateCalendarDayDto[];
+  countryId?: string;
 }
 
 export const calendarsService = {
-  async getAll(): Promise<Calendar[]> {
-    return httpClient.get<Calendar[]>(API_ENDPOINTS.CALENDARS);
+  async getAll(countryId?: string): Promise<Calendar[]> {
+    const url = countryId 
+      ? `${API_ENDPOINTS.CALENDARS}?countryId=${countryId}`
+      : API_ENDPOINTS.CALENDARS;
+    return httpClient.get<Calendar[]>(url);
   },
 
   async getById(id: string): Promise<Calendar> {

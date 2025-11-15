@@ -2,11 +2,23 @@
  * IT Owner Card Component
  *
  * Displays IT Owner information with edit/delete actions
+ * Unified design with Product Card
  */
 
-import { Box, IconButton, Typography } from "@mui/material";
+import {
+  Card,
+  CardContent,
+  CardActions,
+  IconButton,
+  Typography,
+  Box,
+  Chip,
+  Stack,
+  Tooltip,
+  useTheme,
+  alpha,
+} from "@mui/material";
 import { Edit as EditIcon, Delete as DeleteIcon } from "@mui/icons-material";
-import { ElegantCard } from "@/components";
 import type { ITOwner } from "@/features/releasePlans/constants/itOwners";
 
 interface ITOwnerCardProps {
@@ -16,26 +28,42 @@ interface ITOwnerCardProps {
 }
 
 export function ITOwnerCard({ owner, onEdit, onDelete }: ITOwnerCardProps) {
+  const theme = useTheme();
+
   return (
-    <ElegantCard hover>
-      <Box sx={{ p: 2.5 }}>
-        {/* Header with actions */}
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "flex-start",
-            mb: 2,
-          }}
-        >
-          <Box sx={{ flex: 1 }}>
+    <Card
+      elevation={0}
+      sx={{
+        border: `1px solid ${alpha(theme.palette.divider, 0.12)}`,
+        borderRadius: 3,
+        overflow: "hidden",
+        transition: theme.transitions.create(
+          ["box-shadow", "border-color", "transform"],
+          {
+            duration: theme.transitions.duration.shorter,
+            easing: theme.transitions.easing.easeInOut,
+          }
+        ),
+        "&:hover": {
+          borderColor: alpha(theme.palette.primary.main, 0.4),
+          boxShadow: `0 4px 20px ${alpha(theme.palette.common.black, 0.1)}, 0 0 0 1px ${alpha(theme.palette.primary.main, 0.08)}`,
+          transform: "translateY(-2px)",
+        },
+      }}
+    >
+      <CardContent sx={{ p: 3 }}>
+        <Stack spacing={2}>
+          {/* Header */}
+          <Box>
             <Typography
               variant="h6"
               sx={{
                 fontSize: "1.125rem",
-                fontWeight: 600,
-                color: "text.primary",
-                mb: 0.5,
+                fontWeight: 700,
+                color: theme.palette.text.primary,
+                lineHeight: 1.4,
+                mb: 1,
+                letterSpacing: "-0.01em",
               }}
             >
               {owner.name}
@@ -44,62 +72,76 @@ export function ITOwnerCard({ owner, onEdit, onDelete }: ITOwnerCardProps) {
               <Typography
                 variant="body2"
                 sx={{
-                  color: "text.secondary",
+                  color: theme.palette.text.secondary,
                   fontSize: "0.875rem",
+                  lineHeight: 1.6,
                 }}
               >
                 {owner.email}
               </Typography>
             )}
           </Box>
-          <Box sx={{ display: "flex", gap: 0.5, ml: 2 }}>
+
+          {/* Department */}
+          {owner.department && (
+            <Chip
+              label={owner.department}
+              size="small"
+              icon={<span>🏢</span>}
+              sx={{
+                height: 24,
+                fontSize: "0.75rem",
+                fontWeight: 600,
+                bgcolor: alpha(theme.palette.primary.main, 0.08),
+                color: theme.palette.primary.main,
+                border: `1px solid ${alpha(theme.palette.primary.main, 0.2)}`,
+                px: 1.5,
+                alignSelf: "flex-start",
+              }}
+            />
+          )}
+        </Stack>
+      </CardContent>
+      <CardActions sx={{ px: 3, pb: 3, pt: 0 }}>
+        <Stack direction="row" spacing={1} sx={{ ml: "auto" }}>
+          <Tooltip title="Edit">
             <IconButton
               size="small"
               onClick={onEdit}
               sx={{
-                color: "primary.main",
+                color: theme.palette.text.secondary,
+                transition: theme.transitions.create(["color", "transform"], {
+                  duration: theme.transitions.duration.shorter,
+                }),
                 "&:hover": {
-                  backgroundColor: "primary.lighter",
+                  color: theme.palette.primary.main,
+                  transform: "scale(1.1)",
                 },
               }}
             >
-              <EditIcon sx={{ fontSize: { xs: 18, sm: 20 } }} />
+              <EditIcon fontSize="small" />
             </IconButton>
+          </Tooltip>
+          <Tooltip title="Delete">
             <IconButton
               size="small"
               onClick={onDelete}
               sx={{
-                color: "error.main",
+                color: theme.palette.text.secondary,
+                transition: theme.transitions.create(["color", "transform"], {
+                  duration: theme.transitions.duration.shorter,
+                }),
                 "&:hover": {
-                  backgroundColor: "error.lighter",
+                  color: theme.palette.error.main,
+                  transform: "scale(1.1)",
                 },
               }}
             >
-              <DeleteIcon sx={{ fontSize: { xs: 18, sm: 20 } }} />
+              <DeleteIcon fontSize="small" />
             </IconButton>
-          </Box>
-        </Box>
-
-        {/* Department */}
-        {owner.department && (
-          <Box
-            sx={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 1,
-              px: 1.5,
-              py: 0.5,
-              borderRadius: 1,
-              backgroundColor: "primary.lighter",
-              color: "primary.main",
-              fontSize: "0.8125rem",
-              fontWeight: 500,
-            }}
-          >
-            🏢 {owner.department}
-          </Box>
-        )}
-      </Box>
-    </ElegantCard>
+          </Tooltip>
+        </Stack>
+      </CardActions>
+    </Card>
   );
 }

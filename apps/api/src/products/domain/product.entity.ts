@@ -37,6 +37,7 @@ export class Product extends BaseEntity {
     {
       cascade: true,
       eager: false,
+      orphanRemoval: true,
     }
   )
   components?: ComponentVersion[];

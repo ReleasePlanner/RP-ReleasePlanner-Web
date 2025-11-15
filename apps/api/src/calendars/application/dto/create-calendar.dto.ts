@@ -6,9 +6,11 @@ import {
   ValidateNested,
   IsBoolean,
   IsEnum,
+  IsUUID,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { CalendarDayType } from '../../domain/calendar-day.entity';
+import { CALENDAR_VALIDATION_MESSAGES } from '../../constants';
 
 // Declarar la clase DTO anidada primero para evitar problemas de inicialización
 export class CreateCalendarDayDto {
@@ -33,7 +35,7 @@ export class CreateCalendarDayDto {
 
 export class CreateCalendarDto {
   @IsString()
-  @IsNotEmpty({ message: 'Calendar name is required' })
+  @IsNotEmpty({ message: CALENDAR_VALIDATION_MESSAGES.CALENDAR_NAME_REQUIRED })
   name: string;
 
   @IsString()
@@ -45,5 +47,9 @@ export class CreateCalendarDto {
   @ValidateNested({ each: true })
   @Type(() => CreateCalendarDayDto)
   days?: CreateCalendarDayDto[];
+
+  @IsUUID()
+  @IsOptional()
+  countryId?: string;
 }
 

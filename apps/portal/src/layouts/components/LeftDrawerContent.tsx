@@ -33,6 +33,9 @@ import {
   CalendarMonth as CalendarsIcon,
   Person as PersonIcon,
   Timeline as PhasesIcon,
+  Category as ComponentTypeIcon,
+  Label as FeatureCategoryIcon,
+  Public as CountryIcon,
 } from "@mui/icons-material";
 import { useAppDispatch } from "../../store/hooks";
 import { toggleLeftSidebar } from "../../store/store";
@@ -99,6 +102,24 @@ const NAV_ITEMS: NavItem[] = [
     path: "/it-owners",
     icon: <PersonIcon />,
     description: "Gestionar IT Owners",
+  },
+  {
+    label: "Component Types",
+    path: "/component-types",
+    icon: <ComponentTypeIcon />,
+    description: "Gestionar tipos de componente",
+  },
+  {
+    label: "Feature Categories",
+    path: "/feature-categories",
+    icon: <FeatureCategoryIcon />,
+    description: "Gestionar categorías de features",
+  },
+  {
+    label: "Countries",
+    path: "/countries",
+    icon: <CountryIcon />,
+    description: "Gestionar países y regiones",
   },
 ];
 

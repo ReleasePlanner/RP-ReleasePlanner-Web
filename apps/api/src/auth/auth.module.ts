@@ -12,6 +12,7 @@ import { UserRepository } from '../users/infrastructure/user.repository';
 import { User } from '../users/domain/user.entity';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { LocalStrategy } from './strategies/local.strategy';
+import { JWT_CONFIG_DEFAULTS } from './constants';
 
 @Module({
   imports: [
@@ -20,9 +21,13 @@ import { LocalStrategy } from './strategies/local.strategy';
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => ({
-        secret: configService.get<string>('JWT_SECRET') || 'your-secret-key-change-in-production',
+        secret:
+          configService.get<string>('JWT_SECRET') ||
+          JWT_CONFIG_DEFAULTS.SECRET,
         signOptions: {
-          expiresIn: configService.get<string>('JWT_EXPIRES_IN') || '15m',
+          expiresIn:
+            configService.get<string>('JWT_EXPIRES_IN') ||
+            JWT_CONFIG_DEFAULTS.ACCESS_TOKEN_EXPIRES_IN,
         },
       } as any),
       inject: [ConfigService],

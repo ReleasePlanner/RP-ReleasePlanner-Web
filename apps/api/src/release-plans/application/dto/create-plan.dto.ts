@@ -10,17 +10,21 @@ import {
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { PlanStatus } from '../../domain/plan.entity';
+import { PLAN_VALIDATION_MESSAGES, PLAN_API_PROPERTY_DESCRIPTIONS, PLAN_API_PROPERTY_EXAMPLES } from '../../constants';
 
 // Declarar las clases DTO anidadas primero para evitar problemas de inicialización
 export class CreatePlanPhaseDto {
-  @ApiProperty({ description: 'Nombre de la fase', example: 'Análisis' })
+  @ApiProperty({
+    description: PLAN_API_PROPERTY_DESCRIPTIONS.PHASE_NAME,
+    example: PLAN_API_PROPERTY_EXAMPLES.PHASE_NAME,
+  })
   @IsString()
   @IsNotEmpty()
   name: string;
 
   @ApiProperty({
-    description: 'Fecha de inicio (YYYY-MM-DD)',
-    example: '2024-01-01',
+    description: PLAN_API_PROPERTY_DESCRIPTIONS.PHASE_START_DATE,
+    example: PLAN_API_PROPERTY_EXAMPLES.PHASE_START_DATE,
     required: false,
   })
   @IsDateString()
@@ -28,8 +32,8 @@ export class CreatePlanPhaseDto {
   startDate?: string;
 
   @ApiProperty({
-    description: 'Fecha de fin (YYYY-MM-DD)',
-    example: '2024-01-31',
+    description: PLAN_API_PROPERTY_DESCRIPTIONS.PHASE_END_DATE,
+    example: PLAN_API_PROPERTY_EXAMPLES.PHASE_END_DATE,
     required: false,
   })
   @IsDateString()
@@ -37,8 +41,8 @@ export class CreatePlanPhaseDto {
   endDate?: string;
 
   @ApiProperty({
-    description: 'Color en formato hexadecimal',
-    example: '#1976D2',
+    description: PLAN_API_PROPERTY_DESCRIPTIONS.PHASE_COLOR,
+    example: PLAN_API_PROPERTY_EXAMPLES.PHASE_COLOR,
     required: false,
   })
   @IsString()
@@ -47,30 +51,33 @@ export class CreatePlanPhaseDto {
 }
 
 export class CreatePlanTaskDto {
-  @ApiProperty({ description: 'Título de la tarea', example: 'Implementar feature X' })
+  @ApiProperty({
+    description: PLAN_API_PROPERTY_DESCRIPTIONS.TASK_TITLE,
+    example: PLAN_API_PROPERTY_EXAMPLES.TASK_TITLE,
+  })
   @IsString()
   @IsNotEmpty()
   title: string;
 
   @ApiProperty({
-    description: 'Fecha de inicio (YYYY-MM-DD)',
-    example: '2024-01-01',
+    description: PLAN_API_PROPERTY_DESCRIPTIONS.TASK_START_DATE,
+    example: PLAN_API_PROPERTY_EXAMPLES.TASK_START_DATE,
   })
   @IsDateString()
   @IsNotEmpty()
   startDate: string;
 
   @ApiProperty({
-    description: 'Fecha de fin (YYYY-MM-DD)',
-    example: '2024-01-15',
+    description: PLAN_API_PROPERTY_DESCRIPTIONS.TASK_END_DATE,
+    example: PLAN_API_PROPERTY_EXAMPLES.TASK_END_DATE,
   })
   @IsDateString()
   @IsNotEmpty()
   endDate: string;
 
   @ApiProperty({
-    description: 'Color en formato hexadecimal',
-    example: '#FF5733',
+    description: PLAN_API_PROPERTY_DESCRIPTIONS.TASK_COLOR,
+    example: PLAN_API_PROPERTY_EXAMPLES.TASK_COLOR,
     required: false,
   })
   @IsString()
@@ -79,34 +86,40 @@ export class CreatePlanTaskDto {
 }
 
 export class CreatePlanDto {
-  @ApiProperty({ description: 'Nombre del plan', example: 'Release Q1 2024' })
+  @ApiProperty({
+    description: PLAN_API_PROPERTY_DESCRIPTIONS.NAME,
+    example: PLAN_API_PROPERTY_EXAMPLES.NAME,
+  })
   @IsString()
-  @IsNotEmpty({ message: 'Plan name is required' })
+  @IsNotEmpty({ message: PLAN_VALIDATION_MESSAGES.PLAN_NAME_REQUIRED })
   name: string;
 
-  @ApiProperty({ description: 'Propietario del plan', example: 'John Doe' })
+  @ApiProperty({
+    description: PLAN_API_PROPERTY_DESCRIPTIONS.OWNER,
+    example: PLAN_API_PROPERTY_EXAMPLES.OWNER,
+  })
   @IsString()
-  @IsNotEmpty({ message: 'Plan owner is required' })
+  @IsNotEmpty({ message: PLAN_VALIDATION_MESSAGES.PLAN_OWNER_REQUIRED })
   owner: string;
 
   @ApiProperty({
-    description: 'Fecha de inicio del plan (YYYY-MM-DD)',
-    example: '2024-01-01',
+    description: PLAN_API_PROPERTY_DESCRIPTIONS.START_DATE,
+    example: PLAN_API_PROPERTY_EXAMPLES.START_DATE,
   })
   @IsDateString()
-  @IsNotEmpty({ message: 'Start date is required' })
+  @IsNotEmpty({ message: PLAN_VALIDATION_MESSAGES.PLAN_START_DATE_REQUIRED })
   startDate: string;
 
   @ApiProperty({
-    description: 'Fecha de fin del plan (YYYY-MM-DD)',
-    example: '2024-12-31',
+    description: PLAN_API_PROPERTY_DESCRIPTIONS.END_DATE,
+    example: PLAN_API_PROPERTY_EXAMPLES.END_DATE,
   })
   @IsDateString()
-  @IsNotEmpty({ message: 'End date is required' })
+  @IsNotEmpty({ message: PLAN_VALIDATION_MESSAGES.PLAN_END_DATE_REQUIRED })
   endDate: string;
 
   @ApiProperty({
-    description: 'Estado del plan',
+    description: PLAN_API_PROPERTY_DESCRIPTIONS.STATUS,
     enum: PlanStatus,
     example: PlanStatus.PLANNED,
     required: false,
@@ -116,8 +129,8 @@ export class CreatePlanDto {
   status?: PlanStatus;
 
   @ApiProperty({
-    description: 'Descripción del plan',
-    example: 'Plan de release para el primer trimestre',
+    description: PLAN_API_PROPERTY_DESCRIPTIONS.DESCRIPTION,
+    example: PLAN_API_PROPERTY_EXAMPLES.DESCRIPTION,
     required: false,
   })
   @IsString()
@@ -125,7 +138,7 @@ export class CreatePlanDto {
   description?: string;
 
   @ApiProperty({
-    description: 'Lista de fases del plan',
+    description: PLAN_API_PROPERTY_DESCRIPTIONS.PHASES_LIST,
     type: [CreatePlanPhaseDto],
     required: false,
   })
@@ -136,8 +149,8 @@ export class CreatePlanDto {
   phases?: CreatePlanPhaseDto[];
 
   @ApiProperty({
-    description: 'ID del producto asociado',
-    example: 'product-1',
+    description: PLAN_API_PROPERTY_DESCRIPTIONS.PRODUCT_ID,
+    example: PLAN_API_PROPERTY_EXAMPLES.PRODUCT_ID,
     required: false,
   })
   @IsString()
@@ -145,8 +158,8 @@ export class CreatePlanDto {
   productId?: string;
 
   @ApiProperty({
-    description: 'ID del propietario IT',
-    example: 'owner-1',
+    description: PLAN_API_PROPERTY_DESCRIPTIONS.IT_OWNER,
+    example: PLAN_API_PROPERTY_EXAMPLES.IT_OWNER,
     required: false,
   })
   @IsString()
@@ -154,7 +167,7 @@ export class CreatePlanDto {
   itOwner?: string;
 
   @ApiProperty({
-    description: 'IDs de las features asociadas',
+    description: PLAN_API_PROPERTY_DESCRIPTIONS.FEATURES_LIST,
     type: [String],
     example: ['feature-1', 'feature-2'],
     required: false,
@@ -165,7 +178,7 @@ export class CreatePlanDto {
   featureIds?: string[];
 
   @ApiProperty({
-    description: 'IDs de los calendarios asociados',
+    description: PLAN_API_PROPERTY_DESCRIPTIONS.CALENDARS_LIST,
     type: [String],
     example: ['calendar-1'],
     required: false,

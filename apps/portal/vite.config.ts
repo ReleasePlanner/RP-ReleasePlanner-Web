@@ -9,10 +9,26 @@ export default defineConfig(() => ({
   server:{
     port: 5173,
     host: 'localhost',
+    // Add security headers for development server
+    headers: {
+      'X-Frame-Options': 'DENY',
+      'X-Content-Type-Options': 'nosniff',
+      'X-XSS-Protection': '1; mode=block',
+      'Referrer-Policy': 'strict-origin-when-cross-origin',
+      'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob:; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' http://localhost:3000 https://api.example.com ws://localhost:5173 ws://localhost:*; frame-ancestors 'none'; base-uri 'self'; form-action 'self';",
+    },
   },
   preview:{
     port: 5173,
     host: 'localhost',
+    // Add security headers for preview server
+    headers: {
+      'X-Frame-Options': 'DENY',
+      'X-Content-Type-Options': 'nosniff',
+      'X-XSS-Protection': '1; mode=block',
+      'Referrer-Policy': 'strict-origin-when-cross-origin',
+      'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob:; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' http://localhost:3000 https://api.example.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self';",
+    },
   },
   plugins: [react()],
   resolve: {

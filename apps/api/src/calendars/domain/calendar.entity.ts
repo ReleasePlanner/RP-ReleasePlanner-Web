@@ -1,5 +1,6 @@
-import { Entity, Column, OneToMany, Index } from 'typeorm';
+import { Entity, Column, OneToMany, ManyToOne, JoinColumn, Index } from 'typeorm';
 import { BaseEntity } from '../../common/database/base.entity';
+import { Country } from '../../countries/domain/country.entity';
 
 @Entity('calendars')
 @Index(['name'], { unique: true })
@@ -10,13 +11,20 @@ export class Calendar extends BaseEntity {
   @Column({ type: 'text', nullable: true })
   description?: string;
 
+  @Column({ type: 'uuid', nullable: true })
+  countryId?: string;
+
+  @ManyToOne(() => Country, { eager: true, nullable: true })
+  @JoinColumn({ name: 'countryId' })
+  country?: Country;
+
   @OneToMany(() => require('./calendar-day.entity').CalendarDay, (day: any) => day.calendar, {
     cascade: true,
     eager: false,
   })
   days?: any[];
 
-  constructor(name?: string, days?: any[], description?: string) {
+  constructor(name?: string, days?: any[], description?: string, country?: Country) {
     super();
     if (name !== undefined) {
       this.name = name;
@@ -27,6 +35,10 @@ export class Calendar extends BaseEntity {
     // Don't initialize days array - TypeORM will handle it
     if (description !== undefined) {
       this.description = description;
+    }
+    if (country !== undefined) {
+      this.country = country;
+      this.countryId = country.id;
     }
     if (name !== undefined) {
       this.validate();

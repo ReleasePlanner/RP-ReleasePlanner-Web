@@ -6,9 +6,16 @@ import { API_ENDPOINTS } from '../config';
 
 export interface ComponentVersion {
   id: string;
-  type: 'web' | 'services' | 'mobile';
+  type: 'web' | 'services' | 'mobile' | string;
   currentVersion: string;
   previousVersion: string;
+  name?: string;
+  componentTypeId?: string;
+  componentType?: {
+    id: string;
+    name: string;
+    code?: string;
+  };
   createdAt: string;
   updatedAt: string;
 }
@@ -33,7 +40,10 @@ export interface CreateProductDto {
 }
 
 export interface UpdateComponentVersionDto {
-  type?: 'web' | 'services' | 'mobile';
+  id?: string;
+  name?: string;
+  type?: 'web' | 'services' | 'mobile' | string;
+  componentTypeId?: string;
   currentVersion?: string;
   previousVersion?: string;
 }

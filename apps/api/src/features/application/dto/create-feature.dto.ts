@@ -3,9 +3,12 @@ import {
   IsNotEmpty,
   IsEnum,
   ValidateNested,
+  IsOptional,
+  IsUUID,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { FeatureStatus } from '../../domain/feature.entity';
+import { FEATURE_VALIDATION_MESSAGES } from '../../constants';
 
 // Declarar las clases DTO anidadas primero para evitar problemas de inicialización
 export class CreateFeatureCategoryDto {
@@ -22,16 +25,22 @@ export class CreateProductOwnerDto {
 
 export class CreateFeatureDto {
   @IsString()
-  @IsNotEmpty({ message: 'Feature name is required' })
+  @IsNotEmpty({ message: FEATURE_VALIDATION_MESSAGES.FEATURE_NAME_REQUIRED })
   name: string;
 
   @IsString()
-  @IsNotEmpty({ message: 'Feature description is required' })
+  @IsNotEmpty({ message: FEATURE_VALIDATION_MESSAGES.FEATURE_DESCRIPTION_REQUIRED })
   description: string;
+
+  // Support both categoryId (preferred) and category object (for backward compatibility)
+  @IsUUID()
+  @IsOptional()
+  categoryId?: string;
 
   @ValidateNested()
   @Type(() => CreateFeatureCategoryDto)
-  category: CreateFeatureCategoryDto;
+  @IsOptional()
+  category?: CreateFeatureCategoryDto;
 
   @IsEnum(FeatureStatus)
   status: FeatureStatus;
@@ -41,15 +50,19 @@ export class CreateFeatureDto {
   createdBy: CreateProductOwnerDto;
 
   @IsString()
-  @IsNotEmpty({ message: 'Technical description is required' })
+  @IsNotEmpty({ message: FEATURE_VALIDATION_MESSAGES.FEATURE_TECHNICAL_DESCRIPTION_REQUIRED })
   technicalDescription: string;
 
   @IsString()
-  @IsNotEmpty({ message: 'Business description is required' })
+  @IsNotEmpty({ message: FEATURE_VALIDATION_MESSAGES.FEATURE_BUSINESS_DESCRIPTION_REQUIRED })
   businessDescription: string;
 
   @IsString()
-  @IsNotEmpty({ message: 'Product ID is required' })
+  @IsNotEmpty({ message: FEATURE_VALIDATION_MESSAGES.FEATURE_PRODUCT_ID_REQUIRED })
   productId: string;
+
+  @IsUUID()
+  @IsOptional()
+  countryId?: string;
 }
 
