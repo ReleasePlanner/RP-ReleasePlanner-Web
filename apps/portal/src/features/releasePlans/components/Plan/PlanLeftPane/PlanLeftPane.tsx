@@ -147,7 +147,16 @@ const TabPanel = memo(function TabPanel(props: TabPanelProps) {
               >
                 <span>
                   <IconButton
-                    onClick={onSave}
+                    onClick={async () => {
+                      if (onSave) {
+                        try {
+                          await onSave();
+                        } catch (error) {
+                          // Error is already handled in handleSaveTab with snackbar
+                          console.error('[TabPanel] Error saving tab:', error);
+                        }
+                      }
+                    }}
                     disabled={isSaving || !hasPendingChanges}
                     size="small"
                     sx={{

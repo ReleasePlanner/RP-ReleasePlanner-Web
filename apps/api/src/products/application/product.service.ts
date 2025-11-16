@@ -88,6 +88,21 @@ export class ProductService {
       throw new NotFoundException('Product', id);
     }
 
+    // Optimistic locking: Check if product was modified since client last fetched it
+    if (dto.updatedAt) {
+      const clientUpdatedAt = new Date(dto.updatedAt);
+      const serverUpdatedAt = new Date(product.updatedAt);
+      
+      // Allow small time difference for clock skew (1 second tolerance)
+      const timeDiff = Math.abs(serverUpdatedAt.getTime() - clientUpdatedAt.getTime());
+      if (timeDiff > 1000 && serverUpdatedAt > clientUpdatedAt) {
+        throw new ConflictException(
+          'Product was modified by another user. Please refresh and try again.',
+          'CONCURRENT_MODIFICATION',
+        );
+      }
+    }
+
     // Check name uniqueness if name is being updated
     if (dto.name && dto.name !== product.name) {
       validateString(dto.name, 'Product name');
@@ -101,7 +116,12 @@ export class ProductService {
     }
 
     // Prepare updates object
-    const updates: Partial<Product> = {};
+    const updates: Partial<Product> & { _partialUpdate?: boolean } = {};
+    
+    // Preserve _partialUpdate flag if provided (for repository to handle component deletion logic)
+    if (dto._partialUpdate !== undefined) {
+      updates._partialUpdate = dto._partialUpdate;
+    }
     
     // Update name if provided
     if (dto.name !== undefined) {
@@ -115,23 +135,31 @@ export class ProductService {
       // Pass plain objects with id preserved - repository will handle entity conversion
       updates.components = dto.components.map((c) => {
         // Defensive: Validate component data
-        if (!c || !c.type || !c.currentVersion) {
+        // Require either type or componentTypeId, and currentVersion
+        if (!c || (!c.type && !c.componentTypeId) || !c.currentVersion) {
           console.error('ProductService.update - Invalid component:', JSON.stringify(c));
-          throw new Error(`Invalid component data: ${JSON.stringify(c)}`);
+          throw new Error(`Invalid component data: either 'type' or 'componentTypeId' must be provided, and 'currentVersion' is required. Received: ${JSON.stringify(c)}`);
         }
         // If previousVersion is empty, use currentVersion as fallback
         const previousVersion = (c.previousVersion && c.previousVersion.trim() !== '') 
           ? c.previousVersion 
           : c.currentVersion;
         // Return plain object with id if present, so repository can match existing components
-        const componentData = {
+        const componentData: any = {
           id: c.id, // Preserve id if present
           name: c.name, // Include name if present
-          type: c.type,
           currentVersion: c.currentVersion,
           previousVersion: previousVersion,
           productId: id,
         };
+        // Include type or componentTypeId (prefer componentTypeId)
+        if (c.componentTypeId) {
+          componentData.componentTypeId = c.componentTypeId;
+        }
+        if (c.type) {
+          // Normalize type to lowercase to match enum values (web, services, mobile)
+          componentData.type = c.type.toLowerCase();
+        }
         console.log('ProductService.update - mapped component:', JSON.stringify(componentData, null, 2));
         return componentData;
       }) as any;

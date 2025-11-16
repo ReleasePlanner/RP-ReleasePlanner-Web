@@ -55,17 +55,34 @@ export class ComponentVersion extends BaseEntity {
     // Handle both enum and ComponentType entity
     if (typeOrComponentType !== undefined) {
       if (typeof typeOrComponentType === 'string') {
-        // String value - treat as enum
-        this.type = typeOrComponentType as ComponentTypeEnum;
+        // String value - normalize to lowercase and treat as enum
+        let normalizedType = typeOrComponentType.toLowerCase();
+        // Map 'service' to 'services' to match enum values
+        if (normalizedType === 'service') {
+          normalizedType = 'services';
+        }
+        this.type = normalizedType as ComponentTypeEnum;
       } else if (typeOrComponentType instanceof ComponentType) {
         // ComponentType entity
         this.componentType = typeOrComponentType;
         this.componentTypeId = typeOrComponentType.id;
-        // Also set enum for backward compatibility
-        this.type = typeOrComponentType.code as ComponentTypeEnum;
+        // Also set enum for backward compatibility - normalize code to lowercase
+        let normalizedCode = (typeOrComponentType.code || '').toLowerCase();
+        // Map 'service' to 'services' to match enum values
+        if (normalizedCode === 'service') {
+          normalizedCode = 'services';
+        }
+        this.type = normalizedCode as ComponentTypeEnum;
       } else {
-        // Enum value
-        this.type = typeOrComponentType;
+        // Enum value - ensure it's lowercase
+        let normalizedEnum = typeof typeOrComponentType === 'string' 
+          ? typeOrComponentType.toLowerCase() 
+          : typeOrComponentType;
+        // Map 'service' to 'services' to match enum values
+        if (typeof normalizedEnum === 'string' && normalizedEnum === 'service') {
+          normalizedEnum = 'services';
+        }
+        this.type = normalizedEnum as ComponentTypeEnum;
       }
     }
     

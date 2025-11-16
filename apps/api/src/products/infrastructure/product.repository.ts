@@ -99,7 +99,12 @@ export class ProductRepository
         if (updates.components !== undefined) {
           const ComponentVersion = require('../domain/component-version.entity').ComponentVersion;
           
+          // Check if this is a partial update from external transaction (e.g., plan update)
+          // In this case, we should NOT delete components that are not in the updates array
+          const isPartialUpdate = (updates as any)._partialUpdate === true;
+          
           console.log('ProductRepository.update - updates.components:', JSON.stringify(updates.components, null, 2));
+          console.log('ProductRepository.update - isPartialUpdate:', isPartialUpdate);
           console.log('ProductRepository.update - entity.components before:', JSON.stringify(entity.components?.map((c: any) => ({ id: c.id, type: c.type, currentVersion: c.currentVersion, previousVersion: c.previousVersion, productId: (c as any).productId })), null, 2));
           
           // Ensure entity.components is initialized
@@ -208,17 +213,45 @@ export class ProductRepository
                     delete (existingComponent as any).componentType;
                     // Update the foreign key - TypeORM will handle the relation on save
                     existingComponent.componentTypeId = componentType.id;
-                    existingComponent.type = componentType.code as any;
+                    // Normalize code to lowercase to match enum values (web, services, mobile)
+                    let normalizedType = (componentType.code || '').toLowerCase();
+                    // Map 'service' to 'services' to match enum values
+                    if (normalizedType === 'service') {
+                      normalizedType = 'services';
+                    }
+                    existingComponent.type = normalizedType as any;
+                  } else {
+                    // ComponentType is the same, but ensure type is normalized (componentType.code might have changed case)
+                    let normalizedType = (componentType.code || '').toLowerCase();
+                    // Map 'service' to 'services' to match enum values
+                    if (normalizedType === 'service') {
+                      normalizedType = 'services';
+                    }
+                    existingComponent.type = normalizedType as any;
                   }
                 } else if (c.type) {
                   // If no componentType found but we have a type, use enum type only
-                  // Don't clear componentType relation if it already exists (preserve existing relation)
-                  existingComponent.type = c.type;
+                  // Normalize to lowercase to match enum values (web, services, mobile)
+                  let normalizedType = c.type.toLowerCase();
+                  // Map 'service' to 'services' to match enum values
+                  if (normalizedType === 'service') {
+                    normalizedType = 'services';
+                  }
+                  existingComponent.type = normalizedType as any;
                   // Only clear componentType if we explicitly want to remove it
                   // For now, preserve existing componentType relation
                 }
                 existingComponent.currentVersion = c.currentVersion;
                 existingComponent.previousVersion = previousVersion;
+                // Ensure type is normalized to lowercase before saving (defensive check)
+                if (existingComponent.type) {
+                  let normalizedType = (existingComponent.type as string).toLowerCase();
+                  // Map 'service' to 'services' to match enum values
+                  if (normalizedType === 'service') {
+                    normalizedType = 'services';
+                  }
+                  existingComponent.type = normalizedType as any;
+                }
                 components.push(existingComponent);
                 continue;
               }
@@ -232,14 +265,23 @@ export class ProductRepository
               // Use ComponentType entity
               newComponent = new ComponentVersion(componentType, c.currentVersion, previousVersion, c.name);
             } else if (c.type) {
-              // Fallback to enum type
-              newComponent = new ComponentVersion(c.type, c.currentVersion, previousVersion, c.name);
+              // Fallback to enum type - normalize to lowercase to match enum values (web, services, mobile)
+              let normalizedType = c.type.toLowerCase();
+              // Map 'service' to 'services' to match enum values
+              if (normalizedType === 'service') {
+                normalizedType = 'services';
+              }
+              newComponent = new ComponentVersion(normalizedType, c.currentVersion, previousVersion, c.name);
             } else {
               throw new Error('Component type is required (either componentTypeId or type must be provided)');
             }
             (newComponent as any).productId = id;
             // Explicitly set the product relation to ensure TypeORM cascade works correctly
             (newComponent as any).product = entity;
+            // Ensure type is normalized to lowercase before saving (defensive check)
+            if (newComponent.type) {
+              newComponent.type = (newComponent.type as string).toLowerCase() as any;
+            }
             components.push(newComponent);
           }
           
@@ -253,22 +295,53 @@ export class ProductRepository
             if (!(comp as any).product) {
               (comp as any).product = entity;
             }
+            // Final defensive check: ensure type is normalized to lowercase before saving
+            if (comp.type) {
+              let normalizedType = (comp.type as string).toLowerCase();
+              // Map 'service' to 'services' to match enum values
+              if (normalizedType === 'service') {
+                normalizedType = 'services';
+              }
+              comp.type = normalizedType as any;
+            }
           }
           
           // Find components that need to be removed (orphans)
-          const componentsToKeepIds = new Set(
-            components.map((c: any) => c.id).filter(Boolean)
-          );
-          const componentsToRemove = entity.components.filter(
-            (existingComp: any) => existingComp.id && !componentsToKeepIds.has(existingComp.id)
-          );
-          
-          // Remove orphaned components explicitly before assigning new array
-          // This prevents TypeORM from trying to process them incorrectly
-          if (componentsToRemove.length > 0) {
-            console.log('ProductRepository.update - removing orphaned components:', componentsToRemove.map((c: any) => c.id));
-            const ComponentVersionRepository = this.repository.manager.getRepository(ComponentVersion);
-            await ComponentVersionRepository.remove(componentsToRemove);
+          // IMPORTANT: Only remove components if this is NOT a partial update from external transaction
+          // When updating from plan, we should preserve all existing components and only update versions
+          if (!isPartialUpdate) {
+            const componentsToKeepIds = new Set(
+              components.map((c: any) => c.id).filter(Boolean)
+            );
+            const componentsToRemove = entity.components.filter(
+              (existingComp: any) => existingComp.id && !componentsToKeepIds.has(existingComp.id)
+            );
+            
+            // Remove orphaned components explicitly before assigning new array
+            // This prevents TypeORM from trying to process them incorrectly
+            if (componentsToRemove.length > 0) {
+              console.log('ProductRepository.update - removing orphaned components:', componentsToRemove.map((c: any) => c.id));
+              const ComponentVersionRepository = this.repository.manager.getRepository(ComponentVersion);
+              await ComponentVersionRepository.remove(componentsToRemove);
+            }
+          } else {
+            console.log('ProductRepository.update - Partial update detected: preserving all existing components, only updating versions');
+            // For partial updates, ensure all existing components are included in the components array
+            // Components not in the updates array should be preserved with their existing versions
+            const updateComponentIds = new Set(
+              components.map((c: any) => c.id).filter(Boolean)
+            );
+            const existingComponentsNotInUpdate = entity.components.filter(
+              (existingComp: any) => existingComp.id && !updateComponentIds.has(existingComp.id)
+            );
+            
+            // Add existing components that are not in the update to preserve them
+            // These components should be added as entity objects (not plain objects) so TypeORM can track them
+            for (const existingComp of existingComponentsNotInUpdate) {
+              // Use the existing entity object directly - TypeORM will preserve it
+              components.push(existingComp);
+            }
+            console.log('ProductRepository.update - Preserved existing components:', existingComponentsNotInUpdate.map((c: any) => c.id));
           }
           
           // Assign the new components array

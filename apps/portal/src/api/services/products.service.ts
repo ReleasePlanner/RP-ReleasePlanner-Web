@@ -51,6 +51,8 @@ export interface UpdateComponentVersionDto {
 export interface UpdateProductDto {
   name?: string;
   components?: UpdateComponentVersionDto[];
+  updatedAt?: string; // For optimistic locking
+  _partialUpdate?: boolean; // Flag to prevent component deletion in partial updates (e.g., from plan)
 }
 
 export const productsService = {

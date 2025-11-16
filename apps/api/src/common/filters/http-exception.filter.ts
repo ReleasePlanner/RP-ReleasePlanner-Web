@@ -67,7 +67,12 @@ export class HttpExceptionFilter implements ExceptionFilter {
       message = exception.getResponse();
     } else {
       status = HttpStatus.INTERNAL_SERVER_ERROR;
-      message = 'Internal server error';
+      // In development, include the actual error message
+      if (process.env.NODE_ENV !== 'production' && exception instanceof Error) {
+        message = exception.message || 'Internal server error';
+      } else {
+        message = 'Internal server error';
+      }
     }
 
     // Format error response
@@ -92,10 +97,19 @@ export class HttpExceptionFilter implements ExceptionFilter {
         errorResponse.message = 'An internal server error occurred';
         delete (errorResponse as any).stack;
       } else {
-        // Include stack trace in development
+        // Include stack trace and error details in development
         if (exception instanceof Error) {
           errorResponse.stack = exception.stack;
+          // Include the full error message in development
+          if (exception.message && errorResponse.message !== exception.message) {
+            errorResponse.errorMessage = exception.message;
+          }
         }
+        // Include the exception itself for debugging
+        errorResponse.exception = {
+          name: exception instanceof Error ? exception.name : typeof exception,
+          message: exception instanceof Error ? exception.message : String(exception),
+        };
       }
     }
 

@@ -118,11 +118,21 @@ export function categorizeError(error: any): ErrorContext {
     };
   }
 
-  // Validation errors
-  if (error?.statusCode === 400 || error?.code === 'VALIDATION_ERROR') {
+  // Validation errors (400 Bad Request) - check message for validation keywords
+  if (
+    error?.statusCode === 400 || 
+    error?.code === 'VALIDATION_ERROR' ||
+    (error?.message && (
+      error.message.includes('debe ser mayor') ||
+      error.message.includes('no es válido') ||
+      error.message.includes('es obligatorio') ||
+      error.message.includes('es requerido') ||
+      error.message.includes('Bad Request')
+    ))
+  ) {
     return {
       category: ErrorCategory.VALIDATION,
-      retryable: false,
+      retryable: false, // NEVER retry validation errors
       userMessage: error?.message || 'Los datos proporcionados no son válidos.',
       technicalMessage: `Validation error: ${error.message}`,
       statusCode: 400,

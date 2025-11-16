@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useMemo, useRef, useImperativeHandle, forwardRef } from "react";
-import { useTheme } from "@mui/material/styles";
-import { Box } from "@mui/material";
+import { useTheme, alpha } from "@mui/material/styles";
+import { Box, Snackbar, Alert, Typography } from "@mui/material";
 import type {
   Plan,
   PlanStatus,
@@ -21,7 +21,7 @@ import AddPhaseDialog from "../Plan/AddPhaseDialog";
 import PhaseEditDialog from "../Plan/PhaseEditDialog/PhaseEditDialog";
 import { ErrorBoundary } from "../../../../utils/logging/ErrorBoundary";
 import { L, useComponentLogger } from "../../../../utils/logging/simpleLogging";
-import { useUpdatePlan, useFeatures, useUpdateFeature } from "../../../../api/hooks";
+import { useUpdatePlan, useFeatures, useUpdateFeature, useProducts, useUpdateProduct } from "../../../../api/hooks";
 import { useQueryClient } from "@tanstack/react-query";
 import { createFullUpdateDto, createPartialUpdateDto } from "../../lib/planConverters";
 import { categorizeError, getUserErrorMessage, ErrorCategory } from "../../../../api/resilience/ErrorHandler";
@@ -46,10 +46,14 @@ const PlanCard = forwardRef<PlanCardHandle, PlanCardProps>(function PlanCard({ p
   const log = useComponentLogger("PlanCard");
   const theme = useTheme();
 
-  // API hooks for updating plan and features
+  // API hooks for updating plan, features, and products/components
   const updatePlanMutation = useUpdatePlan();
   const updateFeatureMutation = useUpdateFeature();
+  const updateProductMutation = useUpdateProduct();
   const queryClient = useQueryClient();
+  
+  // Get products to access components for version updates
+  const { data: products = [] } = useProducts();
 
   // ⭐ Clean Architecture - Business logic separated in custom hook
   const {
@@ -77,10 +81,11 @@ const PlanCard = forwardRef<PlanCardHandle, PlanCardProps>(function PlanCard({ p
     setLocalMetadata(originalMetadata);
   }, [originalMetadata]);
   
-  const metadata = localMetadata;
+  // Get all features for the product to update their status (use originalMetadata.productId to avoid initialization error)
+  const { data: allProductFeatures = [] } = useFeatures(originalMetadata?.productId);
   
-  // Get all features for the product to update their status (after metadata is defined)
-  const { data: allProductFeatures = [] } = useFeatures(metadata.productId);
+  // Define metadata after hooks (metadata is now available)
+  const metadata = localMetadata;
 
   const [milestoneDialogOpen, setMilestoneDialogOpen] = useState(false);
   const [selectedMilestoneDate, setSelectedMilestoneDate] = useState<
@@ -105,6 +110,12 @@ const PlanCard = forwardRef<PlanCardHandle, PlanCardProps>(function PlanCard({ p
     ((date: string) => void) | null
   >(null);
 
+  // Error snackbar state
+  const [errorSnackbar, setErrorSnackbar] = useState<{
+    open: boolean;
+    message: string;
+  }>({ open: false, message: "" });
+
   const handleMilestoneAdd = (milestone: PlanMilestone) => {
     setSelectedMilestoneDate(milestone.date);
     setEditingMilestone(null);
@@ -123,7 +134,7 @@ const PlanCard = forwardRef<PlanCardHandle, PlanCardProps>(function PlanCard({ p
       metadata.milestones?.filter((m) => m.id !== milestoneId) || [];
     setLocalMetadata(prev => ({
       ...prev,
-      milestones: updatedMilestones,
+          milestones: updatedMilestones,
     }));
   };
 
@@ -143,7 +154,7 @@ const PlanCard = forwardRef<PlanCardHandle, PlanCardProps>(function PlanCard({ p
 
     setLocalMetadata(prev => ({
       ...prev,
-      milestones: updatedMilestones,
+          milestones: updatedMilestones,
     }));
   };
 
@@ -156,7 +167,7 @@ const PlanCard = forwardRef<PlanCardHandle, PlanCardProps>(function PlanCard({ p
     );
     setLocalMetadata(prev => ({
       ...prev,
-      references: planLevelReferences,
+          references: planLevelReferences,
     }));
   }, []);
 
@@ -176,7 +187,7 @@ const PlanCard = forwardRef<PlanCardHandle, PlanCardProps>(function PlanCard({ p
 
       setLocalMetadata(prev => ({
         ...prev,
-        cellData: updatedCellData,
+            cellData: updatedCellData,
       }));
     },
     [metadata.cellData]
@@ -234,7 +245,7 @@ const PlanCard = forwardRef<PlanCardHandle, PlanCardProps>(function PlanCard({ p
 
       setLocalMetadata(prev => ({
         ...prev,
-        cellData: updatedCellData,
+            cellData: updatedCellData,
       }));
     },
     [metadata.cellData, theme.palette.warning.main]
@@ -283,7 +294,7 @@ const PlanCard = forwardRef<PlanCardHandle, PlanCardProps>(function PlanCard({ p
 
       setLocalMetadata(prev => ({
         ...prev,
-        cellData: updatedCellData,
+            cellData: updatedCellData,
       }));
     },
     [metadata.cellData, cellDialogState, metadata.owner]
@@ -332,7 +343,7 @@ const PlanCard = forwardRef<PlanCardHandle, PlanCardProps>(function PlanCard({ p
 
       setLocalMetadata(prev => ({
         ...prev,
-        cellData: updatedCellData,
+            cellData: updatedCellData,
       }));
     },
     [metadata.cellData, cellDialogState]
@@ -382,7 +393,7 @@ const PlanCard = forwardRef<PlanCardHandle, PlanCardProps>(function PlanCard({ p
 
       setLocalMetadata(prev => ({
         ...prev,
-        cellData: updatedCellData,
+            cellData: updatedCellData,
       }));
     },
     [metadata.cellData, cellDialogState]
@@ -416,7 +427,7 @@ const PlanCard = forwardRef<PlanCardHandle, PlanCardProps>(function PlanCard({ p
 
       setLocalMetadata(prev => ({
         ...prev,
-        cellData: updatedCellData,
+            cellData: updatedCellData,
       }));
     },
     [metadata.cellData, cellDialogState]
@@ -450,7 +461,7 @@ const PlanCard = forwardRef<PlanCardHandle, PlanCardProps>(function PlanCard({ p
 
       setLocalMetadata(prev => ({
         ...prev,
-        cellData: updatedCellData,
+            cellData: updatedCellData,
       }));
     },
     [metadata.cellData, cellDialogState]
@@ -484,7 +495,7 @@ const PlanCard = forwardRef<PlanCardHandle, PlanCardProps>(function PlanCard({ p
 
       setLocalMetadata(prev => ({
         ...prev,
-        cellData: updatedCellData,
+            cellData: updatedCellData,
       }));
     },
     [metadata.cellData, cellDialogState]
@@ -653,8 +664,8 @@ const PlanCard = forwardRef<PlanCardHandle, PlanCardProps>(function PlanCard({ p
     if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
       idleCallbackId = requestIdleCallback(
         () => {
-          log.lifecycle(
-            "mount",
+      log.lifecycle(
+        "mount",
             `Plan ${planId} with ${taskCount} tasks, ${phaseCount} phases`
           );
         },
@@ -666,8 +677,8 @@ const PlanCard = forwardRef<PlanCardHandle, PlanCardProps>(function PlanCard({ p
         log.lifecycle(
           "mount",
           `Plan ${planId} with ${taskCount} tasks, ${phaseCount} phases`
-        );
-      }, 0);
+      );
+    }, 0);
     }
     
     return () => {
@@ -675,7 +686,7 @@ const PlanCard = forwardRef<PlanCardHandle, PlanCardProps>(function PlanCard({ p
         cancelIdleCallback(idleCallbackId);
       }
       if (timeoutId !== null) {
-        clearTimeout(timeoutId);
+      clearTimeout(timeoutId);
       }
       hasLoggedMount.current = false;
       log.lifecycle("unmount");
@@ -728,10 +739,10 @@ const PlanCard = forwardRef<PlanCardHandle, PlanCardProps>(function PlanCard({ p
 
   const handleProductChange = useCallback((productId: string) => {
     // Only update local state - save via save button
-    const validProductId = productId && productId.trim() ? productId.trim() : "";
+          const validProductId = productId && productId.trim() ? productId.trim() : "";
     setLocalMetadata(prev => ({
       ...prev,
-      productId: validProductId || undefined,
+              productId: validProductId || undefined,
     }));
     // Defer tracking to avoid blocking the UI update
     if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
@@ -747,9 +758,9 @@ const PlanCard = forwardRef<PlanCardHandle, PlanCardProps>(function PlanCard({ p
       setTimeout(() => {
         L.track(
           () => ({ planId: plan.id, productId: validProductId }),
-          "product_selected",
-          "PlanCard"
-        );
+      "product_selected",
+      "PlanCard"
+    );
       }, 0);
     }
   }, [plan.id]);
@@ -758,7 +769,7 @@ const PlanCard = forwardRef<PlanCardHandle, PlanCardProps>(function PlanCard({ p
     // Only update local state - save via save button
     setLocalMetadata(prev => ({
       ...prev,
-      description: description || undefined,
+          description: description || undefined,
     }));
   }, []);
 
@@ -766,7 +777,7 @@ const PlanCard = forwardRef<PlanCardHandle, PlanCardProps>(function PlanCard({ p
     // Only update local state - save via save button
     setLocalMetadata(prev => ({
       ...prev,
-      status,
+          status,
     }));
   }, []);
 
@@ -774,7 +785,7 @@ const PlanCard = forwardRef<PlanCardHandle, PlanCardProps>(function PlanCard({ p
     // Only update local state - save via save button
     setLocalMetadata(prev => ({
       ...prev,
-      itOwner: itOwnerId || undefined,
+          itOwner: itOwnerId || undefined,
     }));
   }, []);
 
@@ -782,7 +793,7 @@ const PlanCard = forwardRef<PlanCardHandle, PlanCardProps>(function PlanCard({ p
     // Only update local state - save via save button
     setLocalMetadata(prev => ({
       ...prev,
-      startDate: date,
+          startDate: date,
     }));
   }, []);
 
@@ -790,7 +801,7 @@ const PlanCard = forwardRef<PlanCardHandle, PlanCardProps>(function PlanCard({ p
     // Only update local state - save via save button
     setLocalMetadata(prev => ({
       ...prev,
-      endDate: date,
+          endDate: date,
     }));
   }, []);
 
@@ -836,7 +847,7 @@ const PlanCard = forwardRef<PlanCardHandle, PlanCardProps>(function PlanCard({ p
     // Only update local state - save via save button
     setLocalMetadata(prev => ({
       ...prev,
-      featureIds: newFeatureIds,
+          featureIds: newFeatureIds,
     }));
   }, []);
 
@@ -844,7 +855,7 @@ const PlanCard = forwardRef<PlanCardHandle, PlanCardProps>(function PlanCard({ p
     // Only update local state - save via save button
     setLocalMetadata(prev => ({
       ...prev,
-      components: newComponents,
+          components: newComponents,
     }));
   }, []);
 
@@ -852,7 +863,7 @@ const PlanCard = forwardRef<PlanCardHandle, PlanCardProps>(function PlanCard({ p
     // Only update local state - save via save button
     setLocalMetadata(prev => ({
       ...prev,
-      calendarIds: newCalendarIds,
+          calendarIds: newCalendarIds,
     }));
   }, []);
 
@@ -861,7 +872,7 @@ const PlanCard = forwardRef<PlanCardHandle, PlanCardProps>(function PlanCard({ p
     (newName: string) => {
       setLocalMetadata(prev => ({
         ...prev,
-        name: newName,
+            name: newName,
       }));
     },
     []
@@ -869,66 +880,199 @@ const PlanCard = forwardRef<PlanCardHandle, PlanCardProps>(function PlanCard({ p
 
   // Handle save tab - asynchronous, atomic, with optimistic locking
   const handleSaveTab = useCallback(async (tabIndex: number) => {
-    const updateData: Partial<LocalPlan['metadata']> = {};
-    
-    // Validate and prepare data based on tab
-    switch (tabIndex) {
-      case 0: // Datos Comunes
-        // Validate required fields
-        if (!metadata.name?.trim()) {
-          throw new Error("El nombre del plan es obligatorio");
-        }
-        if (!metadata.status) {
-          throw new Error("El estado es obligatorio");
-        }
-        if (!metadata.startDate) {
-          throw new Error("La fecha de inicio es obligatoria");
-        }
-        if (!metadata.endDate) {
-          throw new Error("La fecha de fin es obligatoria");
-        }
-        if (!metadata.productId) {
-          throw new Error("El producto es obligatorio");
+    try {
+      const updateData: Partial<LocalPlan['metadata']> = {};
+      
+      // Validate and prepare data based on tab
+      switch (tabIndex) {
+        case 0: // Datos Comunes
+          // Validate required fields
+          if (!metadata.name?.trim()) {
+            throw new Error("El nombre del plan es obligatorio");
+          }
+          if (!metadata.status) {
+            throw new Error("El estado es obligatorio");
+          }
+          if (!metadata.startDate) {
+            throw new Error("La fecha de inicio es obligatoria");
+          }
+          if (!metadata.endDate) {
+            throw new Error("La fecha de fin es obligatoria");
+          }
+          if (!metadata.productId) {
+            throw new Error("El producto es obligatorio");
+          }
+          
+          updateData.name = metadata.name;
+          updateData.description = metadata.description;
+          updateData.status = metadata.status;
+          updateData.startDate = metadata.startDate;
+          updateData.endDate = metadata.endDate;
+          updateData.productId = metadata.productId;
+          updateData.itOwner = metadata.itOwner;
+          break;
+        case 1: // Features
+          updateData.featureIds = metadata.featureIds;
+        // Note: Feature status updates will be handled after plan save
+          break;
+        case 2: // Componentes
+          // Only include components that have componentId, currentVersion, and finalVersion
+          // Filter out any incomplete component entries
+          updateData.components = (metadata.components || []).filter(
+            (comp) => comp && comp.componentId && comp.currentVersion && comp.finalVersion && comp.finalVersion.trim() !== ""
+          );
+          break;
+        case 3: // Calendarios
+          updateData.calendarIds = metadata.calendarIds;
+          break;
+        case 4: // Referencias
+          updateData.references = consolidatedReferences;
+          break;
+      }
+
+      // Asynchronous save with optimistic locking and retries
+      const maxRetries = 3;
+      let retryCount = 0;
+      let lastError: Error | null = null;
+
+      while (retryCount < maxRetries) {
+        try {
+        // If saving Components tab, validate component versions BEFORE saving plan
+        if (tabIndex === 2 && updateData.components && metadata.productId) {
+          console.log('[handleSaveTab] Validating components before saving:', {
+            components: updateData.components,
+            productId: metadata.productId,
+            productsLength: products.length,
+          });
+          
+          // Get the product to access its components
+          const product = products.find((p) => p.id === metadata.productId);
+          if (!product) {
+            console.error('[handleSaveTab] Product not found:', metadata.productId);
+            throw new Error(`Producto no encontrado: ${metadata.productId}`);
+          }
+          
+          console.log('[handleSaveTab] Product found:', {
+            productId: product.id,
+            productName: product.name,
+            componentsCount: product.components?.length || 0,
+          });
+          
+          // Get components that are being updated (have finalVersion)
+          const componentsToUpdate = updateData.components.filter((comp) => comp.finalVersion && comp.finalVersion.trim() !== "");
+          
+          console.log('[handleSaveTab] Components to update:', {
+            total: updateData.components.length,
+            toUpdate: componentsToUpdate.length,
+            components: componentsToUpdate.map(c => ({ componentId: c.componentId, finalVersion: c.finalVersion })),
+          });
+          
+          if (componentsToUpdate.length > 0) {
+            // Validate that all finalVersions are greater than currentVersions BEFORE saving
+            const originalComponents = plan.components || [];
+            const originalComponentsMap = new Map(
+              originalComponents.map((c: any) => [c.componentId, c.finalVersion])
+            );
+            
+            console.log('[handleSaveTab] Original components:', Array.from(originalComponentsMap.entries()));
+            
+            // Normalize version for comparison
+            const normalizeVersion = (version: string): string => {
+              if (!version || version.trim().length === 0) return "0.0.0.0";
+              const parts = version.trim().split(".").map((p) => parseInt(p, 10) || 0);
+              while (parts.length < 4) {
+                parts.push(0);
+              }
+              return parts.slice(0, 4).join(".");
+            };
+
+            // Compare versions
+            const compareVersions = (v1: string, v2: string): number => {
+              const normalized1 = normalizeVersion(v1);
+              const normalized2 = normalizeVersion(v2);
+              const parts1 = normalized1.split(".").map((p) => parseInt(p, 10));
+              const parts2 = normalized2.split(".").map((p) => parseInt(p, 10));
+
+              for (let i = 0; i < 4; i++) {
+                if (parts1[i] < parts2[i]) return -1;
+                if (parts1[i] > parts2[i]) return 1;
+              }
+              return 0;
+            };
+            
+            // Validate each component
+            for (const planComp of componentsToUpdate) {
+              const productComponent = product.components?.find((c) => c.id === planComp.componentId);
+              if (!productComponent) {
+                console.error('[handleSaveTab] Component not found in product:', {
+                  componentId: planComp.componentId,
+                  productComponents: product.components?.map(c => ({ id: c.id, name: c.name })),
+                });
+                throw new Error(`Componente ${planComp.componentId} no encontrado en el producto`);
+              }
+              
+              // Use currentVersion from planComponent (which should match product's currentVersion when added)
+              const planCurrentVersion = planComp.currentVersion || productComponent.currentVersion || '';
+              const comparison = compareVersions(planComp.finalVersion, planCurrentVersion);
+              
+              console.log('[handleSaveTab] Validating component:', {
+                componentId: planComp.componentId,
+                componentName: productComponent.name,
+                planCurrentVersion,
+                productCurrentVersion: productComponent.currentVersion,
+                finalVersion: planComp.finalVersion,
+                comparison,
+                isValid: comparison > 0,
+              });
+              
+              if (comparison <= 0) {
+                const componentName = productComponent.name || planComp.componentId;
+                const previousVersion = originalComponentsMap.get(planComp.componentId);
+                const errorMsg = previousVersion
+                  ? `La versión final del componente "${componentName}" (${planComp.finalVersion}) debe ser mayor que la versión actual (${planCurrentVersion}). Versión anterior en el plan: ${previousVersion}`
+                  : `La versión final del componente "${componentName}" (${planComp.finalVersion}) debe ser mayor que la versión actual (${planCurrentVersion})`;
+                console.error('[handleSaveTab] Validation failed:', errorMsg);
+                throw new Error(errorMsg);
+              }
+            }
+            
+            console.log('[handleSaveTab] All components validated successfully');
+          }
         }
         
-        updateData.name = metadata.name;
-        updateData.description = metadata.description;
-        updateData.status = metadata.status;
-        updateData.startDate = metadata.startDate;
-        updateData.endDate = metadata.endDate;
-        updateData.productId = metadata.productId;
-        updateData.itOwner = metadata.itOwner;
-        break;
-      case 1: // Features
-        updateData.featureIds = metadata.featureIds;
-        // Note: Feature status updates will be handled after plan save
-        break;
-      case 2: // Componentes
-        updateData.components = metadata.components;
-        break;
-      case 3: // Calendarios
-        updateData.calendarIds = metadata.calendarIds;
-        break;
-      case 4: // Referencias
-        updateData.references = consolidatedReferences;
-        break;
-    }
-
-    // Asynchronous save with optimistic locking and retries
-    const maxRetries = 3;
-    let retryCount = 0;
-    let lastError: Error | null = null;
-
-    while (retryCount < maxRetries) {
-      try {
         // Atomic update with optimistic locking
+        const updateDto = createPartialUpdateDto(
+          plan,
+          updateData,
+          plan.updatedAt // Pass original updatedAt for optimistic locking
+        );
+        
+        console.log('[handleSaveTab] Sending update to backend:', {
+          planId: plan.id,
+          tabIndex,
+          updateData: {
+            ...updateData,
+            components: updateData.components?.map(c => ({
+              componentId: c?.componentId,
+              finalVersion: c?.finalVersion,
+              hasComponentId: !!c?.componentId,
+              hasFinalVersion: !!c?.finalVersion && c.finalVersion.trim() !== '',
+            })),
+          },
+          updateDto: {
+            ...updateDto,
+            components: updateDto.components?.map(c => ({
+              componentId: c?.componentId,
+              finalVersion: c?.finalVersion,
+              hasComponentId: !!c?.componentId,
+              hasFinalVersion: !!c?.finalVersion && c.finalVersion.trim() !== '',
+            })),
+          },
+        });
+        
         const savedPlan = await updatePlanMutation.mutateAsync({
           id: plan.id,
-          data: createPartialUpdateDto(
-            plan,
-            updateData,
-            plan.updatedAt // Pass original updatedAt for optimistic locking
-          ),
+          data: updateDto,
         });
         
         // If saving Features tab, update feature statuses to "assigned"
@@ -958,66 +1102,176 @@ const PlanCard = forwardRef<PlanCardHandle, PlanCardProps>(function PlanCard({ p
           }
         }
         
+        // If saving Components tab, update component versions atomically and transactionally AFTER plan is saved
+        if (tabIndex === 2 && updateData.components && metadata.productId) {
+          // Get the product to access its components (refresh to get latest data)
+          const product = products.find((p) => p.id === metadata.productId);
+          if (product) {
+            // Get components that are being updated (have finalVersion)
+            const componentsToUpdate = updateData.components.filter((comp) => comp.finalVersion && comp.finalVersion.trim() !== "");
+            
+            if (componentsToUpdate.length > 0) {
+              // IMPORTANT: When updating from plan, we must include ALL existing components
+              // to prevent deletion of components not in the plan.
+              // Only update versions for components that are in the plan.
+              
+              // Build component updates: include ALL existing components, but update versions for plan components
+              const componentUpdates = product.components.map((productComponent) => {
+                // Check if this component is being updated from the plan
+                const planComp = componentsToUpdate.find((c) => c.componentId === productComponent.id);
+                
+                if (planComp) {
+                  // This component is in the plan - update its version
+                  const finalVersion = planComp.finalVersion?.trim() || '';
+                  const currentVersion = productComponent.currentVersion?.trim() || '0.0.0.0';
+                  
+                  if (!finalVersion) {
+                    throw new Error(`Component ${planComp.componentId} has invalid finalVersion`);
+                  }
+                  
+                  // Normalize type to lowercase and map 'service' to 'services'
+                  let normalizedType = (productComponent.type || '').toLowerCase().trim();
+                  if (normalizedType === 'service') {
+                    normalizedType = 'services';
+                  }
+                  
+                  return {
+                    id: productComponent.id,
+                    name: productComponent.name,
+                    type: normalizedType || productComponent.type,
+                    componentTypeId: (productComponent as any).componentType?.id || productComponent.componentTypeId,
+                    currentVersion: finalVersion, // finalVersion from plan becomes new currentVersion in product
+                    previousVersion: currentVersion || '0.0.0.0', // currentVersion from product becomes previousVersion
+                  };
+                } else {
+                  // This component is NOT in the plan - keep it unchanged (preserve existing version)
+                  let normalizedType = (productComponent.type || '').toLowerCase().trim();
+                  if (normalizedType === 'service') {
+                    normalizedType = 'services';
+                  }
+                  
+                  return {
+                    id: productComponent.id,
+                    name: productComponent.name,
+                    type: normalizedType || productComponent.type,
+                    componentTypeId: (productComponent as any).componentType?.id || productComponent.componentTypeId,
+                    currentVersion: productComponent.currentVersion, // Keep existing version
+                    previousVersion: productComponent.previousVersion || productComponent.currentVersion || '0.0.0.0', // Keep existing previousVersion
+                  };
+                }
+              });
+              
+              // Update product with ALL components (updated versions for plan components, unchanged for others)
+              await updateProductMutation.mutateAsync({
+                id: product.id,
+                data: {
+                  components: componentUpdates,
+                  updatedAt: product.updatedAt, // Pass original updatedAt for optimistic locking
+                  // Add flag to indicate this is a partial update from external transaction
+                  _partialUpdate: true, // Flag to prevent component deletion
+                },
+              }).catch((error) => {
+                console.error(`Error updating component versions:`, error);
+                throw error;
+              });
+            }
+          }
+        }
+        
         // Invalidate queries to ensure fresh data is fetched
         await queryClient.invalidateQueries({ queryKey: ['plans'] });
         await queryClient.invalidateQueries({ queryKey: ['features'] });
+        await queryClient.invalidateQueries({ queryKey: ['products'] });
         
         // Wait for refetch to complete to ensure originalMetadata is updated
         await queryClient.refetchQueries({ queryKey: ['plans'] });
         await queryClient.refetchQueries({ queryKey: ['features'] });
+        await queryClient.refetchQueries({ queryKey: ['products'] });
         
         // Sync local metadata with saved data after successful save
         // This ensures UI reflects the saved state immediately
         setLocalMetadata(prev => ({ ...prev, ...updateData }));
         
-        return; // Success
-      } catch (error: any) {
-        lastError = error;
-        
-        // Use advanced error categorization
-        const errorContext = categorizeError(error);
-        
-        // Check if it's a concurrency conflict or retryable error
-        if (
-          errorContext.category === ErrorCategory.CONFLICT ||
-          errorContext.category === ErrorCategory.RATE_LIMIT ||
-          (errorContext.retryable && retryCount < maxRetries - 1)
-        ) {
-          retryCount++;
-          if (retryCount < maxRetries) {
-            // Calculate delay based on error type
-            let delay = 500;
-            if (errorContext.category === ErrorCategory.RATE_LIMIT) {
-              delay = Math.min(2000 * Math.pow(2, retryCount), 10000);
-            } else if (errorContext.category === ErrorCategory.CONFLICT) {
-              delay = Math.min(500 * (retryCount + 1), 2000);
-            } else {
-              delay = Math.min(1000 * Math.pow(2, retryCount), 5000);
-            }
-            
-            // Wait before retrying
-            await new Promise(resolve => setTimeout(resolve, delay));
-            
-            // Invalidate queries to refresh plan data before retry
-            await queryClient.invalidateQueries({ queryKey: ['plans'] });
-            
-            // Wait a bit more for the refetch to complete
-            await new Promise(resolve => setTimeout(resolve, 200));
-            continue;
-          } else {
-            // Max retries reached - throw a user-friendly error
-            throw new Error(errorContext.userMessage || `Error al guardar el tab ${tabIndex}. Por favor, intente nuevamente.`);
+          return; // Success
+        } catch (error: any) {
+          lastError = error;
+          
+          // Use advanced error categorization
+          const errorContext = categorizeError(error);
+          
+          console.log('[handleSaveTab] Error caught:', {
+            error,
+            errorContext,
+            statusCode: error?.statusCode,
+            message: error?.message,
+            retryCount,
+          });
+          
+          // NEVER retry validation errors (400) - they won't succeed on retry
+          if (errorContext.category === ErrorCategory.VALIDATION) {
+            console.log('[handleSaveTab] Validation error - not retrying:', errorContext.userMessage);
+            throw new Error(errorContext.userMessage || error?.message || `Error de validación al guardar el tab ${tabIndex}.`);
           }
-        } else {
-          // Not a retryable error, throw immediately with user-friendly message
-          throw new Error(errorContext.userMessage || error?.message || `Error al guardar el tab ${tabIndex}.`);
+          
+          // NEVER retry server errors (500) here - httpClient already handles retries
+          // Only retry optimistic locking conflicts (409) and rate limits (429)
+          if (errorContext.category === ErrorCategory.SERVER_ERROR) {
+            console.log('[handleSaveTab] Server error - not retrying (httpClient handles retries):', errorContext.userMessage);
+            throw new Error(errorContext.userMessage || error?.message || `Error del servidor al guardar el tab ${tabIndex}.`);
+          }
+          
+          // Only retry concurrency conflicts (409) and rate limits (429) - these are handled here
+          // Other retryable errors are handled by httpClient
+          if (
+            errorContext.category === ErrorCategory.CONFLICT ||
+            errorContext.category === ErrorCategory.RATE_LIMIT
+          ) {
+            retryCount++;
+            console.log(`[handleSaveTab] Retrying (attempt ${retryCount}/${maxRetries}):`, errorContext.category);
+            
+            if (retryCount < maxRetries) {
+              // Calculate delay based on error type
+              let delay = 500;
+              if (errorContext.category === ErrorCategory.RATE_LIMIT) {
+                delay = Math.min(2000 * Math.pow(2, retryCount), 10000);
+              } else if (errorContext.category === ErrorCategory.CONFLICT) {
+                delay = Math.min(500 * (retryCount + 1), 2000);
+              } else {
+                delay = Math.min(1000 * Math.pow(2, retryCount), 5000);
+              }
+              
+              // Wait before retrying
+              await new Promise(resolve => setTimeout(resolve, delay));
+              
+              // Invalidate queries to refresh plan data before retry
+              await queryClient.invalidateQueries({ queryKey: ['plans'] });
+              
+              // Wait a bit more for the refetch to complete
+              await new Promise(resolve => setTimeout(resolve, 200));
+              continue;
+            } else {
+              // Max retries reached - throw a user-friendly error
+              console.log('[handleSaveTab] Max retries reached');
+              throw new Error(errorContext.userMessage || `Error al guardar el tab ${tabIndex}. Por favor, intente nuevamente.`);
+            }
+          } else {
+            // Not a retryable error, throw immediately with user-friendly message
+            console.log('[handleSaveTab] Non-retryable error - throwing immediately');
+            throw new Error(errorContext.userMessage || error?.message || `Error al guardar el tab ${tabIndex}.`);
+          }
         }
       }
+      
+      // If we exhausted retries, throw the last error
+      throw lastError || new Error(`Failed to save tab ${tabIndex} after multiple retries`);
+    } catch (error: any) {
+      // Show error to user via snackbar
+      const errorMessage = error?.message || `Error al guardar el tab ${tabIndex}. Por favor, intente nuevamente.`;
+      console.error('[handleSaveTab] Error saving tab:', error);
+      setErrorSnackbar({ open: true, message: errorMessage });
+      throw error; // Re-throw to allow parent to handle if needed
     }
-
-    // If we exhausted retries, throw the last error
-    throw lastError || new Error(`Failed to save tab ${tabIndex} after multiple retries`);
-  }, [plan, metadata, consolidatedReferences, updatePlanMutation, queryClient]);
+  }, [plan, metadata, consolidatedReferences, updatePlanMutation, queryClient, products, allProductFeatures, originalMetadata]);
   
   // Handle save for timeline/phases - asynchronous, atomic, with optimistic locking
   const handleSaveTimeline = useCallback(async () => {
@@ -1451,30 +1705,30 @@ const PlanCard = forwardRef<PlanCardHandle, PlanCardProps>(function PlanCard({ p
         }
         right={
           <Box sx={{ position: "relative", height: "100%" }}>
-            <GanttChart
-              startDate={metadata.startDate}
-              endDate={metadata.endDate}
-              tasks={tasks}
-              phases={metadata.phases}
-              calendarIds={metadata.calendarIds}
-              milestones={metadata.milestones}
-              onMilestoneAdd={handleMilestoneAdd}
-              onMilestoneUpdate={handleMilestoneUpdate}
-              hideMainCalendar
-              onAddPhase={() => setPhaseOpen(true)}
-              onEditPhase={openEditOptimized}
-              onPhaseRangeChange={handlePhaseRangeChangeOptimized}
-              cellData={metadata.cellData}
-              onCellDataChange={handleCellDataChange}
-              onAddCellComment={handleAddCellComment}
-              onAddCellFile={handleAddCellFile}
-              onAddCellLink={handleAddCellLink}
-              onToggleCellMilestone={handleToggleCellMilestone}
-              onScrollToDateReady={setScrollToDateFn}
+          <GanttChart
+            startDate={metadata.startDate}
+            endDate={metadata.endDate}
+            tasks={tasks}
+            phases={metadata.phases}
+            calendarIds={metadata.calendarIds}
+            milestones={metadata.milestones}
+            onMilestoneAdd={handleMilestoneAdd}
+            onMilestoneUpdate={handleMilestoneUpdate}
+            hideMainCalendar
+            onAddPhase={() => setPhaseOpen(true)}
+            onEditPhase={openEditOptimized}
+            onPhaseRangeChange={handlePhaseRangeChangeOptimized}
+            cellData={metadata.cellData}
+            onCellDataChange={handleCellDataChange}
+            onAddCellComment={handleAddCellComment}
+            onAddCellFile={handleAddCellFile}
+            onAddCellLink={handleAddCellLink}
+            onToggleCellMilestone={handleToggleCellMilestone}
+            onScrollToDateReady={setScrollToDateFn}
               onSaveTimeline={handleSaveTimeline}
               hasTimelineChanges={hasTimelineChanges}
               isSavingTimeline={updatePlanMutation.isPending}
-            />
+          />
           </Box>
         }
       />
@@ -1499,9 +1753,9 @@ const PlanCard = forwardRef<PlanCardHandle, PlanCardProps>(function PlanCard({ p
           );
           setLocalMetadata(prev => ({
             ...prev,
-            phases: updatedPhases,
+                phases: updatedPhases,
           }));
-          setEditOpen(false);
+            setEditOpen(false);
         }}
       />
 
@@ -1547,6 +1801,24 @@ const PlanCard = forwardRef<PlanCardHandle, PlanCardProps>(function PlanCard({ p
         onAddLink={handleSaveLink}
         onDeleteLink={handleDeleteLink}
       />
+
+      {/* Error Snackbar */}
+      <Snackbar
+        open={errorSnackbar.open}
+        autoHideDuration={6000}
+        onClose={() => setErrorSnackbar({ open: false, message: "" })}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert
+          onClose={() => setErrorSnackbar({ open: false, message: "" })}
+          severity="error"
+          sx={{ width: "100%" }}
+        >
+          <Typography variant="body2" sx={{ fontWeight: 500 }}>
+            {errorSnackbar.message}
+          </Typography>
+        </Alert>
+      </Snackbar>
     </ErrorBoundary>
   );
 });

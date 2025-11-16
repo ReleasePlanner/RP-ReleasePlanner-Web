@@ -35,9 +35,11 @@ import { UpdateBasePhaseDto } from '../application/dto/update-base-phase.dto';
 import { BasePhaseResponseDto } from '../application/dto/base-phase-response.dto';
 import { CacheResult, InvalidateCache } from '../../common/decorators/cache.decorator';
 import { CacheInvalidateInterceptor } from '../../common/interceptors/cache-invalidate.interceptor';
+import { Public } from '../../auth/decorators/public.decorator';
 
 @ApiTags(API_TAGS.BASE_PHASES)
 @Controller('base-phases')
+@Public() // TODO: Remove this in production - temporary for development
 @UseInterceptors(CacheInvalidateInterceptor)
 export class BasePhaseController {
   constructor(private readonly service: BasePhaseService) {}

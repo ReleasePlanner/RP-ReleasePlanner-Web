@@ -3,7 +3,7 @@
  * NestJS application following best practices
  */
 
-import { Logger, ValidationPipe } from '@nestjs/common';
+import { Logger, ValidationPipe, BadRequestException } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import helmet from 'helmet';
@@ -76,9 +76,19 @@ async function bootstrap() {
       exceptionFactory: (errors) => {
         const messages = errors.map((error) => {
           const constraints = error.constraints || {};
-          return Object.values(constraints).join(', ');
+          const property = error.property || 'unknown';
+          const constraintMessages = Object.values(constraints).join(', ');
+          return `${property}: ${constraintMessages}`;
         });
-        return new Error(messages.join('; '));
+        return new BadRequestException({
+          message: 'Validation failed',
+          errors: messages,
+          details: errors.map((error) => ({
+            property: error.property,
+            constraints: error.constraints,
+            value: error.value,
+          })),
+        });
       },
     })
   );

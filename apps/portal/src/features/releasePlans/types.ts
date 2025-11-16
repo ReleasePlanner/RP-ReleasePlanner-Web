@@ -15,6 +15,7 @@ export type PlanPhase = {
 
 export type PlanComponent = {
   componentId: string; // ID del componente del producto
+  currentVersion: string; // Versión actual del componente en el producto (al momento de asignar al plan)
   finalVersion: string; // Versión final que se usará en el plan
 };
 

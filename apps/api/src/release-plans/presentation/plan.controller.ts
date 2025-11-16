@@ -27,9 +27,11 @@ import {
   PLAN_API_PARAM_DESCRIPTIONS,
 } from '../constants';
 import { API_TAGS } from '../../common/constants';
+import { Public } from '../../auth/decorators/public.decorator';
 
 @ApiTags(API_TAGS.PLANS)
 @Controller('plans')
+@Public() // TODO: Remove this in production - temporary for development
 export class PlanController {
   constructor(private readonly service: PlanService) {}
 

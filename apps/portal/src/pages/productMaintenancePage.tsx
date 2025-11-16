@@ -148,7 +148,7 @@ export function ProductMaintenancePage() {
       component: {
         id: `comp-${Date.now()}`,
         name: "",
-        type: "web",
+        type: "", // Don't set default type - let user select from ComponentType dropdown
         version: "",
         description: "",
       } as any,
@@ -191,8 +191,10 @@ export function ProductMaintenancePage() {
     }
   };
 
-  const handleSaveComponent = async () => {
-    if (!editingProduct || !editingProduct.component) return;
+  const handleSaveComponent = async (updatedComponent?: ComponentVersion) => {
+    // Use updatedComponent if provided (from dialog), otherwise use editingProduct.component
+    const componentToSave = updatedComponent || editingProduct?.component;
+    if (!componentToSave) return;
 
     const product = selectedProduct || editingProduct.product;
     const existingProduct = products.find((p) => p.id === product.id);
@@ -200,10 +202,10 @@ export function ProductMaintenancePage() {
     if (!existingProduct) return;
 
     try {
-      const editingComponentId = editingProduct.component.id;
+      const editingComponentId = componentToSave.id;
       
       // Map component data - handle both version formats
-      const componentData = editingProduct.component as any;
+      const componentData = componentToSave as any;
       
       // Check if component exists by comparing valid UUIDs only
       const componentExists = editingComponentId && 
@@ -216,20 +218,21 @@ export function ProductMaintenancePage() {
       // The dialog uses 'version' field which should be used as the new currentVersion
       let currentVersion = componentData.version || componentData.currentVersion || '';
       
-      // For new components, if version is still empty, throw error
-      if (!currentVersion && !componentExists) {
-        // This shouldn't happen if dialog validation works, but add defensive check
-        console.error('Missing currentVersion for new component');
-        throw new Error('Component currentVersion is required. Please enter a Current Version.');
-      }
-      
-      // For existing components, if version is empty, use existing currentVersion
-      if (!currentVersion && componentExists) {
-        const existingComp = existingProduct.components.find((c: ComponentVersion) => c.id === editingComponentId);
-        currentVersion = existingComp?.currentVersion || '';
-        if (!currentVersion) {
-          console.error('Missing currentVersion for existing component');
-          throw new Error('Component currentVersion is required');
+      // For new components, currentVersion is required
+      if (!componentExists) {
+        if (!currentVersion || currentVersion.trim() === '') {
+          console.error('Missing currentVersion for new component', { componentData });
+          throw new Error('Component currentVersion is required. Please enter a Current Version in the dialog.');
+        }
+      } else {
+        // For existing components, if version is empty, use existing currentVersion
+        if (!currentVersion || currentVersion.trim() === '') {
+          const existingComp = existingProduct.components.find((c: ComponentVersion) => c.id === editingComponentId);
+          currentVersion = existingComp?.currentVersion || '';
+          if (!currentVersion || currentVersion.trim() === '') {
+            console.error('Missing currentVersion for existing component', { editingComponentId, existingComp });
+            throw new Error('Component currentVersion is required');
+          }
         }
       }
       
@@ -265,16 +268,55 @@ export function ProductMaintenancePage() {
         previousVersion = currentVersion; // Fallback to currentVersion
       }
 
+      // Get component type - prefer componentData.type, fallback to existing component type
+      let componentType = componentData.type || '';
+      let componentTypeId = (componentData as any).componentTypeId;
+      
+      if (componentExists) {
+        const existingComp = existingProduct.components.find((c: ComponentVersion) => c.id === editingComponentId);
+        if (existingComp) {
+          // If type is not provided, use existing component type
+          if (!componentType) {
+            componentType = existingComp.type || '';
+          }
+          // If componentTypeId is not provided, use existing componentTypeId
+          if (!componentTypeId) {
+            componentTypeId = (existingComp as any).componentTypeId;
+          }
+        }
+      }
+      
+      // Normalize type to lowercase to match enum values (web, services, mobile)
+      if (componentType) {
+        componentType = componentType.toLowerCase();
+        // Map 'service' to 'services' to match enum values
+        if (componentType === 'service') {
+          componentType = 'services';
+        }
+      }
+      
+      // Ensure we have at least type or componentTypeId
+      if (!componentType && !componentTypeId) {
+        console.error('Missing component type', { componentData, componentExists, componentType, componentTypeId });
+        throw new Error('Component type is required. Please select a Component Type in the dialog.');
+      }
+      
+      // Ensure name is present
+      if (!componentData.name || componentData.name.trim() === '') {
+        console.error('Missing component name', { componentData });
+        throw new Error('Component name is required. Please enter a Component Name in the dialog.');
+      }
+
       const updatedComponents = componentExists
         ? existingProduct.components.map((c: ComponentVersion) =>
             c.id === editingComponentId
               ? {
                   ...c,
                   name: componentData.name || c.name, // Include name if provided
-                  type: componentData.type,
+                  type: componentType || c.type, // Ensure type is always present
                   currentVersion: currentVersion,
                   previousVersion: previousVersion || c.previousVersion, // Preserve previousVersion if not provided
-                  componentTypeId: (componentData as any).componentTypeId || (c as any).componentTypeId,
+                  componentTypeId: componentTypeId || (c as any).componentTypeId,
                 }
               : c
           )
@@ -283,41 +325,94 @@ export function ProductMaintenancePage() {
             {
               // Don't include id for new components (backend will generate it)
               name: componentData.name || '', // Include name for new components
-              type: componentData.type,
-              currentVersion: currentVersion,
-              previousVersion: previousVersion,
-              componentTypeId: (componentData as any).componentTypeId,
-            },
+              type: componentType, // Ensure type is always present
+              currentVersion: currentVersion, // Ensure currentVersion is set
+              previousVersion: previousVersion, // Ensure previousVersion is set
+              componentTypeId: componentTypeId,
+              // Also include version field for compatibility with dialog format
+              version: currentVersion,
+            } as ComponentVersion,
           ];
 
-      await updateMutation.mutateAsync({
+      // Log the components being sent to backend for debugging
+      console.log('handleSaveComponent - updatedComponents before mapping:', updatedComponents);
+      
+      const componentsPayload = updatedComponents.map((c: ComponentVersion) => {
+        // Get currentVersion - prefer currentVersion, fallback to version field
+        const compCurrentVersion = c.currentVersion || (c as any).version || '';
+        // Get previousVersion - prefer previousVersion, fallback to currentVersion
+        const compPreviousVersion = c.previousVersion || compCurrentVersion || '';
+        
+        console.log('handleSaveComponent - mapping component:', {
+          id: c.id,
+          name: (c as any).name,
+          type: c.type,
+          currentVersion: c.currentVersion,
+          version: (c as any).version,
+          compCurrentVersion,
+          previousVersion: c.previousVersion,
+          compPreviousVersion,
+        });
+        
+        const componentPayload: any = {
+          name: (c as any).name || '', // Include name in payload
+          currentVersion: compCurrentVersion, // Use normalized currentVersion
+          previousVersion: compPreviousVersion, // Use normalized previousVersion
+        };
+        // Prefer componentTypeId if available, otherwise use type (normalized to lowercase)
+        if ((c as any).componentTypeId && isValidUUID((c as any).componentTypeId)) {
+          componentPayload.componentTypeId = (c as any).componentTypeId;
+          // Also include type for backward compatibility (get from componentType if available)
+          if ((c as any).componentType?.code) {
+            let normalizedType = (c as any).componentType.code.toLowerCase();
+            // Map 'service' to 'services' to match enum values
+            if (normalizedType === 'service') {
+              normalizedType = 'services';
+            }
+            componentPayload.type = normalizedType;
+          } else if (c.type) {
+            let normalizedType = c.type.toLowerCase();
+            // Map 'service' to 'services' to match enum values
+            if (normalizedType === 'service') {
+              normalizedType = 'services';
+            }
+            componentPayload.type = normalizedType;
+          }
+        } else if (c.type) {
+          // Normalize type to lowercase for backend compatibility
+          let normalizedType = c.type.toLowerCase();
+          // Map 'service' to 'services' to match enum values
+          if (normalizedType === 'service') {
+            normalizedType = 'services';
+          }
+          componentPayload.type = normalizedType; // Fallback to enum type for backward compatibility
+        }
+        // Only include id if it's a valid UUID (from database)
+        if (c.id && isValidUUID(c.id)) {
+          componentPayload.id = c.id;
+        }
+        console.log('handleSaveComponent - componentPayload:', componentPayload);
+        return componentPayload;
+      });
+      
+      console.log('handleSaveComponent - componentsPayload:', componentsPayload);
+      
+      const result = await updateMutation.mutateAsync({
         id: product.id,
         data: {
-          components: updatedComponents.map((c: ComponentVersion) => {
-            const componentPayload: any = {
-              name: (c as any).name || '', // Include name in payload
-              currentVersion: c.currentVersion,
-              previousVersion: c.previousVersion,
-            };
-            // Prefer componentTypeId if available, otherwise use type (normalized to lowercase)
-            if ((c as any).componentTypeId && isValidUUID((c as any).componentTypeId)) {
-              componentPayload.componentTypeId = (c as any).componentTypeId;
-            } else if (c.type) {
-              // Normalize type to lowercase for backend compatibility
-              componentPayload.type = c.type.toLowerCase(); // Fallback to enum type for backward compatibility
-            }
-            // Only include id if it's a valid UUID (from database)
-            if (c.id && isValidUUID(c.id)) {
-              componentPayload.id = c.id;
-            }
-            return componentPayload;
-          }),
+          components: componentsPayload,
         },
       });
+      
+      console.log('handleSaveComponent - update result:', result);
 
       handleCloseDialog();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving component:', error);
+      // Show error to user
+      const errorMessage = error?.message || error?.response?.data?.message || 'Error al guardar el componente. Por favor, intente nuevamente.';
+      alert(errorMessage); // TODO: Replace with proper notification system
+      // Don't close dialog on error so user can fix and retry
     }
   };
 

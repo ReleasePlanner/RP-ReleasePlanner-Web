@@ -5,6 +5,7 @@ import { PlanTask } from './plan-task.entity';
 import { PlanMilestone } from './plan-milestone.entity';
 import { PlanReference } from './plan-reference.entity';
 import { GanttCellData } from './gantt-cell-data.entity';
+import { PlanComponentVersion } from './plan-component-version.entity';
 
 export enum PlanStatus {
   PLANNED = 'planned',
@@ -47,7 +48,7 @@ export class Plan extends BaseEntity {
   featureIds: string[];
 
   @Column({ type: 'jsonb', default: '[]' })
-  components: Array<{ componentId: string; finalVersion: string }>;
+  components: Array<{ componentId: string; currentVersion: string; finalVersion: string }>;
 
   @Column({ type: 'jsonb', default: '[]' })
   calendarIds: string[];
@@ -82,6 +83,12 @@ export class Plan extends BaseEntity {
     eager: false,
   })
   cellData?: GanttCellData[];
+
+  @OneToMany(() => PlanComponentVersion, (componentVersion) => componentVersion.plan, {
+    cascade: true,
+    eager: false,
+  })
+  componentVersions?: PlanComponentVersion[];
 
   constructor(
     name?: string,

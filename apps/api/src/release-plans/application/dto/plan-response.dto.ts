@@ -132,7 +132,7 @@ export class PlanResponseDto {
   productId?: string;
   itOwner?: string;
   featureIds: string[];
-  components: Array<{ componentId: string; finalVersion: string }>;
+  components: Array<{ componentId: string; currentVersion: string; finalVersion: string }>;
   calendarIds: string[];
   milestones: PlanMilestoneResponseDto[];
   references: PlanReferenceResponseDto[];

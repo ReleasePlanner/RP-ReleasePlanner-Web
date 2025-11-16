@@ -164,8 +164,12 @@ async function handleResponse<T>(
             error = data.error || errorData.error;
             errorCode = data.code || errorData.code;
           } else {
-            // Standard error format
-            errorMessage = errorData.message || errorData.error || errorMessage;
+            // Standard error format - check for errorMessage and exception fields in development
+            errorMessage = errorData.errorMessage || errorData.message || errorData.error || errorMessage;
+            // Include exception details if available (development mode)
+            if (errorData.exception && errorData.exception.message) {
+              errorMessage = `${errorMessage} (${errorData.exception.message})`;
+            }
             error = errorData.error;
             errorCode = errorData.code;
           }

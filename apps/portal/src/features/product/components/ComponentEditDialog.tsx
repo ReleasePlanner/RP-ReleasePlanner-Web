@@ -29,7 +29,7 @@ interface ComponentEditDialogProps {
   component: ComponentVersion | null;
   selectedProductName: string | null;
   onClose: () => void;
-  onSave: () => void;
+  onSave: (updatedComponent?: ComponentVersion) => void;
   onComponentChange: (component: ComponentVersion) => void;
 }
 
@@ -314,7 +314,8 @@ export function ComponentEditDialog({
         : (normalizedCurrent || ""); // If no newVersion, use currentVersionInput as previousVersion (or empty)
       
       // Ensure we have at least a currentVersion
-      if (!finalCurrentVersion) {
+      // For new components, require at least one version field to be filled
+      if (!finalCurrentVersion || finalCurrentVersion.trim() === '') {
         // This should not happen if validation is working, but add defensive check
         console.error('No version provided for new component', { 
           currentVersionInput, 
@@ -323,7 +324,13 @@ export function ComponentEditDialog({
           normalizedNew,
           finalCurrentVersion 
         });
-        setCurrentVersionError("Current Version is required");
+        // Show error on the appropriate field
+        if (!currentVersionInput || currentVersionInput.trim() === '') {
+          setCurrentVersionError("Current Version is required. Please enter at least a Current Version or New Version.");
+        }
+        if (!newVersion || newVersion.trim() === '') {
+          setVersionError("At least one version field is required.");
+        }
         return; // Don't save if no version
       }
       
@@ -342,15 +349,39 @@ export function ComponentEditDialog({
       setCurrentVersionError("");
       setVersionError("");
       
-      onComponentChange({
+      const updatedComponent = {
         ...component,
         version: finalCurrentVersion,
         currentVersion: finalCurrentVersion,
         previousVersion: finalPreviousVersion || finalCurrentVersion, // Fallback to currentVersion if empty
-      } as any);
+        // Ensure name and type are preserved from component
+        name: component.name || '',
+        // Normalize type to lowercase to match enum values (web, services, mobile)
+        type: component.type ? component.type.toLowerCase() : '',
+        componentTypeId: (component as any).componentTypeId,
+      } as any;
+      
+      // Validate required fields before saving
+      if (!updatedComponent.name || updatedComponent.name.trim() === '') {
+        setCurrentVersionError("Component name is required");
+        return;
+      }
+      
+      if (!updatedComponent.type && !updatedComponent.componentTypeId) {
+        setCurrentVersionError("Component type is required");
+        return;
+      }
+      
+      // Update parent state
+      onComponentChange(updatedComponent);
+      
+      // Pass updated component directly to onSave to avoid timing issues
+      onSave(updatedComponent);
     } else {
       // Editing: if newVersion is provided, use it as new currentVersion
       const currentVer = component.version || (component as any).currentVersion || "";
+      
+      let updatedComponent: ComponentVersion;
       
       if (newVersion && newVersion.trim()) {
         // User entered a new version - normalize and use it
@@ -362,25 +393,36 @@ export function ComponentEditDialog({
         
         if (normalized && validateVersionFormat(normalized)) {
           setVersionError(""); // Clear error
-          onComponentChange({
+          updatedComponent = {
             ...component,
             version: normalized,
             currentVersion: normalized,
-          } as any);
+            // Normalize type to lowercase to match enum values (web, services, mobile)
+            type: component.type ? component.type.toLowerCase() : component.type,
+          } as any;
+          // Update parent state
+          onComponentChange(updatedComponent);
+          // Pass updated component directly to onSave
+          onSave(updatedComponent);
         } else {
           setVersionError("Invalid version format. Please enter a valid version (e.g., 1.0.0.0)");
           return; // Don't save if invalid
         }
       } else {
         // Editing but no new version provided - keep current version
-        onComponentChange({
+        updatedComponent = {
           ...component,
           version: currentVer,
           currentVersion: currentVer,
-        } as any);
+          // Normalize type to lowercase to match enum values (web, services, mobile)
+          type: component.type ? component.type.toLowerCase() : component.type,
+        } as any;
+        // Update parent state
+        onComponentChange(updatedComponent);
+        // Pass updated component directly to onSave
+        onSave(updatedComponent);
       }
     }
-    onSave();
   };
 
   return (
@@ -504,9 +546,11 @@ export function ComponentEditDialog({
                   onChange={(e) => {
                     const selectedType = componentTypes.find((ct) => ct.id === e.target.value);
                     if (selectedType) {
+                      // Normalize type to lowercase to match enum values (web, services, mobile)
+                      const normalizedType = (selectedType.code || selectedType.name || '').toLowerCase();
                       onComponentChange({
                         ...component,
-                        type: selectedType.code || selectedType.name,
+                        type: normalizedType,
                         componentTypeId: selectedType.id,
                       } as any);
                     }
@@ -835,7 +879,7 @@ export function ComponentEditDialog({
             !component.type || 
             !!versionError ||
             !!currentVersionError ||
-            (!editing && !currentVersionInput) // Require currentVersion when creating
+            (!editing && !currentVersionInput && !newVersion) // Require at least one version field when creating
           }
           sx={{ 
             textTransform: "none", 

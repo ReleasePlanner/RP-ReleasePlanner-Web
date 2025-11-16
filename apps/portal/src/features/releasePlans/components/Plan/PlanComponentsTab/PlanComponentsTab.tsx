@@ -8,17 +8,18 @@ import {
   alpha,
   Tooltip,
   IconButton,
+  CircularProgress,
 } from "@mui/material";
 import {
   Add as AddIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
 } from "@mui/icons-material";
-import type { ComponentVersion } from "@/features/releasePlans/components/Plan/CommonDataCard";
+import type { ComponentVersion } from "@/api/services/products.service";
 import type { PlanComponent } from "@/features/releasePlans/types";
 import { SelectComponentsDialog } from "./SelectComponentsDialog";
 import { ComponentVersionEditDialog } from "./ComponentVersionEditDialog";
-import { useAppSelector } from "@/store/hooks";
+import { useProducts } from "@/api/hooks";
 
 export type PlanComponentsTabProps = {
   productId?: string;
@@ -37,13 +38,20 @@ export function PlanComponentsTab({
   const [editingComponent, setEditingComponent] =
     useState<PlanComponent | null>(null);
 
-  // Get components from Redux store (product maintenance)
-  const products = useAppSelector((state) => state.products.products);
-  const product = products.find((p) => p.id === productId);
+  // Get products from API (Products maintenance) - same as PlanLeftPane
+  const { data: products = [], isLoading: isLoadingProducts } = useProducts();
+  
+  // Get product from API
+  const product = useMemo(() => {
+    if (!productId) return null;
+    return products.find((p) => p.id === productId) || null;
+  }, [productId, products]);
+  
   const productName = product?.name || "";
   const productComponents = product?.components || [];
 
   // Get full component details for components in the plan
+  // Use currentVersion from planComponent (stored in plan), not from product
   const planComponentsWithDetails = useMemo(() => {
     return components
       .map((planComp) => {
@@ -53,6 +61,7 @@ export function PlanComponentsTab({
         return component
           ? {
               ...component,
+              currentVersion: planComp.currentVersion || component.currentVersion || "0.0.0.0", // Use currentVersion from plan
               finalVersion: planComp.finalVersion,
               planComponentId: planComp.componentId,
             }
@@ -88,8 +97,11 @@ export function PlanComponentsTab({
       planComponentId: string;
     }
   ) => {
+    // Find the plan component to get currentVersion
+    const planComp = components.find((c) => c.componentId === component.planComponentId);
     setEditingComponent({
       componentId: component.planComponentId,
+      currentVersion: planComp?.currentVersion || component.currentVersion || "0.0.0.0", // Preserve currentVersion from plan
       finalVersion: component.finalVersion,
     });
     setEditDialogOpen(true);
@@ -105,9 +117,15 @@ export function PlanComponentsTab({
 
   const handleSaveVersion = (updatedComponent: PlanComponent) => {
     if (onComponentsChange) {
+      // Preserve currentVersion when updating finalVersion
       onComponentsChange(
         components.map((c) =>
-          c.componentId === updatedComponent.componentId ? updatedComponent : c
+          c.componentId === updatedComponent.componentId 
+            ? { 
+                ...updatedComponent, 
+                currentVersion: updatedComponent.currentVersion || c.currentVersion || "0.0.0.0" // Preserve currentVersion
+              } 
+            : c
         )
       );
     }
@@ -125,8 +143,22 @@ export function PlanComponentsTab({
         }}
       >
         <Typography variant="body2">
-          Please select a product in the Common Data tab to manage components.
+          Por favor seleccione un producto en el tab de Datos Comunes para gestionar los componentes.
         </Typography>
+      </Box>
+    );
+  }
+
+  if (isLoadingProducts && productComponents.length === 0) {
+    return (
+      <Box
+        sx={{
+          p: 3,
+          textAlign: "center",
+          color: "text.secondary",
+        }}
+      >
+        <CircularProgress size={24} />
       </Box>
     );
   }
@@ -327,7 +359,7 @@ export function PlanComponentsTab({
                           color: theme.palette.text.secondary,
                         }}
                       >
-                        {component.version || "N/A"}
+                        {component.currentVersion || "N/A"}
                       </Typography>
                     </Box>
                     <Box component="td" sx={{ p: 1.5 }}>
@@ -414,9 +446,10 @@ export function PlanComponentsTab({
         open={editDialogOpen}
         component={editingComponent}
         currentVersion={
+          editingComponent?.currentVersion || 
           planComponentsWithDetails.find(
             (c) => c.planComponentId === editingComponent?.componentId
-          )?.version || ""
+          )?.currentVersion || ""
         }
         onClose={() => {
           setEditDialogOpen(false);
