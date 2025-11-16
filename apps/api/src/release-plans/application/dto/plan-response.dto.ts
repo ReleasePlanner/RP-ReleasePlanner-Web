@@ -149,16 +149,27 @@ export class PlanResponseDto {
     this.endDate = entity.endDate;
     this.status = entity.status;
     this.description = entity.description;
-    this.phases = entity.phases.map((p) => new PlanPhaseResponseDto(p));
+    // Defensive: Handle undefined/null relations
+    this.phases = (entity.phases && Array.isArray(entity.phases)) 
+      ? entity.phases.map((p) => new PlanPhaseResponseDto(p))
+      : [];
     this.productId = entity.productId;
     this.itOwner = entity.itOwner;
-    this.featureIds = entity.featureIds;
-    this.components = entity.components;
-    this.calendarIds = entity.calendarIds;
-    this.milestones = entity.milestones.map((m) => new PlanMilestoneResponseDto(m));
-    this.references = entity.references.map((r) => new PlanReferenceResponseDto(r));
-    this.cellData = entity.cellData.map((c) => new GanttCellDataResponseDto(c));
-    this.tasks = entity.tasks.map((t) => new PlanTaskResponseDto(t));
+    this.featureIds = entity.featureIds || [];
+    this.components = entity.components || [];
+    this.calendarIds = entity.calendarIds || [];
+    this.milestones = (entity.milestones && Array.isArray(entity.milestones))
+      ? entity.milestones.map((m) => new PlanMilestoneResponseDto(m))
+      : [];
+    this.references = (entity.references && Array.isArray(entity.references))
+      ? entity.references.map((r) => new PlanReferenceResponseDto(r))
+      : [];
+    this.cellData = (entity.cellData && Array.isArray(entity.cellData))
+      ? entity.cellData.map((c) => new GanttCellDataResponseDto(c))
+      : [];
+    this.tasks = (entity.tasks && Array.isArray(entity.tasks))
+      ? entity.tasks.map((t) => new PlanTaskResponseDto(t))
+      : [];
     this.createdAt = entity.createdAt;
     this.updatedAt = entity.updatedAt;
   }

@@ -1,4 +1,5 @@
-import { Card, CardContent, Collapse, Divider, useTheme, alpha } from "@mui/material";
+import { useState, useEffect, useRef } from "react";
+import { Card, CardContent, Collapse, Divider, useTheme, alpha, Box, LinearProgress, Typography } from "@mui/material";
 import type { Plan } from "../../../types";
 import { PlanHeader } from "./PlanHeader";
 import { PlanContent } from "./PlanContent";
@@ -9,7 +10,6 @@ export type PlanCardLayoutProps = {
   leftPercent: number;
   onToggleExpanded: () => void;
   onLeftPercentChange: (percent: number) => void;
-  onNameChange?: (name: string) => void;
   left: React.ReactNode;
   right: React.ReactNode;
 };
@@ -25,11 +25,71 @@ export function PlanCardLayout({
   leftPercent,
   onToggleExpanded,
   onLeftPercentChange,
-  onNameChange,
   left,
   right,
 }: PlanCardLayoutProps) {
   const theme = useTheme();
+  
+  // ⚡ Render content immediately when expanded - no artificial delays
+  // Show progress bar while heavy components mount
+  // Initialize based on expanded state to avoid rendering issues
+  const [isContentReady, setIsContentReady] = useState(expanded);
+  const renderTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Handle expanded state changes - render content immediately
+  useEffect(() => {
+    if (expanded) {
+      // Clear any pending timeouts
+      if (renderTimeoutRef.current) {
+        clearTimeout(renderTimeoutRef.current);
+        renderTimeoutRef.current = null;
+      }
+      
+      // If not ready yet, render immediately
+      if (!isContentReady) {
+        // Use requestAnimationFrame to avoid blocking but render ASAP
+        if (typeof window !== 'undefined' && 'requestAnimationFrame' in window) {
+          requestAnimationFrame(() => {
+            setIsContentReady(true);
+          });
+        } else {
+          setIsContentReady(true);
+        }
+      }
+    } else {
+      // When collapsing, reset state immediately
+      setIsContentReady(false);
+      if (renderTimeoutRef.current) {
+        clearTimeout(renderTimeoutRef.current);
+        renderTimeoutRef.current = null;
+      }
+    }
+  }, [expanded, isContentReady]);
+  
+  // Handle Collapse callbacks - ensure content renders ASAP
+  const handleCollapseEnter = () => {
+    // Render immediately when animation starts
+    setIsContentReady(true);
+  };
+  
+  const handleCollapseEntered = () => {
+    // Ensure content is definitely rendered (safety net)
+    setIsContentReady(true);
+  };
+  
+  const handleCollapseExit = () => {
+    // Reset state when collapsing
+    setIsContentReady(false);
+  };
+  
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (renderTimeoutRef.current) {
+        clearTimeout(renderTimeoutRef.current);
+      }
+    };
+  }, []);
   
   return (
     <Card
@@ -55,12 +115,18 @@ export function PlanCardLayout({
         name={plan.metadata.name}
         expanded={expanded}
         onToggleExpanded={onToggleExpanded}
-        onNameChange={onNameChange}
       />
 
       <Divider sx={{ borderColor: theme.palette.divider }} />
 
-      <Collapse in={expanded} timeout={200} unmountOnExit>
+      <Collapse 
+        in={expanded} 
+        timeout={150}
+        unmountOnExit
+        onEnter={handleCollapseEnter}
+        onEntered={handleCollapseEntered}
+        onExit={handleCollapseExit}
+      >
         <CardContent
           sx={{
             p: 0,
@@ -69,17 +135,62 @@ export function PlanCardLayout({
             maxHeight: { xs: "600px", sm: "800px", md: "900px" },
             display: "flex",
             flexDirection: "column",
+            position: "relative",
             "&:last-child": {
               pb: 0,
             },
           }}
         >
-          <PlanContent
-            leftPercent={leftPercent}
-            onLeftPercentChange={onLeftPercentChange}
-            left={left}
-            right={right}
-          />
+          {/* ⚡ Show prominent progress bar while content is loading */}
+          {!isContentReady ? (
+            <Box
+              sx={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                bgcolor: theme.palette.mode === "dark"
+                  ? alpha(theme.palette.background.default, 0.95)
+                  : alpha(theme.palette.background.default, 0.98),
+                zIndex: 10,
+                gap: 2,
+              }}
+            >
+              <LinearProgress 
+                sx={{ 
+                  width: "80%", 
+                  maxWidth: 400,
+                  height: 6,
+                  borderRadius: 3,
+                  "& .MuiLinearProgress-bar": {
+                    borderRadius: 3,
+                  }
+                }} 
+              />
+              <Typography
+                variant="body2"
+                sx={{
+                  color: theme.palette.text.secondary,
+                  fontSize: "0.875rem",
+                }}
+              >
+                Cargando plan...
+              </Typography>
+            </Box>
+          ) : (
+            /* ⚡ Render content immediately - no artificial delays */
+            <PlanContent
+              leftPercent={leftPercent}
+              onLeftPercentChange={onLeftPercentChange}
+              left={left}
+              right={right}
+            />
+          )}
         </CardContent>
       </Collapse>
     </Card>

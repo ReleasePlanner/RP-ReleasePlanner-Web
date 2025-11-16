@@ -92,7 +92,6 @@ const UserProfile = ({ userId }: { userId: number }) => {
     // Automatic logging + tracking with one wrapper
     return log.handler(() => {
       // Your save logic here
-      console.log("Saving profile:", profileData);
       return { success: true };
     }, "save_profile")();
   };
@@ -139,14 +138,12 @@ const UserProfile = ({ userId }: { userId: number }) => {
 
 class PlanManagerOriginal {
   createPlan(planData: object) {
-    console.log("PlanManager.createPlan called with:", planData);
     const start = performance.now();
 
     try {
       // Business logic
       const plan = { id: Date.now(), ...planData, status: "active" };
 
-      console.log(`Plan created in ${performance.now() - start}ms`);
       // monitoring.trackUserInteraction({ action: 'create_plan', component: 'PlanManager' });
 
       return plan;

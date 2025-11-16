@@ -1,5 +1,6 @@
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback, useMemo, useRef, useImperativeHandle, forwardRef } from "react";
 import { useTheme } from "@mui/material/styles";
+import { Box } from "@mui/material";
 import type {
   Plan,
   PlanStatus,
@@ -20,8 +21,10 @@ import AddPhaseDialog from "../Plan/AddPhaseDialog";
 import PhaseEditDialog from "../Plan/PhaseEditDialog/PhaseEditDialog";
 import { ErrorBoundary } from "../../../../utils/logging/ErrorBoundary";
 import { L, useComponentLogger } from "../../../../utils/logging/simpleLogging";
-import { useUpdatePlan } from "../../../../api/hooks";
+import { useUpdatePlan, useFeatures, useUpdateFeature } from "../../../../api/hooks";
+import { useQueryClient } from "@tanstack/react-query";
 import { createFullUpdateDto, createPartialUpdateDto } from "../../lib/planConverters";
+import { categorizeError, getUserErrorMessage, ErrorCategory } from "../../../../api/resilience/ErrorHandler";
 import { MilestoneEditDialog } from "../Plan/MilestoneEditDialog";
 import {
   CellCommentsDialog,
@@ -33,13 +36,20 @@ export type PlanCardProps = {
   plan: Plan;
 };
 
-export default function PlanCard({ plan }: PlanCardProps) {
+export type PlanCardHandle = {
+  saveAll: () => Promise<void>;
+  hasPendingChanges: () => boolean;
+};
+
+const PlanCard = forwardRef<PlanCardHandle, PlanCardProps>(function PlanCard({ plan }, ref) {
   // ⭐ Optimized logging system - ONE line replaces all manual logging
   const log = useComponentLogger("PlanCard");
   const theme = useTheme();
 
-  // API hook for updating plan
+  // API hooks for updating plan and features
   const updatePlanMutation = useUpdatePlan();
+  const updateFeatureMutation = useUpdateFeature();
+  const queryClient = useQueryClient();
 
   // ⭐ Clean Architecture - Business logic separated in custom hook
   const {
@@ -57,7 +67,20 @@ export default function PlanCard({ plan }: PlanCardProps) {
     setEditOpen,
   } = usePlanCard(plan, updatePlanMutation);
 
-  const { metadata, tasks } = plan;
+  const { metadata: originalMetadata, tasks } = plan;
+  
+  // Local state for pending changes - only saved when user clicks save button
+  const [localMetadata, setLocalMetadata] = useState(originalMetadata);
+  
+  // Sync local metadata when plan changes from external source
+  useEffect(() => {
+    setLocalMetadata(originalMetadata);
+  }, [originalMetadata]);
+  
+  const metadata = localMetadata;
+  
+  // Get all features for the product to update their status (after metadata is defined)
+  const { data: allProductFeatures = [] } = useFeatures(metadata.productId);
 
   const [milestoneDialogOpen, setMilestoneDialogOpen] = useState(false);
   const [selectedMilestoneDate, setSelectedMilestoneDate] = useState<
@@ -94,22 +117,18 @@ export default function PlanCard({ plan }: PlanCardProps) {
     setMilestoneDialogOpen(true);
   };
 
-  const handleMilestoneDelete = async (milestoneId: string) => {
+  const handleMilestoneDelete = (milestoneId: string) => {
+    // Only update local state - save via save button
     const updatedMilestones =
       metadata.milestones?.filter((m) => m.id !== milestoneId) || [];
-    try {
-      await updatePlanMutation.mutateAsync({
-        id: plan.id,
-        data: createPartialUpdateDto(plan, {
-          milestones: updatedMilestones,
-        }),
-      });
-    } catch (error) {
-      console.error('Error deleting milestone:', error);
-    }
+    setLocalMetadata(prev => ({
+      ...prev,
+      milestones: updatedMilestones,
+    }));
   };
 
-  const handleMilestoneSave = async (milestone: PlanMilestone) => {
+  const handleMilestoneSave = (milestone: PlanMilestone) => {
+    // Only update local state - save via save button
     const existingMilestones = metadata.milestones || [];
     const existingIndex = existingMilestones.findIndex(
       (m) => m.id === milestone.id
@@ -122,39 +141,28 @@ export default function PlanCard({ plan }: PlanCardProps) {
           )
         : [...existingMilestones, milestone];
 
-    try {
-      await updatePlanMutation.mutateAsync({
-        id: plan.id,
-        data: createPartialUpdateDto(plan, {
-          milestones: updatedMilestones,
-        }),
-      });
-    } catch (error) {
-      console.error('Error saving milestone:', error);
-    }
+    setLocalMetadata(prev => ({
+      ...prev,
+      milestones: updatedMilestones,
+    }));
   };
 
-  const handleReferencesChange = async (newReferences: PlanReference[]) => {
+  const handleReferencesChange = useCallback((newReferences: PlanReference[]) => {
+    // Only update local state - save via save button
     // Only save plan-level references (without date/phaseId)
     // Auto-generated references from cellData and milestones are filtered out
     const planLevelReferences = newReferences.filter(
       (ref) => !ref.date && !ref.phaseId
     );
-    try {
-      await updatePlanMutation.mutateAsync({
-        id: plan.id,
-        data: createPartialUpdateDto(plan, {
-          references: planLevelReferences,
-        }),
-      });
-    } catch (error) {
-      console.error('Error updating references:', error);
-    }
-  };
+    setLocalMetadata(prev => ({
+      ...prev,
+      references: planLevelReferences,
+    }));
+  }, []);
 
-  // Cell data handlers
+  // Cell data handlers - only update local state, save via save button
   const handleCellDataChange = useCallback(
-    async (data: GanttCellData) => {
+    (data: GanttCellData) => {
       // Find existing cellData and update or add the new one
       const existingCellData = metadata.cellData || [];
       const existingIndex = existingCellData.findIndex(
@@ -166,18 +174,12 @@ export default function PlanCard({ plan }: PlanCardProps) {
           ? existingCellData.map((cd, idx) => (idx === existingIndex ? data : cd))
           : [...existingCellData, data];
 
-      try {
-        await updatePlanMutation.mutateAsync({
-          id: plan.id,
-          data: createPartialUpdateDto(plan, {
-            cellData: updatedCellData,
-          }),
-        });
-      } catch (error) {
-        console.error('Error updating cell data:', error);
-      }
+      setLocalMetadata(prev => ({
+        ...prev,
+        cellData: updatedCellData,
+      }));
     },
-    [plan, metadata.cellData, updatePlanMutation]
+    [metadata.cellData]
   );
 
   const handleAddCellComment = useCallback(
@@ -196,7 +198,8 @@ export default function PlanCard({ plan }: PlanCardProps) {
   }, []);
 
   const handleToggleCellMilestone = useCallback(
-    async (phaseId: string, date: string) => {
+    (phaseId: string, date: string) => {
+      // Only update local state - save via save button
       const existingCellData = metadata.cellData || [];
       const cellDataIndex = existingCellData.findIndex(
         (cd) => cd.phaseId === (phaseId || undefined) && cd.date === date
@@ -229,22 +232,17 @@ export default function PlanCard({ plan }: PlanCardProps) {
         ];
       }
 
-      try {
-        await updatePlanMutation.mutateAsync({
-          id: plan.id,
-          data: createPartialUpdateDto(plan, {
-            cellData: updatedCellData,
-          }),
-        });
-      } catch (error) {
-        console.error('Error toggling cell milestone:', error);
-      }
+      setLocalMetadata(prev => ({
+        ...prev,
+        cellData: updatedCellData,
+      }));
     },
-    [plan, metadata.cellData, updatePlanMutation, theme.palette.warning.main]
+    [metadata.cellData, theme.palette.warning.main]
   );
 
   const handleSaveComment = useCallback(
-    async (text: string) => {
+    (text: string) => {
+      // Only update local state - save via save button
       if (!cellDialogState.date) return; // date is required, phaseId can be null for day-level
       const comment: GanttCellComment = {
         id: `comment-${Date.now()}`,
@@ -283,22 +281,17 @@ export default function PlanCard({ plan }: PlanCardProps) {
         ];
       }
 
-      try {
-        await updatePlanMutation.mutateAsync({
-          id: plan.id,
-          data: createPartialUpdateDto(plan, {
-            cellData: updatedCellData,
-          }),
-        });
-      } catch (error) {
-        console.error('Error saving comment:', error);
-      }
+      setLocalMetadata(prev => ({
+        ...prev,
+        cellData: updatedCellData,
+      }));
     },
-    [plan, metadata.cellData, cellDialogState, metadata.owner, updatePlanMutation]
+    [metadata.cellData, cellDialogState, metadata.owner]
   );
 
   const handleSaveFile = useCallback(
-    async (file: { name: string; url: string }) => {
+    (file: { name: string; url: string }) => {
+      // Only update local state - save via save button
       if (!cellDialogState.date) return; // date is required, phaseId can be null for day-level
       const fileData: GanttCellFile = {
         id: `file-${Date.now()}`,
@@ -337,22 +330,17 @@ export default function PlanCard({ plan }: PlanCardProps) {
         ];
       }
 
-      try {
-        await updatePlanMutation.mutateAsync({
-          id: plan.id,
-          data: createPartialUpdateDto(plan, {
-            cellData: updatedCellData,
-          }),
-        });
-      } catch (error) {
-        console.error('Error saving file:', error);
-      }
+      setLocalMetadata(prev => ({
+        ...prev,
+        cellData: updatedCellData,
+      }));
     },
-    [plan, metadata.cellData, cellDialogState, updatePlanMutation]
+    [metadata.cellData, cellDialogState]
   );
 
   const handleSaveLink = useCallback(
-    async (link: { title: string; url: string; description?: string }) => {
+    (link: { title: string; url: string; description?: string }) => {
+      // Only update local state - save via save button
       if (!cellDialogState.date) return; // date is required, phaseId can be null for day-level
       const linkData: GanttCellLink = {
         id: `link-${Date.now()}`,
@@ -392,22 +380,17 @@ export default function PlanCard({ plan }: PlanCardProps) {
         ];
       }
 
-      try {
-        await updatePlanMutation.mutateAsync({
-          id: plan.id,
-          data: createPartialUpdateDto(plan, {
-            cellData: updatedCellData,
-          }),
-        });
-      } catch (error) {
-        console.error('Error saving link:', error);
-      }
+      setLocalMetadata(prev => ({
+        ...prev,
+        cellData: updatedCellData,
+      }));
     },
-    [plan, metadata.cellData, cellDialogState, updatePlanMutation]
+    [metadata.cellData, cellDialogState]
   );
 
   const handleDeleteComment = useCallback(
-    async (commentId: string) => {
+    (commentId: string) => {
+      // Only update local state - save via save button
       if (!cellDialogState.date) return;
       const existingCellData = metadata.cellData || [];
       const cellDataIndex = existingCellData.findIndex(
@@ -431,22 +414,17 @@ export default function PlanCard({ plan }: PlanCardProps) {
           : cd
       );
 
-      try {
-        await updatePlanMutation.mutateAsync({
-          id: plan.id,
-          data: createPartialUpdateDto(plan, {
-            cellData: updatedCellData,
-          }),
-        });
-      } catch (error) {
-        console.error('Error deleting comment:', error);
-      }
+      setLocalMetadata(prev => ({
+        ...prev,
+        cellData: updatedCellData,
+      }));
     },
-    [plan, metadata.cellData, cellDialogState, updatePlanMutation]
+    [metadata.cellData, cellDialogState]
   );
 
   const handleDeleteFile = useCallback(
-    async (fileId: string) => {
+    (fileId: string) => {
+      // Only update local state - save via save button
       if (!cellDialogState.date) return;
       const existingCellData = metadata.cellData || [];
       const cellDataIndex = existingCellData.findIndex(
@@ -470,22 +448,17 @@ export default function PlanCard({ plan }: PlanCardProps) {
           : cd
       );
 
-      try {
-        await updatePlanMutation.mutateAsync({
-          id: plan.id,
-          data: createPartialUpdateDto(plan, {
-            cellData: updatedCellData,
-          }),
-        });
-      } catch (error) {
-        console.error('Error deleting file:', error);
-      }
+      setLocalMetadata(prev => ({
+        ...prev,
+        cellData: updatedCellData,
+      }));
     },
-    [plan, metadata.cellData, cellDialogState, updatePlanMutation]
+    [metadata.cellData, cellDialogState]
   );
 
   const handleDeleteLink = useCallback(
-    async (linkId: string) => {
+    (linkId: string) => {
+      // Only update local state - save via save button
       if (!cellDialogState.date) return;
       const existingCellData = metadata.cellData || [];
       const cellDataIndex = existingCellData.findIndex(
@@ -509,18 +482,12 @@ export default function PlanCard({ plan }: PlanCardProps) {
           : cd
       );
 
-      try {
-        await updatePlanMutation.mutateAsync({
-          id: plan.id,
-          data: createPartialUpdateDto(plan, {
-            cellData: updatedCellData,
-          }),
-        });
-      } catch (error) {
-        console.error('Error deleting link:', error);
-      }
+      setLocalMetadata(prev => ({
+        ...prev,
+        cellData: updatedCellData,
+      }));
     },
-    [plan, metadata.cellData, cellDialogState, updatePlanMutation]
+    [metadata.cellData, cellDialogState]
   );
 
   const currentCellData = cellDialogState.date
@@ -541,6 +508,8 @@ export default function PlanCard({ plan }: PlanCardProps) {
     return map;
   }, [metadata.phases]);
 
+  // Optimize consolidatedReferences - only recalculate when relevant fields change
+  // This prevents recalculation when description or other unrelated fields change
   const consolidatedReferences = useMemo(() => {
     const allReferences: PlanReference[] = [];
 
@@ -662,21 +631,57 @@ export default function PlanCard({ plan }: PlanCardProps) {
   // Products are now loaded directly in PlanLeftPane from Redux store
 
   // ⭐ Lifecycle logging - Automatic mount/unmount tracking (deferred for performance)
+  const hasLoggedMount = useRef(false);
   useEffect(() => {
+    // Only log mount once per component instance
+    if (hasLoggedMount.current) {
+      return () => {
+        hasLoggedMount.current = false;
+      };
+    }
+    
+    hasLoggedMount.current = true;
     // Defer logging to avoid blocking initial render
-    const timeoutId = setTimeout(() => {
-      log.lifecycle(
-        "mount",
-        `Plan ${plan.id} with ${tasks.length} tasks, ${
-          metadata.phases?.length || 0
-        } phases`
+    // Use requestIdleCallback for better performance than setTimeout
+    const planId = plan.id;
+    const taskCount = tasks.length;
+    const phaseCount = metadata.phases?.length || 0;
+    
+    let idleCallbackId: number | null = null;
+    let timeoutId: NodeJS.Timeout | null = null;
+    
+    if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+      idleCallbackId = requestIdleCallback(
+        () => {
+          log.lifecycle(
+            "mount",
+            `Plan ${planId} with ${taskCount} tasks, ${phaseCount} phases`
+          );
+        },
+        { timeout: 1000 } // Fallback timeout
       );
-    }, 0);
+    } else {
+      // Fallback for browsers without requestIdleCallback
+      timeoutId = setTimeout(() => {
+        log.lifecycle(
+          "mount",
+          `Plan ${planId} with ${taskCount} tasks, ${phaseCount} phases`
+        );
+      }, 0);
+    }
+    
     return () => {
-      clearTimeout(timeoutId);
+      if (idleCallbackId !== null && typeof window !== 'undefined' && 'cancelIdleCallback' in window) {
+        cancelIdleCallback(idleCallbackId);
+      }
+      if (timeoutId !== null) {
+        clearTimeout(timeoutId);
+      }
+      hasLoggedMount.current = false;
       log.lifecycle("unmount");
     };
-  }, [log, plan.id, tasks.length, metadata.phases?.length]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run on mount/unmount, not on every prop change
 
   // ⭐ Enhanced handlers with optimized logging + tracking + performance
   const handleToggleExpandedOptimized = () => {
@@ -701,106 +706,93 @@ export default function PlanCard({ plan }: PlanCardProps) {
     );
   };
 
-  const handleAddPhaseOptimized = (name: string) => {
+  const handleAddPhaseOptimized = (phasesToAdd: PlanPhase[]) => {
     return L.all(
       () => {
-        handleAddPhase(name);
-        return { planId: plan.id, phaseName: name };
+        handleAddPhase(phasesToAdd, (updatedPhases) => {
+          setLocalMetadata(prev => ({
+            ...prev,
+            phases: updatedPhases,
+          }));
+        });
+        return { planId: plan.id, phasesCount: phasesToAdd.length };
       },
       {
         component: "PlanCard",
-        message: "Adding new phase",
-        action: "add_phase",
+        message: `Adding ${phasesToAdd.length} phase(s)`,
+        action: "add_phases",
         time: true,
       }
     );
   };
 
-  const handleProductChange = async (productId: string) => {
-    return L.track(
-      async () => {
-        try {
-          await updatePlanMutation.mutateAsync({
-            id: plan.id,
-            data: createPartialUpdateDto(plan, {
-              productId: productId || undefined,
-            }),
-          });
-          return { planId: plan.id, productId };
-        } catch (error) {
-          console.error('Error updating product:', error);
-          throw error;
-        }
-      },
-      "product_selected",
-      "PlanCard"
-    );
-  };
-
-  const handleDescriptionChange = async (description: string) => {
-    try {
-      await updatePlanMutation.mutateAsync({
-        id: plan.id,
-        data: createPartialUpdateDto(plan, {
-          description: description || undefined,
-        }),
+  const handleProductChange = useCallback((productId: string) => {
+    // Only update local state - save via save button
+    const validProductId = productId && productId.trim() ? productId.trim() : "";
+    setLocalMetadata(prev => ({
+      ...prev,
+      productId: validProductId || undefined,
+    }));
+    // Defer tracking to avoid blocking the UI update
+    if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+      requestIdleCallback(() => {
+        L.track(
+          () => ({ planId: plan.id, productId: validProductId }),
+          "product_selected",
+          "PlanCard"
+        );
       });
-    } catch (error) {
-      console.error('Error updating description:', error);
+    } else {
+      // Fallback: use setTimeout with minimal delay
+      setTimeout(() => {
+        L.track(
+          () => ({ planId: plan.id, productId: validProductId }),
+          "product_selected",
+          "PlanCard"
+        );
+      }, 0);
     }
-  };
+  }, [plan.id]);
 
-  const handleStatusChange = async (status: PlanStatus) => {
-    try {
-      await updatePlanMutation.mutateAsync({
-        id: plan.id,
-        data: createPartialUpdateDto(plan, {
-          status,
-        }),
-      });
-    } catch (error) {
-      console.error('Error updating status:', error);
-    }
-  };
+  const handleDescriptionChange = useCallback((description: string) => {
+    // Only update local state - save via save button
+    setLocalMetadata(prev => ({
+      ...prev,
+      description: description || undefined,
+    }));
+  }, []);
 
-  const handleITOwnerChange = async (itOwnerId: string) => {
-    try {
-      await updatePlanMutation.mutateAsync({
-        id: plan.id,
-        data: createPartialUpdateDto(plan, {
-          itOwner: itOwnerId || undefined,
-        }),
-      });
-    } catch (error) {
-      console.error('Error updating IT owner:', error);
-    }
-  };
+  const handleStatusChange = useCallback((status: PlanStatus) => {
+    // Only update local state - save via save button
+    setLocalMetadata(prev => ({
+      ...prev,
+      status,
+    }));
+  }, []);
 
-  const handleStartDateChange = async (date: string) => {
-    try {
-      await updatePlanMutation.mutateAsync({
-        id: plan.id,
-        data: createPartialUpdateDto(plan, {
-          startDate: date,
-        }),
-      });
-    } catch (error) {
-      console.error('Error updating start date:', error);
-    }
-  };
+  const handleITOwnerChange = useCallback((itOwnerId: string) => {
+    // Only update local state - save via save button
+    setLocalMetadata(prev => ({
+      ...prev,
+      itOwner: itOwnerId || undefined,
+    }));
+  }, []);
 
-  const handleEndDateChange = async (date: string) => {
-    try {
-      await updatePlanMutation.mutateAsync({
-        id: plan.id,
-        data: createPartialUpdateDto(plan, {
-          endDate: date,
-        }),
-      });
-    } catch (error) {
-      console.error('Error updating end date:', error);
-    }
-  };
+  const handleStartDateChange = useCallback((date: string) => {
+    // Only update local state - save via save button
+    setLocalMetadata(prev => ({
+      ...prev,
+      startDate: date,
+    }));
+  }, []);
+
+  const handleEndDateChange = useCallback((date: string) => {
+    // Only update local state - save via save button
+    setLocalMetadata(prev => ({
+      ...prev,
+      endDate: date,
+    }));
+  }, []);
 
   const openEditOptimized = (phaseId: string) => {
     return L.safe(
@@ -827,7 +819,12 @@ export default function PlanCard({ plan }: PlanCardProps) {
   ) => {
     return L.time(
       () => {
-        handlePhaseRangeChange(phaseId, startDate, endDate);
+        handlePhaseRangeChange(phaseId, startDate, endDate, (updatedPhases) => {
+          setLocalMetadata(prev => ({
+            ...prev,
+            phases: updatedPhases,
+          }));
+        });
         return { phaseId, startDate, endDate };
       },
       "Phase drag operation",
@@ -835,44 +832,553 @@ export default function PlanCard({ plan }: PlanCardProps) {
     );
   };
 
-  const handleFeatureIdsChange = async (newFeatureIds: string[]) => {
-    try {
-      await updatePlanMutation.mutateAsync({
-        id: plan.id,
-        data: createPartialUpdateDto(plan, {
-          featureIds: newFeatureIds,
-        }),
-      });
-    } catch (error) {
-      console.error('Error updating feature IDs:', error);
-    }
-  };
+  const handleFeatureIdsChange = useCallback((newFeatureIds: string[]) => {
+    // Only update local state - save via save button
+    setLocalMetadata(prev => ({
+      ...prev,
+      featureIds: newFeatureIds,
+    }));
+  }, []);
 
-  const handleComponentsChange = async (newComponents: PlanComponent[]) => {
-    try {
-      await updatePlanMutation.mutateAsync({
-        id: plan.id,
-        data: createPartialUpdateDto(plan, {
-          components: newComponents,
-        }),
-      });
-    } catch (error) {
-      console.error('Error updating components:', error);
-    }
-  };
+  const handleComponentsChange = useCallback((newComponents: PlanComponent[]) => {
+    // Only update local state - save via save button
+    setLocalMetadata(prev => ({
+      ...prev,
+      components: newComponents,
+    }));
+  }, []);
 
-  const handleCalendarIdsChange = async (newCalendarIds: string[]) => {
-    try {
-      await updatePlanMutation.mutateAsync({
-        id: plan.id,
-        data: createPartialUpdateDto(plan, {
-          calendarIds: newCalendarIds,
-        }),
-      });
-    } catch (error) {
-      console.error('Error updating calendar IDs:', error);
+  const handleCalendarIdsChange = useCallback((newCalendarIds: string[]) => {
+    // Only update local state - save via save button
+    setLocalMetadata(prev => ({
+      ...prev,
+      calendarIds: newCalendarIds,
+    }));
+  }, []);
+
+  // Handle name change - only updates local state, save via save button
+  const handleNameChange = useCallback(
+    (newName: string) => {
+      setLocalMetadata(prev => ({
+        ...prev,
+        name: newName,
+      }));
+    },
+    []
+  );
+
+  // Handle save tab - asynchronous, atomic, with optimistic locking
+  const handleSaveTab = useCallback(async (tabIndex: number) => {
+    const updateData: Partial<LocalPlan['metadata']> = {};
+    
+    // Validate and prepare data based on tab
+    switch (tabIndex) {
+      case 0: // Datos Comunes
+        // Validate required fields
+        if (!metadata.name?.trim()) {
+          throw new Error("El nombre del plan es obligatorio");
+        }
+        if (!metadata.status) {
+          throw new Error("El estado es obligatorio");
+        }
+        if (!metadata.startDate) {
+          throw new Error("La fecha de inicio es obligatoria");
+        }
+        if (!metadata.endDate) {
+          throw new Error("La fecha de fin es obligatoria");
+        }
+        if (!metadata.productId) {
+          throw new Error("El producto es obligatorio");
+        }
+        
+        updateData.name = metadata.name;
+        updateData.description = metadata.description;
+        updateData.status = metadata.status;
+        updateData.startDate = metadata.startDate;
+        updateData.endDate = metadata.endDate;
+        updateData.productId = metadata.productId;
+        updateData.itOwner = metadata.itOwner;
+        break;
+      case 1: // Features
+        updateData.featureIds = metadata.featureIds;
+        // Note: Feature status updates will be handled after plan save
+        break;
+      case 2: // Componentes
+        updateData.components = metadata.components;
+        break;
+      case 3: // Calendarios
+        updateData.calendarIds = metadata.calendarIds;
+        break;
+      case 4: // Referencias
+        updateData.references = consolidatedReferences;
+        break;
     }
-  };
+
+    // Asynchronous save with optimistic locking and retries
+    const maxRetries = 3;
+    let retryCount = 0;
+    let lastError: Error | null = null;
+
+    while (retryCount < maxRetries) {
+      try {
+        // Atomic update with optimistic locking
+        const savedPlan = await updatePlanMutation.mutateAsync({
+          id: plan.id,
+          data: createPartialUpdateDto(
+            plan,
+            updateData,
+            plan.updatedAt // Pass original updatedAt for optimistic locking
+          ),
+        });
+        
+        // If saving Features tab, update feature statuses to "assigned"
+        if (tabIndex === 1 && updateData.featureIds) {
+          // Get features that are being added (in new list but not in original)
+          const originalFeatureIds = originalMetadata.featureIds || [];
+          const newFeatureIds = updateData.featureIds;
+          const addedFeatureIds = newFeatureIds.filter((id) => !originalFeatureIds.includes(id));
+          
+          // Update status of newly added features to "assigned"
+          if (addedFeatureIds.length > 0) {
+            const featuresToUpdate = allProductFeatures.filter((f) => addedFeatureIds.includes(f.id));
+            await Promise.all(
+              featuresToUpdate.map((feature) =>
+                updateFeatureMutation.mutateAsync({
+                  id: feature.id,
+                  data: {
+                    status: "assigned" as const,
+                    updatedAt: feature.updatedAt, // Pass original updatedAt for optimistic locking
+                  },
+                }).catch((error) => {
+                  console.error(`Error updating feature ${feature.id} status to assigned:`, error);
+                  throw error;
+                })
+              )
+            );
+          }
+        }
+        
+        // Invalidate queries to ensure fresh data is fetched
+        await queryClient.invalidateQueries({ queryKey: ['plans'] });
+        await queryClient.invalidateQueries({ queryKey: ['features'] });
+        
+        // Wait for refetch to complete to ensure originalMetadata is updated
+        await queryClient.refetchQueries({ queryKey: ['plans'] });
+        await queryClient.refetchQueries({ queryKey: ['features'] });
+        
+        // Sync local metadata with saved data after successful save
+        // This ensures UI reflects the saved state immediately
+        setLocalMetadata(prev => ({ ...prev, ...updateData }));
+        
+        return; // Success
+      } catch (error: any) {
+        lastError = error;
+        
+        // Use advanced error categorization
+        const errorContext = categorizeError(error);
+        
+        // Check if it's a concurrency conflict or retryable error
+        if (
+          errorContext.category === ErrorCategory.CONFLICT ||
+          errorContext.category === ErrorCategory.RATE_LIMIT ||
+          (errorContext.retryable && retryCount < maxRetries - 1)
+        ) {
+          retryCount++;
+          if (retryCount < maxRetries) {
+            // Calculate delay based on error type
+            let delay = 500;
+            if (errorContext.category === ErrorCategory.RATE_LIMIT) {
+              delay = Math.min(2000 * Math.pow(2, retryCount), 10000);
+            } else if (errorContext.category === ErrorCategory.CONFLICT) {
+              delay = Math.min(500 * (retryCount + 1), 2000);
+            } else {
+              delay = Math.min(1000 * Math.pow(2, retryCount), 5000);
+            }
+            
+            // Wait before retrying
+            await new Promise(resolve => setTimeout(resolve, delay));
+            
+            // Invalidate queries to refresh plan data before retry
+            await queryClient.invalidateQueries({ queryKey: ['plans'] });
+            
+            // Wait a bit more for the refetch to complete
+            await new Promise(resolve => setTimeout(resolve, 200));
+            continue;
+          } else {
+            // Max retries reached - throw a user-friendly error
+            throw new Error(errorContext.userMessage || `Error al guardar el tab ${tabIndex}. Por favor, intente nuevamente.`);
+          }
+        } else {
+          // Not a retryable error, throw immediately with user-friendly message
+          throw new Error(errorContext.userMessage || error?.message || `Error al guardar el tab ${tabIndex}.`);
+        }
+      }
+    }
+
+    // If we exhausted retries, throw the last error
+    throw lastError || new Error(`Failed to save tab ${tabIndex} after multiple retries`);
+  }, [plan, metadata, consolidatedReferences, updatePlanMutation, queryClient]);
+  
+  // Handle save for timeline/phases - asynchronous, atomic, with optimistic locking
+  const handleSaveTimeline = useCallback(async () => {
+    const maxRetries = 3;
+    let retryCount = 0;
+    let lastError: Error | null = null;
+
+    while (retryCount < maxRetries) {
+      try {
+        // Atomic update with optimistic locking
+        const savedPlan = await updatePlanMutation.mutateAsync({
+          id: plan.id,
+          data: createPartialUpdateDto(
+            plan,
+            {
+              phases: metadata.phases,
+              cellData: metadata.cellData,
+              milestones: metadata.milestones,
+            },
+            plan.updatedAt // Pass original updatedAt for optimistic locking
+          ),
+        });
+        
+        // Invalidate queries to ensure fresh data is fetched
+        await queryClient.invalidateQueries({ queryKey: ['plans'] });
+        
+        // Wait for refetch to complete to ensure originalMetadata is updated
+        await queryClient.refetchQueries({ queryKey: ['plans'] });
+        
+        // Sync local metadata with saved data after successful save
+        // This ensures UI reflects the saved state immediately
+        setLocalMetadata(prev => ({
+          ...prev,
+          phases: metadata.phases,
+          cellData: metadata.cellData,
+          milestones: metadata.milestones,
+        }));
+        
+        return; // Success
+      } catch (error: any) {
+        lastError = error;
+        
+        // Use advanced error categorization
+        const errorContext = categorizeError(error);
+        
+        // Check if it's a concurrency conflict or retryable error
+        if (
+          errorContext.category === ErrorCategory.CONFLICT ||
+          errorContext.category === ErrorCategory.RATE_LIMIT ||
+          (errorContext.retryable && retryCount < maxRetries - 1)
+        ) {
+          retryCount++;
+          if (retryCount < maxRetries) {
+            // Calculate delay based on error type
+            let delay = 500;
+            if (errorContext.category === ErrorCategory.RATE_LIMIT) {
+              delay = Math.min(2000 * Math.pow(2, retryCount), 10000);
+            } else if (errorContext.category === ErrorCategory.CONFLICT) {
+              delay = Math.min(500 * (retryCount + 1), 2000);
+            } else {
+              delay = Math.min(1000 * Math.pow(2, retryCount), 5000);
+            }
+            
+            // Wait before retrying
+            await new Promise(resolve => setTimeout(resolve, delay));
+            
+            // Invalidate queries to refresh plan data before retry
+            await queryClient.invalidateQueries({ queryKey: ['plans'] });
+            
+            // Wait a bit more for the refetch to complete
+            await new Promise(resolve => setTimeout(resolve, 200));
+            continue;
+          } else {
+            // Max retries reached - throw a user-friendly error
+            throw new Error(errorContext.userMessage || 'Error al guardar el timeline. Por favor, intente nuevamente.');
+          }
+        } else {
+          // Not a retryable error, throw immediately with user-friendly message
+          throw new Error(errorContext.userMessage || error?.message || 'Error al guardar el timeline.');
+        }
+      }
+    }
+
+    // If we exhausted retries, throw the last error
+    throw lastError || new Error('Failed to save timeline after multiple retries');
+  }, [plan, metadata, updatePlanMutation, queryClient]);
+
+  // Check if there are pending changes - optimized to avoid expensive JSON.stringify
+  const hasPendingChanges = useCallback(() => {
+    // Quick reference equality check first (fastest)
+    if (originalMetadata === localMetadata) return false;
+    
+    // Compare key fields directly before falling back to JSON.stringify
+    if (
+      originalMetadata.name !== localMetadata.name ||
+      originalMetadata.description !== localMetadata.description ||
+      originalMetadata.status !== localMetadata.status ||
+      originalMetadata.productId !== localMetadata.productId ||
+      originalMetadata.itOwner !== localMetadata.itOwner ||
+      originalMetadata.startDate !== localMetadata.startDate ||
+      originalMetadata.endDate !== localMetadata.endDate
+    ) {
+      return true;
+    }
+    
+    // For arrays/objects, check reference equality first
+    if (
+      originalMetadata.featureIds !== localMetadata.featureIds ||
+      originalMetadata.components !== localMetadata.components ||
+      originalMetadata.calendarIds !== localMetadata.calendarIds ||
+      originalMetadata.references !== localMetadata.references ||
+      originalMetadata.phases !== localMetadata.phases ||
+      originalMetadata.cellData !== localMetadata.cellData ||
+      originalMetadata.milestones !== localMetadata.milestones
+    ) {
+      // Only use JSON.stringify if references differ
+      return JSON.stringify(originalMetadata) !== JSON.stringify(localMetadata);
+    }
+    
+    return false;
+  }, [originalMetadata, localMetadata]);
+
+  // Check if there are pending changes specifically in timeline (phases, cellData, milestones)
+  // Optimized comparison to avoid expensive JSON.stringify on every render
+  const hasTimelineChanges = useMemo(() => {
+    // Quick reference equality check first (fastest)
+    if (
+      originalMetadata.phases === localMetadata.phases &&
+      originalMetadata.cellData === localMetadata.cellData &&
+      originalMetadata.milestones === localMetadata.milestones
+    ) {
+      return false;
+    }
+    
+    // Deep comparison only if references differ
+    // Use JSON.stringify as fallback but cache the stringified versions
+    const originalStr = JSON.stringify({
+      phases: originalMetadata.phases,
+      cellData: originalMetadata.cellData,
+      milestones: originalMetadata.milestones,
+    });
+    const localStr = JSON.stringify({
+      phases: localMetadata.phases,
+      cellData: localMetadata.cellData,
+      milestones: localMetadata.milestones,
+    });
+    
+    return originalStr !== localStr;
+  }, [
+    originalMetadata.phases,
+    originalMetadata.cellData,
+    originalMetadata.milestones,
+    localMetadata.phases,
+    localMetadata.cellData,
+    localMetadata.milestones,
+  ]);
+
+  // Check if there are pending changes for each tab - optimized with separate useMemo per tab
+  // This prevents recalculation of all tabs when only one field changes
+  
+  // Tab 0: General Info - compare fields directly (fastest, most common changes)
+  const hasTab0Changes = useMemo(() => {
+    return (
+      originalMetadata.name !== localMetadata.name ||
+      originalMetadata.description !== localMetadata.description ||
+      originalMetadata.status !== localMetadata.status ||
+      originalMetadata.productId !== localMetadata.productId ||
+      originalMetadata.itOwner !== localMetadata.itOwner ||
+      originalMetadata.startDate !== localMetadata.startDate ||
+      originalMetadata.endDate !== localMetadata.endDate
+    );
+  }, [
+    originalMetadata.name,
+    originalMetadata.description,
+    originalMetadata.status,
+    originalMetadata.productId,
+    originalMetadata.itOwner,
+    originalMetadata.startDate,
+    originalMetadata.endDate,
+    localMetadata.name,
+    localMetadata.description,
+    localMetadata.status,
+    localMetadata.productId,
+    localMetadata.itOwner,
+    localMetadata.startDate,
+    localMetadata.endDate,
+  ]);
+  
+  // Tab 1: Features - check reference first, then content
+  const hasTab1Changes = useMemo(() => {
+    if (originalMetadata.featureIds === localMetadata.featureIds) return false;
+    const origSorted = [...(originalMetadata.featureIds || [])].sort();
+    const localSorted = [...(localMetadata.featureIds || [])].sort();
+    return origSorted.length !== localSorted.length ||
+      origSorted.some((id, idx) => id !== localSorted[idx]);
+  }, [originalMetadata.featureIds, localMetadata.featureIds]);
+  
+  // Tab 2: Components - check reference first
+  const hasTab2Changes = useMemo(() => {
+    if (originalMetadata.components === localMetadata.components) return false;
+    return JSON.stringify(originalMetadata.components || []) !== 
+           JSON.stringify(localMetadata.components || []);
+  }, [originalMetadata.components, localMetadata.components]);
+  
+  // Tab 3: Calendars - check reference first, then content
+  const hasTab3Changes = useMemo(() => {
+    if (originalMetadata.calendarIds === localMetadata.calendarIds) return false;
+    const origSorted = [...(originalMetadata.calendarIds || [])].sort();
+    const localSorted = [...(localMetadata.calendarIds || [])].sort();
+    return origSorted.length !== localSorted.length ||
+      origSorted.some((id, idx) => id !== localSorted[idx]);
+  }, [originalMetadata.calendarIds, localMetadata.calendarIds]);
+  
+  // Tab 4: References - check reference first
+  const hasTab4Changes = useMemo(() => {
+    if (originalMetadata.references === localMetadata.references) return false;
+    return JSON.stringify(originalMetadata.references || []) !== 
+           JSON.stringify(localMetadata.references || []);
+  }, [originalMetadata.references, localMetadata.references]);
+  
+  // Combine all tab changes - use useMemo with stable reference
+  // Only recreate the object if any of the boolean values actually change
+  const hasTabChanges = useMemo(() => ({
+    0: hasTab0Changes,
+    1: hasTab1Changes,
+    2: hasTab2Changes,
+    3: hasTab3Changes,
+    4: hasTab4Changes,
+  }), [hasTab0Changes, hasTab1Changes, hasTab2Changes, hasTab3Changes, hasTab4Changes]);
+  
+  // Memoize the hasTabChanges object reference to prevent unnecessary re-renders
+  // Use a ref to track the previous value and only update when it actually changes
+  const hasTabChangesRef = useRef(hasTabChanges);
+  const stableHasTabChanges = useMemo(() => {
+    // Quick check: if references are the same, return immediately (fastest path)
+    if (hasTabChangesRef.current === hasTabChanges) {
+      return hasTabChangesRef.current;
+    }
+    
+    // Compare if any value actually changed
+    const changed = 
+      hasTabChangesRef.current[0] !== hasTabChanges[0] ||
+      hasTabChangesRef.current[1] !== hasTabChanges[1] ||
+      hasTabChangesRef.current[2] !== hasTabChanges[2] ||
+      hasTabChangesRef.current[3] !== hasTabChanges[3] ||
+      hasTabChangesRef.current[4] !== hasTabChanges[4];
+    
+    if (changed) {
+      hasTabChangesRef.current = hasTabChanges;
+      return hasTabChanges;
+    }
+    
+    // Return the same reference if nothing changed
+    return hasTabChangesRef.current;
+  }, [hasTabChanges]);
+
+  // Handle save all changes - transactional with optimistic locking
+  const handleSaveAll = useCallback(async () => {
+    if (!hasPendingChanges()) {
+      return; // No changes to save
+    }
+
+    // Validate required fields before saving
+    if (!metadata.name?.trim()) {
+      throw new Error("El nombre del plan es obligatorio");
+    }
+    if (!metadata.status) {
+      throw new Error("El estado es obligatorio");
+    }
+    if (!metadata.startDate) {
+      throw new Error("La fecha de inicio es obligatoria");
+    }
+    if (!metadata.endDate) {
+      throw new Error("La fecha de fin es obligatoria");
+    }
+    if (!metadata.productId) {
+      throw new Error("El producto es obligatorio");
+    }
+
+    const maxRetries = 3;
+    let retryCount = 0;
+    let lastError: Error | null = null;
+
+    while (retryCount < maxRetries) {
+      try {
+        // Atomic update with optimistic locking
+        const savedPlan = await updatePlanMutation.mutateAsync({
+          id: plan.id,
+          data: createFullUpdateDto(
+            {
+              ...plan,
+              metadata: localMetadata,
+            },
+            plan.updatedAt // Pass original updatedAt for optimistic locking
+          ),
+        });
+
+        // Invalidate queries to ensure fresh data is fetched
+        await queryClient.invalidateQueries({ queryKey: ['plans'] });
+        
+        // Wait for refetch to complete to ensure originalMetadata is updated
+        await queryClient.refetchQueries({ queryKey: ['plans'] });
+
+        // Sync local metadata with saved data after successful save
+        // This ensures UI reflects the saved state immediately
+        setLocalMetadata(localMetadata);
+        
+        return; // Success
+      } catch (error: any) {
+        lastError = error;
+        
+        // Use advanced error categorization
+        const errorContext = categorizeError(error);
+        
+        // Check if it's a concurrency conflict or retryable error
+        if (
+          errorContext.category === ErrorCategory.CONFLICT ||
+          errorContext.category === ErrorCategory.RATE_LIMIT ||
+          (errorContext.retryable && retryCount < maxRetries)
+        ) {
+          retryCount++;
+          if (retryCount < maxRetries) {
+            // Calculate delay based on error type
+            let delay = 500;
+            if (errorContext.category === ErrorCategory.RATE_LIMIT) {
+              delay = Math.min(2000 * Math.pow(2, retryCount), 10000);
+            } else if (errorContext.category === ErrorCategory.CONFLICT) {
+              delay = Math.min(500 * (retryCount + 1), 2000);
+            } else {
+              delay = Math.min(1000 * Math.pow(2, retryCount), 5000);
+            }
+            
+            // Wait before retrying
+            await new Promise(resolve => setTimeout(resolve, delay));
+            
+            // Invalidate queries to refresh plan data before retry
+            await queryClient.invalidateQueries({ queryKey: ['plans'] });
+            
+            // Wait a bit more for the refetch to complete
+            await new Promise(resolve => setTimeout(resolve, 200));
+            continue;
+          } else {
+            // Max retries reached - throw a user-friendly error
+            throw new Error(errorContext.userMessage || 'Error al guardar. Por favor, intente nuevamente.');
+          }
+        } else {
+          // Not a retryable error, throw immediately with user-friendly message
+          throw new Error(errorContext.userMessage || error?.message || 'Error al guardar.');
+        }
+      }
+    }
+
+    // If we exhausted retries, throw the last error
+    throw lastError || new Error('Failed to save after multiple retries');
+  }, [plan, localMetadata, originalMetadata, hasPendingChanges, updatePlanMutation, queryClient]);
+
+  // Expose saveAll and hasPendingChanges via ref
+  useImperativeHandle(ref, () => ({
+    saveAll: handleSaveAll,
+    hasPendingChanges,
+  }), [handleSaveAll, hasPendingChanges]);
 
   // ⭐ Error Boundary with automatic error logging and recovery UI
   const handleError = (error: Error) => {
@@ -904,6 +1410,7 @@ export default function PlanCard({ plan }: PlanCardProps) {
         onLeftPercentChange={handleLeftPercentChangeOptimized}
         left={
           <PlanLeftPane
+            name={metadata.name}
             owner={metadata.owner}
             startDate={metadata.startDate}
             endDate={metadata.endDate}
@@ -911,8 +1418,10 @@ export default function PlanCard({ plan }: PlanCardProps) {
             description={metadata.description}
             status={metadata.status}
             productId={metadata.productId}
+            originalProductId={originalMetadata.productId}
             itOwner={metadata.itOwner}
             featureIds={metadata.featureIds}
+            onNameChange={handleNameChange}
             onProductChange={handleProductChange}
             onDescriptionChange={handleDescriptionChange}
             onStatusChange={handleStatusChange}
@@ -933,30 +1442,40 @@ export default function PlanCard({ plan }: PlanCardProps) {
                   }
                 : undefined
             }
+            onSaveTab={handleSaveTab}
+            isSaving={updatePlanMutation.isPending}
+            hasTabChanges={stableHasTabChanges}
+            planUpdatedAt={plan.updatedAt}
+            plan={plan}
           />
         }
         right={
-          <GanttChart
-            startDate={metadata.startDate}
-            endDate={metadata.endDate}
-            tasks={tasks}
-            phases={metadata.phases}
-            calendarIds={metadata.calendarIds}
-            milestones={metadata.milestones}
-            onMilestoneAdd={handleMilestoneAdd}
-            onMilestoneUpdate={handleMilestoneUpdate}
-            hideMainCalendar
-            onAddPhase={() => setPhaseOpen(true)}
-            onEditPhase={openEditOptimized}
-            onPhaseRangeChange={handlePhaseRangeChangeOptimized}
-            cellData={metadata.cellData}
-            onCellDataChange={handleCellDataChange}
-            onAddCellComment={handleAddCellComment}
-            onAddCellFile={handleAddCellFile}
-            onAddCellLink={handleAddCellLink}
-            onToggleCellMilestone={handleToggleCellMilestone}
-            onScrollToDateReady={setScrollToDateFn}
-          />
+          <Box sx={{ position: "relative", height: "100%" }}>
+            <GanttChart
+              startDate={metadata.startDate}
+              endDate={metadata.endDate}
+              tasks={tasks}
+              phases={metadata.phases}
+              calendarIds={metadata.calendarIds}
+              milestones={metadata.milestones}
+              onMilestoneAdd={handleMilestoneAdd}
+              onMilestoneUpdate={handleMilestoneUpdate}
+              hideMainCalendar
+              onAddPhase={() => setPhaseOpen(true)}
+              onEditPhase={openEditOptimized}
+              onPhaseRangeChange={handlePhaseRangeChangeOptimized}
+              cellData={metadata.cellData}
+              onCellDataChange={handleCellDataChange}
+              onAddCellComment={handleAddCellComment}
+              onAddCellFile={handleAddCellFile}
+              onAddCellLink={handleAddCellLink}
+              onToggleCellMilestone={handleToggleCellMilestone}
+              onScrollToDateReady={setScrollToDateFn}
+              onSaveTimeline={handleSaveTimeline}
+              hasTimelineChanges={hasTimelineChanges}
+              isSavingTimeline={updatePlanMutation.isPending}
+            />
+          </Box>
         }
       />
 
@@ -965,7 +1484,7 @@ export default function PlanCard({ plan }: PlanCardProps) {
         open={phaseOpen}
         onClose={() => setPhaseOpen(false)}
         onSubmit={handleAddPhaseOptimized}
-        existingPhaseNames={(metadata.phases ?? []).map((ph) => ph.name)}
+        existingPhases={metadata.phases ?? []}
       />
 
       <PhaseEditDialog
@@ -973,21 +1492,16 @@ export default function PlanCard({ plan }: PlanCardProps) {
         phase={editingPhase}
         planPhases={metadata.phases || []}
         onCancel={() => setEditOpen(false)}
-        onSave={async (updatedPhase) => {
+        onSave={(updatedPhase) => {
+          // Only update local state - save via save button
           const updatedPhases = (metadata.phases || []).map((p) =>
             p.id === updatedPhase.id ? updatedPhase : p
           );
-          try {
-            await updatePlanMutation.mutateAsync({
-              id: plan.id,
-              data: createPartialUpdateDto(plan, {
-                phases: updatedPhases,
-              }),
-            });
-            setEditOpen(false);
-          } catch (error) {
-            console.error('Error updating phase:', error);
-          }
+          setLocalMetadata(prev => ({
+            ...prev,
+            phases: updatedPhases,
+          }));
+          setEditOpen(false);
         }}
       />
 
@@ -1035,7 +1549,9 @@ export default function PlanCard({ plan }: PlanCardProps) {
       />
     </ErrorBoundary>
   );
-}
+});
+
+export default PlanCard;
 
 /**
  * 🎯 SUMMARY OF IMPROVEMENTS:

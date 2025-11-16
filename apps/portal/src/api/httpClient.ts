@@ -14,6 +14,23 @@
 import { API_BASE_URL } from "./config";
 import { logger } from "../utils/logging/Logger";
 import { authService } from "./services/auth.service";
+import {
+  circuitBreakerManager,
+  CircuitBreakerOpenError,
+} from "./resilience/CircuitBreaker";
+import {
+  calculateRetryDelay,
+  isRetryableError as isRetryableErrorStrategy,
+  getRetryConfigForError,
+  sleep as sleepUtil,
+} from "./resilience/RetryStrategy";
+import {
+  categorizeError,
+  getUserErrorMessage,
+  isErrorRetryable,
+  ErrorCategory,
+} from "./resilience/ErrorHandler";
+import { bulkheadManager, BulkheadRejectedError, BulkheadTimeoutError } from "./resilience/Bulkhead";
 
 export interface ApiError {
   message: string;
@@ -110,15 +127,10 @@ function sleep(ms: number): Promise<void> {
 }
 
 /**
- * Check if error is retryable
+ * Check if error is retryable (using advanced strategy)
  */
 function isRetryableError(error: HttpClientError): boolean {
-  // Don't retry client errors (4xx) except 408 (timeout) and 429 (rate limit)
-  if (error.statusCode >= 400 && error.statusCode < 500) {
-    return error.statusCode === 408 || error.statusCode === 429;
-  }
-  // Retry server errors (5xx) and network errors
-  return error.statusCode >= 500 || error.isNetworkError || error.isTimeout;
+  return isRetryableErrorStrategy(error);
 }
 
 /**
@@ -207,7 +219,7 @@ async function handleResponse<T>(
 }
 
 /**
- * Execute HTTP request with retry logic
+ * Execute HTTP request with retry logic, circuit breaker, and bulkhead
  */
 async function executeRequest<T>(
   url: string,
@@ -227,6 +239,19 @@ async function executeRequest<T>(
   const fullUrl = `${API_BASE_URL}${url}`;
   let lastError: HttpClientError | null = null;
 
+  // Get circuit breaker for this endpoint (group by base URL + method)
+  const endpointKey = `${method}:${url.split('?')[0]}`;
+  const circuitBreaker = circuitBreakerManager.getBreaker(endpointKey, {
+    failureThreshold: 5,
+    resetTimeout: 60000,
+  });
+
+  // Get bulkhead for this endpoint (limit concurrent requests)
+  const bulkhead = bulkheadManager.getBulkhead(endpointKey, {
+    maxConcurrent: 10,
+    maxQueueSize: 50,
+  });
+
   // Check online status
   if (!isOnline()) {
     const offlineError = new HttpClientError(
@@ -245,6 +270,45 @@ async function executeRequest<T>(
     });
     throw offlineError;
   }
+
+  // Execute with circuit breaker and bulkhead protection
+  return circuitBreaker.execute(async () => {
+    return bulkhead.execute(async () => {
+      return executeRequestWithRetry<T>(
+        url,
+        method,
+        options,
+        data,
+        correlationId,
+        fullUrl,
+        circuitBreaker
+      );
+    });
+  });
+}
+
+/**
+ * Internal function to execute request with retry logic
+ */
+async function executeRequestWithRetry<T>(
+  url: string,
+  method: string,
+  options: HttpClientOptions,
+  data: unknown | undefined,
+  correlationId: string,
+  fullUrl: string,
+  circuitBreaker: any
+): Promise<T> {
+  const {
+    timeout = DEFAULT_TIMEOUT,
+    retries = DEFAULT_RETRIES,
+    retryDelay = DEFAULT_RETRY_DELAY,
+    skipRetry = false,
+    ...fetchOptions
+  } = options;
+
+  let lastError: HttpClientError | null = null;
+  let retryConfig = getRetryConfigForError(null);
 
   for (let attempt = 0; attempt <= retries; attempt++) {
     let timeoutId: ReturnType<typeof setTimeout> | null = null;
@@ -472,8 +536,56 @@ async function executeRequest<T>(
         clearTimeout(timeoutId);
       }
 
+      // Handle circuit breaker errors
+      if (error instanceof CircuitBreakerOpenError) {
+        const errorContext = categorizeError(error);
+        logger.warn(
+          `Circuit breaker OPEN for ${method} ${url}`,
+          {
+            component: "httpClient",
+            action: "executeRequest",
+            metadata: {
+              method,
+              url: fullUrl,
+              correlationId,
+              timeUntilRetry: error.timeUntilRetry,
+            },
+          }
+        );
+        lastError = new HttpClientError(
+          getUserErrorMessage(error),
+          503,
+          "SERVICE_UNAVAILABLE",
+          "CIRCUIT_BREAKER_OPEN",
+          correlationId
+        );
+      }
+      // Handle bulkhead errors
+      else if (error instanceof BulkheadRejectedError || error instanceof BulkheadTimeoutError) {
+        const errorContext = categorizeError(error);
+        logger.warn(
+          `Bulkhead ${error instanceof BulkheadRejectedError ? 'rejected' : 'timeout'} for ${method} ${url}`,
+          {
+            component: "httpClient",
+            action: "executeRequest",
+            metadata: {
+              method,
+              url: fullUrl,
+              correlationId,
+              errorType: error instanceof BulkheadRejectedError ? 'BULKHEAD_REJECTED' : 'BULKHEAD_TIMEOUT',
+            },
+          }
+        );
+        lastError = new HttpClientError(
+          getUserErrorMessage(error),
+          error instanceof BulkheadRejectedError ? 503 : 504,
+          "SERVICE_UNAVAILABLE",
+          error instanceof BulkheadRejectedError ? "BULKHEAD_REJECTED" : "BULKHEAD_TIMEOUT",
+          correlationId
+        );
+      }
       // Handle timeout
-      if (error instanceof Error && error.name === "AbortError") {
+      else if (error instanceof Error && error.name === "AbortError") {
         lastError = new HttpClientError(
           `Request timeout: The operation took longer than ${timeout}ms to complete`,
           408,
@@ -510,6 +622,11 @@ async function executeRequest<T>(
         );
       }
 
+      // Update retry config based on error type
+      if (lastError) {
+        retryConfig = getRetryConfigForError(lastError);
+      }
+
       // Don't retry if:
       // - Skip retry is enabled
       // - Max retries reached
@@ -521,12 +638,42 @@ async function executeRequest<T>(
         !isRetryableError(lastError) ||
         attempt === retries
       ) {
+        // Categorize error for better logging
+        const errorContext = categorizeError(lastError);
+        logger.error(
+          `API request failed after ${attempt + 1} attempts: ${method} ${url}`,
+          lastError,
+          {
+            component: "httpClient",
+            action: "executeRequest",
+            metadata: {
+              method,
+              url: fullUrl,
+              correlationId,
+              attempts: attempt + 1,
+              errorCategory: errorContext.category,
+              retryable: errorContext.retryable,
+            },
+          }
+        );
         throw lastError;
       }
 
-      // Exponential backoff
-      const delay = retryDelay * Math.pow(2, attempt);
-      await sleep(delay);
+      // Calculate delay using advanced retry strategy
+      const delay = calculateRetryDelay(attempt, retryConfig);
+      logger.debug(`Retrying request after ${delay}ms delay`, {
+        component: "httpClient",
+        action: "executeRequest",
+        metadata: {
+          method,
+          url: fullUrl,
+          correlationId,
+          attempt: attempt + 1,
+          delay,
+          strategy: retryConfig.strategy,
+        },
+      });
+      await sleepUtil(delay);
     }
   }
 

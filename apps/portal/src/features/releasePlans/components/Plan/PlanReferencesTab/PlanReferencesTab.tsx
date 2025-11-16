@@ -125,40 +125,50 @@ export function PlanReferencesTab({
         height: "100%",
         display: "flex",
         flexDirection: "column",
-        p: 2,
+        p: { xs: 1.5, sm: 2 },
       }}
     >
       <Stack
         direction="row"
         justifyContent="space-between"
         alignItems="center"
-        sx={{ mb: 2 }}
+        sx={{ mb: 1.5, pb: 1, borderBottom: `1px solid ${alpha(theme.palette.divider, 0.08)}` }}
       >
-        <Typography variant="h6" sx={{ fontWeight: 600, fontSize: "1rem" }}>
-          References
-        </Typography>
-        <Button
-          variant="outlined"
-          size="small"
-          startIcon={<AddIcon />}
-          onClick={handleAdd}
-          sx={{
-            textTransform: "none",
+        <Typography 
+          variant="subtitle2" 
+          sx={{ 
+            fontWeight: 600, 
             fontSize: "0.8125rem",
-            fontWeight: 500,
-            px: 1.75,
-            py: 0.625,
-            borderRadius: 1,
-            borderColor: alpha(theme.palette.primary.main, 0.5),
-            color: theme.palette.primary.main,
-            "&:hover": {
-              borderColor: theme.palette.primary.main,
-              bgcolor: alpha(theme.palette.primary.main, 0.08),
-            },
+            color: theme.palette.text.primary,
           }}
         >
-          Add Reference
-        </Button>
+          Referencias ({references.length})
+        </Typography>
+        <Tooltip title="Agregar referencia" arrow placement="top">
+          <Button
+            variant="outlined"
+            size="small"
+            startIcon={<AddIcon sx={{ fontSize: 16 }} />}
+            onClick={handleAdd}
+            sx={{
+              textTransform: "none",
+              fontSize: "0.75rem",
+              fontWeight: 500,
+              px: 1.5,
+              py: 0.5,
+              borderRadius: 1,
+              minHeight: 28,
+              borderColor: alpha(theme.palette.primary.main, 0.5),
+              color: theme.palette.primary.main,
+              "&:hover": {
+                borderColor: theme.palette.primary.main,
+                bgcolor: alpha(theme.palette.primary.main, 0.08),
+              },
+            }}
+          >
+            Agregar
+          </Button>
+        </Tooltip>
       </Stack>
 
       {references.length === 0 ? (
@@ -170,19 +180,27 @@ export function PlanReferencesTab({
             justifyContent: "center",
             color: "text.secondary",
             textAlign: "center",
-            p: 4,
+            p: 3,
           }}
         >
           <Stack spacing={1} alignItems="center">
-            <NoteIcon sx={{ fontSize: 48, opacity: 0.3 }} />
-            <Typography variant="body2">No references added yet</Typography>
-            <Typography variant="caption" sx={{ opacity: 0.7 }}>
-              Add links, documents, or notes related to this plan
+            <NoteIcon sx={{ fontSize: 40, opacity: 0.3 }} />
+            <Typography 
+              variant="body2"
+              sx={{ fontSize: "0.8125rem" }}
+            >
+              No hay referencias agregadas aún
+            </Typography>
+            <Typography 
+              variant="caption" 
+              sx={{ opacity: 0.7, fontSize: "0.75rem" }}
+            >
+              Agrega enlaces, documentos o notas relacionadas con este plan
             </Typography>
           </Stack>
         </Box>
       ) : (
-        <Stack spacing={1.5} sx={{ overflow: "auto", flex: 1 }}>
+        <Stack spacing={1} sx={{ overflow: "auto", flex: 1 }}>
           {references.map((reference) => (
             <Card
               key={reference.id}
@@ -200,11 +218,11 @@ export function PlanReferencesTab({
                 }
               }}
               sx={{
-                borderRadius: 2,
-                border: `1px solid ${alpha(theme.palette.divider, 0.5)}`,
+                borderRadius: 1.25,
+                border: `1px solid ${alpha(theme.palette.divider, 0.2)}`,
                 cursor: reference.date ? "pointer" : "default",
                 "&:hover": {
-                  boxShadow: theme.shadows[2],
+                  boxShadow: `0 1px 3px ${alpha(theme.palette.common.black, 0.08)}`,
                   borderColor: alpha(theme.palette.primary.main, 0.3),
                   backgroundColor: reference.date
                     ? alpha(theme.palette.primary.main, 0.02)
@@ -213,8 +231,8 @@ export function PlanReferencesTab({
                 transition: "all 0.2s ease",
               }}
             >
-              <CardContent sx={{ p: 2, "&:last-child": { pb: 2 } }}>
-                <Stack spacing={1.5}>
+              <CardContent sx={{ p: { xs: 1.25, sm: 1.5 }, "&:last-child": { pb: { xs: 1.25, sm: 1.5 } } }}>
+                <Stack spacing={1}>
                   <Stack
                     direction="row"
                     justifyContent="space-between"
@@ -236,17 +254,21 @@ export function PlanReferencesTab({
                         sx={{
                           bgcolor: alpha(getTypeColor(reference.type), 0.1),
                           color: getTypeColor(reference.type),
-                          fontWeight: 600,
-                          fontSize: "0.7rem",
-                          height: 24,
+                          fontWeight: 500,
+                          fontSize: "0.6875rem",
+                          height: 22,
+                          "& .MuiChip-icon": {
+                            fontSize: 14,
+                          },
                         }}
                       />
                       <Typography
                         variant="subtitle2"
                         sx={{
                           fontWeight: 600,
-                          fontSize: "0.875rem",
+                          fontSize: "0.8125rem",
                           flex: 1,
+                          color: theme.palette.text.primary,
                         }}
                       >
                         {reference.title}

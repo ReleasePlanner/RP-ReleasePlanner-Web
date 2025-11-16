@@ -218,10 +218,8 @@ export function FeatureMaintenancePage() {
 
       if (isNew) {
         payload.productId = editingState.productId;
-        console.log('Creating feature with payload:', payload);
         await createMutation.mutateAsync(payload);
       } else {
-        console.log('Updating feature with payload:', payload);
         await updateMutation.mutateAsync({
           id: feature.id,
           data: payload,

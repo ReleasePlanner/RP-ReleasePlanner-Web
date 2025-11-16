@@ -158,6 +158,8 @@ export function PhaseEditDialog({
         <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
           {/* Phase Name */}
           <TextField
+            id="phase-name-input"
+            name="phaseName"
             label="Phase Name"
             fullWidth
             size="small"
@@ -187,6 +189,8 @@ export function PhaseEditDialog({
             }}
           >
             <TextField
+              id="phase-start-date-input"
+              name="phaseStartDate"
               label="Start Date"
               type="date"
               size="small"
@@ -205,6 +209,8 @@ export function PhaseEditDialog({
               }}
             />
             <TextField
+              id="phase-end-date-input"
+              name="phaseEndDate"
               label="End Date"
               type="date"
               size="small"
@@ -245,6 +251,8 @@ export function PhaseEditDialog({
               }}
             />
             <TextField
+              id="phase-color-input"
+              name="phaseColor"
               label="Color"
               type="color"
               size="small"

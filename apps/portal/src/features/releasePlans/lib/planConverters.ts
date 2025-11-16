@@ -119,10 +119,14 @@ export function convertLocalPlanToUpdateDto(localPlan: LocalPlan): UpdatePlanDto
 
 /**
  * Create a partial UpdatePlanDto from local plan changes
+ * @param localPlan - The local plan object
+ * @param changes - Partial changes to apply
+ * @param originalUpdatedAt - Optional original updatedAt for optimistic locking
  */
 export function createPartialUpdateDto(
   localPlan: LocalPlan,
-  changes: Partial<LocalPlan['metadata']>
+  changes: Partial<LocalPlan['metadata']>,
+  originalUpdatedAt?: Date | string
 ): UpdatePlanDto {
   return {
     ...(changes.name !== undefined && { name: changes.name }),
@@ -184,13 +188,15 @@ export function createPartialUpdateDto(
         phaseId: r.phaseId,
       })),
     }),
+    // Include updatedAt for optimistic locking
+    ...(originalUpdatedAt && { updatedAt: typeof originalUpdatedAt === 'string' ? originalUpdatedAt : originalUpdatedAt.toISOString() }),
   };
 }
 
 /**
  * Create UpdatePlanDto with full plan data (for complete updates)
  */
-export function createFullUpdateDto(localPlan: LocalPlan): UpdatePlanDto {
+export function createFullUpdateDto(localPlan: LocalPlan, originalUpdatedAt?: Date | string): UpdatePlanDto {
   return {
     name: localPlan.metadata.name,
     owner: localPlan.metadata.owner,
@@ -203,6 +209,8 @@ export function createFullUpdateDto(localPlan: LocalPlan): UpdatePlanDto {
     featureIds: localPlan.metadata.featureIds,
     calendarIds: localPlan.metadata.calendarIds,
     components: localPlan.metadata.components,
+    // Include updatedAt for optimistic locking
+    ...(originalUpdatedAt && { updatedAt: typeof originalUpdatedAt === 'string' ? originalUpdatedAt : originalUpdatedAt.toISOString() }),
     phases: localPlan.metadata.phases?.map((p) => ({
       name: p.name,
       startDate: p.startDate,

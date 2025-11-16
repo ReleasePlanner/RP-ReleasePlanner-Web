@@ -21,8 +21,8 @@ export const getTimelineColors = (theme: Theme) => {
       ? "rgba(144, 202, 249, 0.9)" // Brighter blue for better visibility
       : "rgba(24,90,189,0.6)",
     WEEKEND_BG: isDark 
-      ? "rgba(255, 255, 255, 0.08)" // Increased opacity for better visibility
-      : "#f3f4f6",
+      ? "rgba(255, 255, 255, 0.12)" // Darker for better visibility
+      : "#e5e7eb", // Darker gray for better contrast
     WEEKEND_BORDER: isDark
       ? "rgba(255, 255, 255, 0.15)" // Increased opacity
       : "#e5e7eb",
@@ -69,7 +69,7 @@ export const getTimelineColors = (theme: Theme) => {
 // Components should use getTimelineColors(theme) instead
 export const TIMELINE_COLORS = {
   TODAY_MARKER: "rgba(24,90,189,0.6)",
-  WEEKEND_BG: "#f3f4f6",
+  WEEKEND_BG: "#e5e7eb", // Darker gray for better contrast
   WEEKEND_BORDER: "#e5e7eb",
   BORDER_LIGHT: "#e5e7eb",
   TEXT_PRIMARY: "#374151",

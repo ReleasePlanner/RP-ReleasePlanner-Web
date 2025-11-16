@@ -296,20 +296,12 @@ export function ComponentEditDialog({
       // Always normalize, even if it's a partial version like "1" or "1.2"
       if (currentVersionInput && currentVersionInput.trim()) {
         normalizedCurrent = normalizeVersion(currentVersionInput.trim());
-        console.log('handleSave (creating) - normalized currentVersionInput:', {
-          original: currentVersionInput,
-          normalized: normalizedCurrent
-        });
       }
       
       // Normalize newVersion if it exists
       // Always normalize, even if it's a partial version like "1" or "1.2"
       if (newVersion && newVersion.trim()) {
         normalizedNew = normalizeVersion(newVersion.trim());
-        console.log('handleSave (creating) - normalized newVersion:', {
-          original: newVersion,
-          normalized: normalizedNew
-        });
       }
       
       // For new components:

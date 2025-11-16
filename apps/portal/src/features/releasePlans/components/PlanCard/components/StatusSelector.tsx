@@ -70,6 +70,8 @@ export function StatusSelector({
   return (
     <FormControl size="small" disabled={disabled}>
       <Select
+        id="plan-status-selector"
+        name="planStatus"
         value={status}
         onChange={handleChange}
         displayEmpty
@@ -125,6 +127,7 @@ export function StatusSelector({
           transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
         }}
         MenuProps={{
+          disableAutoFocusItem: true,
           PaperProps: {
             sx: {
               mt: 1,
@@ -134,6 +137,24 @@ export function StatusSelector({
                 py: 1,
               },
             },
+          },
+          onClose: () => {
+            // Prevent aria-hidden warnings by ensuring proper focus management
+            if (typeof window !== 'undefined' && 'requestAnimationFrame' in window) {
+              requestAnimationFrame(() => {
+                const activeElement = document.activeElement as HTMLElement;
+                if (activeElement && activeElement.blur) {
+                  activeElement.blur();
+                }
+              });
+            } else {
+              setTimeout(() => {
+                const activeElement = document.activeElement as HTMLElement;
+                if (activeElement && activeElement.blur) {
+                  activeElement.blur();
+                }
+              }, 0);
+            }
           },
         }}
       >

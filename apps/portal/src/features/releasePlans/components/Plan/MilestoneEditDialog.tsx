@@ -132,6 +132,8 @@ export function MilestoneEditDialog({
           </Box>
 
           <TextField
+            id="milestone-name-input"
+            name="milestoneName"
             label="Milestone Name"
             fullWidth
             required
@@ -143,6 +145,8 @@ export function MilestoneEditDialog({
           />
 
           <TextField
+            id="milestone-description-input"
+            name="milestoneDescription"
             label="Description"
             fullWidth
             multiline

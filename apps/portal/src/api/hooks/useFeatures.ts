@@ -16,6 +16,11 @@ export function useFeatures(productId?: string) {
   return useQuery({
     queryKey: QUERY_KEYS.list(productId),
     queryFn: () => featuresService.getAll(productId),
+    enabled: !!productId, // Only run query if productId is provided
+    staleTime: 5 * 60 * 1000, // 5 minutes - data stays fresh longer
+    gcTime: 10 * 60 * 1000, // 10 minutes - cache persists longer (formerly cacheTime)
+    refetchOnWindowFocus: false, // Don't refetch on window focus
+    refetchOnMount: false, // Use cached data if available, refetch in background
   });
 }
 

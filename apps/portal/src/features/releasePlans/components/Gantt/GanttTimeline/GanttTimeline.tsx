@@ -84,8 +84,9 @@ export default function GanttTimeline({
 
   return (
     <div
-      className="sticky top-0 z-10"
+      className="sticky z-10"
       style={{
+        top: 0,
         width: totalWidth,
         minWidth: totalWidth,
         height: TIMELINE_DIMENSIONS.TOTAL_HEIGHT,
@@ -98,20 +99,14 @@ export default function GanttTimeline({
         position: "relative",
       }}
     >
-      {/* Today marker */}
-      {shouldShowTodayMarker && (
-        <TodayMarker
-          todayIndex={todayIndex!}
-          pxPerDay={safePxPerDay}
-          totalHeight={TIMELINE_DIMENSIONS.TOTAL_HEIGHT}
-        />
-      )}
-
-      {/* Jump to today button */}
-      {onJumpToToday && <TodayButton onJumpToToday={onJumpToToday} />}
-
-      {/* Legend */}
-      <TimelineLegend />
+        {/* Today marker */}
+        {shouldShowTodayMarker && (
+          <TodayMarker
+            todayIndex={todayIndex!}
+            pxPerDay={safePxPerDay}
+            totalHeight={TIMELINE_DIMENSIONS.TOTAL_HEIGHT}
+          />
+        )}
 
       {/* Timeline rows */}
       <MonthsRow monthSegments={monthSegments} pxPerDay={safePxPerDay} />

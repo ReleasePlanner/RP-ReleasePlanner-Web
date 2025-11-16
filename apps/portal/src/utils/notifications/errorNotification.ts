@@ -2,9 +2,13 @@
  * Error Notification System
  * 
  * Provides user-friendly error notifications
+ * 
+ * NOTE: This module now uses the centralized ErrorHandler for consistency.
+ * All error messages are provided by the resilience ErrorHandler module.
  */
 import { logger } from '../logging/Logger';
 import { HttpClientError } from '../../api/httpClient';
+import { getUserErrorMessage, categorizeError, ErrorCategory } from '../../api/resilience/ErrorHandler';
 
 export interface ErrorNotificationOptions {
   title?: string;
@@ -15,80 +19,50 @@ export interface ErrorNotificationOptions {
 
 /**
  * Get user-friendly error message based on error type
+ * 
+ * Uses centralized ErrorHandler for consistency across the application
  */
 export function getErrorMessage(error: unknown): string {
-  if (error instanceof HttpClientError) {
-    // Network errors
-    if (error.isNetworkError) {
-      if (!navigator.onLine) {
-        return 'No hay conexión a internet. Por favor, verifica tu conexión.';
-      }
-      return 'Error de conexión. Por favor, intenta nuevamente.';
-    }
-
-    // Timeout errors
-    if (error.isTimeout) {
-      return 'La solicitud tardó demasiado tiempo. Por favor, intenta nuevamente.';
-    }
-
-    // HTTP status code errors
-    switch (error.statusCode) {
-      case 400:
-        return error.message || 'Solicitud inválida. Por favor, verifica los datos ingresados.';
-      case 401:
-        return 'No autorizado. Por favor, inicia sesión nuevamente.';
-      case 403:
-        return 'No tienes permisos para realizar esta acción.';
-      case 404:
-        return 'Recurso no encontrado.';
-      case 409:
-        return error.message || 'Conflicto: El recurso ya existe o ha sido modificado.';
-      case 429:
-        return 'Demasiadas solicitudes. Por favor, espera un momento e intenta nuevamente.';
-      case 500:
-        return 'Error del servidor. Por favor, intenta más tarde.';
-      case 502:
-      case 503:
-      case 504:
-        return 'El servicio no está disponible temporalmente. Por favor, intenta más tarde.';
-      default:
-        return error.message || 'Ocurrió un error inesperado. Por favor, intenta nuevamente.';
-    }
+  // Use centralized error handler for all errors
+  const errorContext = categorizeError(error);
+  
+  // Special handling for offline network errors
+  if (
+    errorContext.category === ErrorCategory.NETWORK &&
+    typeof navigator !== 'undefined' &&
+    !navigator.onLine
+  ) {
+    return 'No hay conexión a internet. Por favor, verifica tu conexión.';
   }
-
-  if (error instanceof Error) {
-    return error.message || 'Ocurrió un error inesperado.';
-  }
-
-  return 'Ocurrió un error inesperado. Por favor, intenta nuevamente.';
+  
+  return errorContext.userMessage;
 }
 
 /**
  * Get error title based on error type
+ * 
+ * Uses centralized ErrorHandler for consistency
  */
 export function getErrorTitle(error: unknown): string {
-  if (error instanceof HttpClientError) {
-    if (error.isNetworkError) {
-      return 'Error de Conexión';
-    }
-    if (error.isTimeout) {
-      return 'Tiempo de Espera Agotado';
-    }
-    if (error.statusCode >= 500) {
-      return 'Error del Servidor';
-    }
-    if (error.statusCode === 404) {
-      return 'No Encontrado';
-    }
-    if (error.statusCode === 403) {
-      return 'Acceso Denegado';
-    }
-    if (error.statusCode === 401) {
-      return 'No Autorizado';
-    }
-  }
-
-  return 'Error';
+  const errorContext = categorizeError(error);
+  
+  const titleMap: Record<ErrorCategory, string> = {
+    [ErrorCategory.NETWORK]: 'Error de Conexión',
+    [ErrorCategory.TIMEOUT]: 'Tiempo de Espera Agotado',
+    [ErrorCategory.AUTHENTICATION]: 'No Autorizado',
+    [ErrorCategory.AUTHORIZATION]: 'Acceso Denegado',
+    [ErrorCategory.VALIDATION]: 'Error de Validación',
+    [ErrorCategory.NOT_FOUND]: 'No Encontrado',
+    [ErrorCategory.CONFLICT]: 'Conflicto',
+    [ErrorCategory.RATE_LIMIT]: 'Demasiadas Solicitudes',
+    [ErrorCategory.SERVER_ERROR]: 'Error del Servidor',
+    [ErrorCategory.CIRCUIT_BREAKER]: 'Servicio No Disponible',
+    [ErrorCategory.BULKHEAD_REJECTED]: 'Demasiadas Solicitudes',
+    [ErrorCategory.BULKHEAD_TIMEOUT]: 'Tiempo de Espera Agotado',
+    [ErrorCategory.UNKNOWN]: 'Error',
+  };
+  
+  return titleMap[errorContext.category] || 'Error';
 }
 
 /**

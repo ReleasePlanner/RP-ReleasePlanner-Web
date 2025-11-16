@@ -202,6 +202,8 @@ export function SelectComponentsDialog({
         >
           {/* Search */}
           <TextField
+            id="select-components-search-input"
+            name="componentsSearch"
             size="small"
             placeholder="Search components..."
             value={searchQuery}
@@ -259,6 +261,8 @@ export function SelectComponentsDialog({
                   <TableRow>
                     <TableCell padding="checkbox" sx={{ width: 50 }}>
                       <Checkbox
+                        id="select-all-components-checkbox"
+                        name="selectAllComponents"
                         indeterminate={isSomeSelected}
                         checked={isAllSelected}
                         onChange={handleSelectAll}
@@ -302,6 +306,8 @@ export function SelectComponentsDialog({
                       >
                         <TableCell padding="checkbox">
                           <Checkbox
+                            id={`component-checkbox-${component.id}`}
+                            name={`component-${component.id}`}
                             checked={isSelected}
                             onChange={() =>
                               handleToggleComponent(
@@ -351,6 +357,8 @@ export function SelectComponentsDialog({
                         </TableCell>
                         <TableCell onClick={(e) => e.stopPropagation()}>
                           <TextField
+                            id={`component-version-input-${component.id}`}
+                            name={`componentVersion-${component.id}`}
                             size="small"
                             value={
                               finalVersions[component.id] ||

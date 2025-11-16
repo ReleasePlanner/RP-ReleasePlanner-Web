@@ -22,13 +22,13 @@ export enum UserRole {
 @Index(['username'], { unique: true })
 export class User extends BaseEntity {
   @Column({ type: 'varchar', length: 100, unique: true })
-  username: string;
+  username!: string;
 
   @Column({ type: 'varchar', length: 255, unique: true })
-  email: string;
+  email!: string;
 
   @Column({ type: 'varchar', length: 255 })
-  password: string; // Hashed password
+  password!: string; // Hashed password
 
   @Column({ type: 'varchar', length: 100, nullable: true })
   firstName?: string;

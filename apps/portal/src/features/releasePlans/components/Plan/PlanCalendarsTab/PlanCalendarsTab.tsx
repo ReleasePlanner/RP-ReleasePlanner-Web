@@ -58,13 +58,13 @@ export function PlanCalendarsTab({
   return (
     <Box
       sx={{
-        p: 2,
+        p: { xs: 1.5, sm: 2 },
         height: "100%",
         display: "flex",
         flexDirection: "column",
       }}
     >
-      <Stack spacing={2} sx={{ flex: 1, minHeight: 0 }}>
+      <Stack spacing={1.5} sx={{ flex: 1, minHeight: 0 }}>
         {/* Header */}
         <Box
           sx={{
@@ -75,22 +75,30 @@ export function PlanCalendarsTab({
             borderBottom: `1px solid ${alpha(theme.palette.divider, 0.08)}`,
           }}
         >
-          <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-            Calendars ({planCalendars.length})
+          <Typography 
+            variant="subtitle2" 
+            sx={{ 
+              fontWeight: 600,
+              fontSize: "0.8125rem",
+              color: theme.palette.text.primary,
+            }}
+          >
+            Calendarios ({planCalendars.length})
           </Typography>
-          <Tooltip title="Add calendars from maintenance" arrow placement="top">
+          <Tooltip title="Agregar calendarios del mantenimiento" arrow placement="top">
             <Button
               variant="outlined"
               size="small"
-              startIcon={<AddIcon />}
+              startIcon={<AddIcon sx={{ fontSize: 16 }} />}
               onClick={() => setSelectDialogOpen(true)}
               sx={{
                 textTransform: "none",
-                fontSize: "0.8125rem",
+                fontSize: "0.75rem",
                 fontWeight: 500,
-                px: 1.75,
-                py: 0.625,
+                px: 1.5,
+                py: 0.5,
                 borderRadius: 1,
+                minHeight: 28,
                 borderColor: alpha(theme.palette.primary.main, 0.5),
                 color: theme.palette.primary.main,
                 "&:hover": {
@@ -99,7 +107,7 @@ export function PlanCalendarsTab({
                 },
               }}
             >
-              Add Calendars
+              Agregar
             </Button>
           </Tooltip>
         </Box>
@@ -109,25 +117,28 @@ export function PlanCalendarsTab({
           {planCalendars.length === 0 ? (
             <Box
               sx={{
-                p: 4,
+                p: 3,
                 textAlign: "center",
                 color: "text.secondary",
               }}
             >
-              <Typography variant="body2">
-                No calendars added to this plan yet. Click "Add Calendars" to
-                select calendars from maintenance.
+              <Typography 
+                variant="body2"
+                sx={{ fontSize: "0.8125rem" }}
+              >
+                No hay calendarios agregados a este plan. Haz clic en "Agregar" para
+                seleccionar calendarios del mantenimiento.
               </Typography>
             </Box>
           ) : (
-            <Stack spacing={1.5}>
+            <Stack spacing={1}>
               {planCalendars.map((calendar: Calendar) => (
                 <Box
                   key={calendar.id}
                   sx={{
-                    p: 2,
+                    p: { xs: 1.25, sm: 1.5 },
                     borderRadius: 1,
-                    border: `1px solid ${alpha(theme.palette.divider, 0.5)}`,
+                    border: `1px solid ${alpha(theme.palette.divider, 0.2)}`,
                     bgcolor: theme.palette.background.paper,
                     transition: theme.transitions.create(
                       ["border-color", "box-shadow"],
@@ -137,9 +148,9 @@ export function PlanCalendarsTab({
                     ),
                     "&:hover": {
                       borderColor: alpha(theme.palette.primary.main, 0.3),
-                      boxShadow: `0 2px 4px ${alpha(
+                      boxShadow: `0 1px 3px ${alpha(
                         theme.palette.common.black,
-                        0.08
+                        0.06
                       )}`,
                     },
                   }}

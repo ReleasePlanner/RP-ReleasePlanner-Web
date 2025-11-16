@@ -13,34 +13,106 @@ import {
   InputAdornment,
   Alert,
   Fade,
+  Checkbox,
+  FormControlLabel,
+  Divider,
+  Tabs,
+  Tab,
+  CircularProgress,
 } from "@mui/material";
 import {
   Add as AddIcon,
   Timeline as TimelineIcon,
   CheckCircle as CheckCircleIcon,
   ErrorOutline as ErrorIcon,
+  Palette as PaletteIcon,
+  LibraryBooks as LibraryBooksIcon,
+  Create as CreateIcon,
 } from "@mui/icons-material";
-import { useCallback, useState, useEffect } from "react";
+import { useCallback, useState, useEffect, useMemo } from "react";
+import { useBasePhases } from "../../../../api/hooks";
+import type { BasePhase } from "../../../../api/services/basePhases.service";
+import type { PlanPhase } from "../../../types";
 
 type AddPhaseDialogProps = {
   open: boolean;
   onClose: () => void;
-  onSubmit: (name: string) => void;
-  existingPhaseNames?: string[]; // Names of existing phases to validate uniqueness
+  onSubmit: (phases: PlanPhase[]) => void;
+  existingPhases?: PlanPhase[]; // Existing phases in the plan
 };
+
+interface TabPanelProps {
+  children?: React.ReactNode;
+  index: number;
+  value: number;
+}
+
+function TabPanel(props: TabPanelProps) {
+  const { children, value, index, ...other } = props;
+
+  return (
+    <div
+      role="tabpanel"
+      hidden={value !== index}
+      id={`add-phase-tabpanel-${index}`}
+      aria-labelledby={`add-phase-tab-${index}`}
+      {...other}
+    >
+      {value === index && <Box sx={{ pt: 3 }}>{children}</Box>}
+    </div>
+  );
+}
 
 export default function AddPhaseDialog({
   open,
   onClose,
   onSubmit,
-  existingPhaseNames = [],
+  existingPhases = [],
 }: AddPhaseDialogProps) {
   const theme = useTheme();
-  const [phaseName, setPhaseName] = useState("");
+  const { data: basePhases = [], isLoading: isLoadingBasePhases } = useBasePhases();
+  const [tabValue, setTabValue] = useState(0);
+  
+  // State for maintenance phases selection
+  const [selectedBasePhaseIds, setSelectedBasePhaseIds] = useState<Set<string>>(new Set());
+  
+  // State for new phase creation
+  const [newPhaseName, setNewPhaseName] = useState("");
+  const [newPhaseColor, setNewPhaseColor] = useState("#1976D2");
   const [error, setError] = useState<string>("");
   const [isValidating, setIsValidating] = useState(false);
 
-  // Validate phase name uniqueness
+  // Get existing phase names for validation
+  const existingPhaseNames = useMemo(
+    () => existingPhases.map((p) => p.name.toLowerCase().trim()),
+    [existingPhases]
+  );
+
+  // Filter base phases that are not yet in the plan
+  const availableBasePhases = useMemo(() => {
+    const existingNames = new Set(
+      existingPhases.map((p) => p.name.toLowerCase().trim())
+    );
+    return basePhases.filter(
+      (bp) => !existingNames.has(bp.name.toLowerCase().trim())
+    );
+  }, [basePhases, existingPhases]);
+
+  // Predefined colors for new phases
+  const predefinedColors = [
+    "#1976D2", // Blue
+    "#388E3C", // Green
+    "#FBC02D", // Yellow
+    "#D32F2F", // Red
+    "#7B1FA2", // Purple
+    "#455A64", // Gray
+    "#E64A19", // Orange
+    "#0097A7", // Cyan
+    "#5D4037", // Brown
+    "#C2185B", // Pink
+  ];
+
+  // Validate new phase name uniqueness
   const validatePhaseName = useCallback(
     (name: string): boolean => {
       const trimmedName = name.trim();
@@ -49,12 +121,9 @@ export default function AddPhaseDialog({
         return false;
       }
 
-      const normalizedExisting = existingPhaseNames.map((n) =>
-        n.toLowerCase().trim()
-      );
       const normalizedNew = trimmedName.toLowerCase().trim();
 
-      if (normalizedExisting.includes(normalizedNew)) {
+      if (existingPhaseNames.includes(normalizedNew)) {
         setError("Ya existe una fase con este nombre en el plan");
         return false;
       }
@@ -65,30 +134,23 @@ export default function AddPhaseDialog({
     [existingPhaseNames]
   );
 
-  const submitPhase = useCallback(() => {
-    const name = phaseName.trim();
-    if (validatePhaseName(name)) {
-      onSubmit(name);
-      setPhaseName("");
-      setError("");
-      onClose();
-    }
-  }, [onSubmit, phaseName, onClose, validatePhaseName]);
-
   // Reset form when dialog opens/closes
   useEffect(() => {
     if (open) {
-      setPhaseName("");
+      setSelectedBasePhaseIds(new Set());
+      setNewPhaseName("");
+      setNewPhaseColor("#1976D2");
       setError("");
       setIsValidating(false);
+      setTabValue(0);
     }
   }, [open]);
 
   // Validate on name change with debounce
   useEffect(() => {
-    if (!open) return;
+    if (!open || tabValue !== 1) return;
 
-    const trimmedName = phaseName.trim();
+    const trimmedName = newPhaseName.trim();
     if (!trimmedName) {
       setError("");
       setIsValidating(false);
@@ -99,35 +161,91 @@ export default function AddPhaseDialog({
     const timeoutId = setTimeout(() => {
       validatePhaseName(trimmedName);
       setIsValidating(false);
-    }, 300); // Debounce validation
+    }, 300);
 
     return () => clearTimeout(timeoutId);
-  }, [phaseName, open, validatePhaseName]);
+  }, [newPhaseName, open, tabValue, validatePhaseName]);
+
+  const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
+    setTabValue(newValue);
+    setError("");
+  };
+
+  const handleBasePhaseToggle = (phaseId: string) => {
+    setSelectedBasePhaseIds((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(phaseId)) {
+        newSet.delete(phaseId);
+      } else {
+        newSet.add(phaseId);
+      }
+      return newSet;
+    });
+  };
+
+  const handleSelectAllBasePhases = () => {
+    if (selectedBasePhaseIds.size === availableBasePhases.length) {
+      setSelectedBasePhaseIds(new Set());
+    } else {
+      setSelectedBasePhaseIds(new Set(availableBasePhases.map((bp) => bp.id)));
+    }
+  };
+
+  const handleSubmit = useCallback(() => {
+    const phasesToAdd: PlanPhase[] = [];
+
+    if (tabValue === 0) {
+      // Add selected base phases
+      selectedBasePhaseIds.forEach((phaseId) => {
+        const basePhase = basePhases.find((bp) => bp.id === phaseId);
+        if (basePhase) {
+          phasesToAdd.push({
+            id: `phase-${Date.now()}-${phaseId}`,
+            name: basePhase.name,
+            color: basePhase.color,
+          });
+        }
+      });
+    } else {
+      // Add new custom phase
+      if (!validatePhaseName(newPhaseName)) return;
+      phasesToAdd.push({
+        id: `phase-${Date.now()}-custom`,
+        name: newPhaseName.trim(),
+        color: newPhaseColor,
+      });
+    }
+
+    if (phasesToAdd.length > 0) {
+      onSubmit(phasesToAdd);
+      onClose();
+    }
+  }, [tabValue, selectedBasePhaseIds, basePhases, newPhaseName, newPhaseColor, validatePhaseName, onSubmit, onClose]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && phaseName.trim() && !error && !isValidating) {
-      e.preventDefault();
-      submitPhase();
-    }
     if (e.key === "Escape") {
       onClose();
     }
   };
 
-  const isFormValid = phaseName.trim() !== "" && !error && !isValidating;
+  const canSubmit =
+    tabValue === 0
+      ? selectedBasePhaseIds.size > 0
+      : newPhaseName.trim() !== "" && !error && !isValidating;
 
   return (
     <Dialog
       open={open}
       onClose={onClose}
       fullWidth
-      maxWidth="sm"
+      maxWidth="md"
       PaperProps={{
         sx: {
           borderRadius: 3,
-          boxShadow: theme.palette.mode === "dark"
-            ? `0 8px 32px ${alpha(theme.palette.common.black, 0.4)}`
-            : `0 8px 32px ${alpha(theme.palette.common.black, 0.12)}`,
+          boxShadow:
+            theme.palette.mode === "dark"
+              ? `0 8px 32px ${alpha(theme.palette.common.black, 0.4)}`
+              : `0 8px 32px ${alpha(theme.palette.common.black, 0.12)}`,
           border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
           overflow: "hidden",
         },
@@ -137,12 +255,13 @@ export default function AddPhaseDialog({
     >
       <DialogTitle
         sx={{
-          py: 2.5,
           px: 3,
-          background: theme.palette.mode === "dark"
-            ? `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.1)} 0%, transparent 100%)`
-            : `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.05)} 0%, transparent 100%)`,
-          borderBottom: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+          pt: 3,
+          pb: 2,
+          borderBottom: `1px solid ${alpha(theme.palette.divider, 0.12)}`,
+          fontWeight: 600,
+          fontSize: "1.25rem",
+          color: theme.palette.text.primary,
         }}
       >
         <Stack direction="row" spacing={1.5} alignItems="center">
@@ -171,7 +290,7 @@ export default function AddPhaseDialog({
                 mb: 0.25,
               }}
             >
-              Agregar Nueva Fase
+              Agregar Fases
             </Typography>
             <Typography
               variant="body2"
@@ -181,28 +300,214 @@ export default function AddPhaseDialog({
                 fontWeight: 400,
               }}
             >
-              Crea una nueva fase para tu plan de release
+              Selecciona fases del mantenimiento o crea una nueva fase solo para este plan
             </Typography>
           </Box>
         </Stack>
       </DialogTitle>
 
-      <DialogContent sx={{ pt: 4, pb: 2, px: 3 }}>
-        <Stack spacing={2.5}>
-          {/* Phase Name Input */}
-          <Box sx={{ mt: 3 }}>
+      <DialogContent sx={{ px: 3, pt: 2, pb: 2 }}>
+        <Tabs
+          value={tabValue}
+          onChange={handleTabChange}
+          sx={{
+            borderBottom: `1px solid ${alpha(theme.palette.divider, 0.12)}`,
+            mb: 0,
+            "& .MuiTab-root": {
+              textTransform: "none",
+              fontWeight: 500,
+              fontSize: "0.875rem",
+              minHeight: 48,
+            },
+          }}
+        >
+          <Tab
+            icon={<LibraryBooksIcon sx={{ fontSize: 18 }} />}
+            iconPosition="start"
+            label="Del Mantenimiento"
+            id="add-phase-tab-0"
+            aria-controls="add-phase-tabpanel-0"
+          />
+          <Tab
+            icon={<CreateIcon sx={{ fontSize: 18 }} />}
+            iconPosition="start"
+            label="Nueva Fase"
+            id="add-phase-tab-1"
+            aria-controls="add-phase-tabpanel-1"
+          />
+        </Tabs>
+
+        {/* Tab 1: Select from Maintenance */}
+        <TabPanel value={tabValue} index={0}>
+          {isLoadingBasePhases ? (
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                py: 4,
+              }}
+            >
+              <CircularProgress size={32} />
+            </Box>
+          ) : availableBasePhases.length === 0 ? (
+            <Alert
+              severity="info"
+              sx={{
+                borderRadius: 2,
+                "& .MuiAlert-message": {
+                  fontSize: "0.875rem",
+                },
+              }}
+            >
+              <Typography variant="body2" sx={{ fontWeight: 500, mb: 0.5 }}>
+                Todas las fases del mantenimiento ya están en el plan
+              </Typography>
+              <Typography variant="body2">
+                Puedes crear una nueva fase solo para este plan usando la pestaña "Nueva Fase"
+              </Typography>
+            </Alert>
+          ) : (
+            <Stack spacing={2}>
+              {/* Select All */}
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  pb: 1,
+                }}
+              >
+                <Typography
+                  variant="body2"
+                  sx={{
+                    fontWeight: 500,
+                    color: theme.palette.text.secondary,
+                  }}
+                >
+                  {selectedBasePhaseIds.size} de {availableBasePhases.length}{" "}
+                  fases seleccionadas
+                </Typography>
+                <Button
+                  size="small"
+                  onClick={handleSelectAllBasePhases}
+                  sx={{
+                    textTransform: "none",
+                    fontSize: "0.8125rem",
+                    fontWeight: 500,
+                  }}
+                >
+                  {selectedBasePhaseIds.size === availableBasePhases.length
+                    ? "Deseleccionar todas"
+                    : "Seleccionar todas"}
+                </Button>
+              </Box>
+
+              {/* Phase List */}
+              <Box
+                sx={{
+                  maxHeight: 400,
+                  overflowY: "auto",
+                  border: `1px solid ${alpha(theme.palette.divider, 0.12)}`,
+                  borderRadius: 2,
+                  p: 1,
+                }}
+              >
+                <Stack spacing={0.5}>
+                  {availableBasePhases.map((basePhase) => {
+                    const isSelected = selectedBasePhaseIds.has(basePhase.id);
+                    return (
+                      <Box
+                        key={basePhase.id}
+                        sx={{
+                          p: 1.5,
+                          borderRadius: 1.5,
+                          bgcolor: isSelected
+                            ? alpha(theme.palette.primary.main, 0.08)
+                            : "transparent",
+                          border: `1px solid ${
+                            isSelected
+                              ? alpha(theme.palette.primary.main, 0.2)
+                              : "transparent"
+                          }`,
+                          transition: "all 0.2s ease",
+                          "&:hover": {
+                            bgcolor: alpha(theme.palette.action.hover, 0.04),
+                          },
+                        }}
+                      >
+                        <FormControlLabel
+                          control={
+                            <Checkbox
+                              id={`base-phase-checkbox-${basePhase.id}`}
+                              name={`basePhase-${basePhase.id}`}
+                              checked={isSelected}
+                              onChange={() => handleBasePhaseToggle(basePhase.id)}
+                              sx={{
+                                color: basePhase.color,
+                                "&.Mui-checked": {
+                                  color: basePhase.color,
+                                },
+                              }}
+                            />
+                          }
+                          label={
+                            <Stack direction="row" spacing={1.5} alignItems="center">
+                              <Box
+                                sx={{
+                                  width: 20,
+                                  height: 20,
+                                  borderRadius: 1,
+                                  bgcolor: basePhase.color,
+                                  flexShrink: 0,
+                                }}
+                              />
+                              <Typography
+                                variant="body2"
+                                sx={{
+                                  fontWeight: isSelected ? 600 : 500,
+                                  color: theme.palette.text.primary,
+                                }}
+                              >
+                                {basePhase.name}
+                              </Typography>
+                            </Stack>
+                          }
+                          sx={{
+                            m: 0,
+                            width: "100%",
+                            "& .MuiFormControlLabel-label": {
+                              flex: 1,
+                            },
+                          }}
+                        />
+                      </Box>
+                    );
+                  })}
+                </Stack>
+              </Box>
+            </Stack>
+          )}
+        </TabPanel>
+
+        {/* Tab 2: Create New Phase */}
+        <TabPanel value={tabValue} index={1}>
+          <Stack spacing={3}>
+            {/* Phase Name Input */}
             <TextField
+              id="add-phase-name-input"
+              name="phaseName"
               autoFocus
               fullWidth
               size="medium"
               label="Nombre de la Fase"
               placeholder="Ej: Planning, Development, Testing..."
-              value={phaseName}
-              onChange={(e) => setPhaseName(e.target.value)}
+              value={newPhaseName}
+              onChange={(e) => setNewPhaseName(e.target.value)}
               onKeyDown={handleKeyDown}
               error={!!error}
               InputLabelProps={{
-                shrink: false, // Let label be visible inside field when empty
+                shrink: false,
                 sx: {
                   fontSize: "1rem",
                   fontWeight: 600,
@@ -237,7 +542,7 @@ export default function AddPhaseDialog({
                   </Box>
                 ) : isValidating ? (
                   "Validando..."
-                ) : phaseName.trim() ? (
+                ) : newPhaseName.trim() ? (
                   <Box
                     component="span"
                     sx={{
@@ -263,7 +568,7 @@ export default function AddPhaseDialog({
                         fontSize: 20,
                         color: error
                           ? theme.palette.error.main
-                          : phaseName.trim()
+                          : newPhaseName.trim()
                           ? theme.palette.success.main
                           : theme.palette.text.secondary,
                         transition: "color 0.2s ease",
@@ -301,39 +606,122 @@ export default function AddPhaseDialog({
                 },
               }}
             />
-          </Box>
 
-          {/* Info Alert */}
-          {phaseName.trim() && !error && (
-            <Fade in={phaseName.trim() && !error}>
-              <Alert
-                severity="info"
-                icon={<TimelineIcon sx={{ fontSize: 18 }} />}
+            {/* Color Picker */}
+            <Box>
+              <Typography
+                variant="subtitle2"
                 sx={{
-                  borderRadius: 2,
-                  fontSize: "0.8125rem",
-                  backgroundColor: alpha(theme.palette.info.main, 0.08),
-                  border: `1px solid ${alpha(theme.palette.info.main, 0.2)}`,
-                  "& .MuiAlert-icon": {
-                    color: theme.palette.info.main,
-                  },
-                  "& .MuiAlert-message": {
-                    color: theme.palette.text.secondary,
-                  },
+                  mb: 1.5,
+                  fontWeight: 600,
+                  fontSize: "0.875rem",
+                  color: theme.palette.text.primary,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1,
                 }}
               >
-                La fase se creará con fechas por defecto que podrás ajustar después
-              </Alert>
-            </Fade>
-          )}
-        </Stack>
+                <PaletteIcon sx={{ fontSize: 18 }} />
+                Color de la Fase
+              </Typography>
+              <Stack direction="row" spacing={1} flexWrap="wrap">
+                {predefinedColors.map((color) => (
+                  <Box
+                    key={color}
+                    onClick={() => setNewPhaseColor(color)}
+                    sx={{
+                      width: 40,
+                      height: 40,
+                      borderRadius: 1.5,
+                      bgcolor: color,
+                      cursor: "pointer",
+                      border:
+                        newPhaseColor === color
+                          ? `3px solid ${theme.palette.common.white}`
+                          : `2px solid ${alpha(theme.palette.divider, 0.2)}`,
+                      boxShadow:
+                        newPhaseColor === color
+                          ? `0 0 0 2px ${color}, 0 2px 8px ${alpha(
+                              theme.palette.common.black,
+                              0.2
+                            )}`
+                          : "none",
+                      transition: "all 0.2s ease",
+                      "&:hover": {
+                        transform: "scale(1.1)",
+                        boxShadow: `0 2px 8px ${alpha(color, 0.4)}`,
+                      },
+                    }}
+                  />
+                ))}
+              </Stack>
+              <Box
+                sx={{
+                  mt: 1.5,
+                  p: 1.5,
+                  borderRadius: 1.5,
+                  bgcolor: alpha(newPhaseColor, 0.1),
+                  border: `1px solid ${alpha(newPhaseColor, 0.2)}`,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1.5,
+                }}
+              >
+                <Box
+                  sx={{
+                    width: 24,
+                    height: 24,
+                    borderRadius: 1,
+                    bgcolor: newPhaseColor,
+                    flexShrink: 0,
+                  }}
+                />
+                <Typography
+                  variant="body2"
+                  sx={{
+                    fontWeight: 500,
+                    color: theme.palette.text.secondary,
+                  }}
+                >
+                  Vista previa del color seleccionado
+                </Typography>
+              </Box>
+            </Box>
+
+            {/* Info Alert */}
+            {newPhaseName.trim() && !error && (
+              <Fade in={newPhaseName.trim() && !error}>
+                <Alert
+                  severity="info"
+                  icon={<TimelineIcon sx={{ fontSize: 18 }} />}
+                  sx={{
+                    borderRadius: 2,
+                    fontSize: "0.8125rem",
+                    backgroundColor: alpha(theme.palette.info.main, 0.08),
+                    border: `1px solid ${alpha(theme.palette.info.main, 0.2)}`,
+                    "& .MuiAlert-icon": {
+                      color: theme.palette.info.main,
+                    },
+                    "& .MuiAlert-message": {
+                      color: theme.palette.text.secondary,
+                    },
+                  }}
+                >
+                  Esta fase solo existirá en este plan y no se guardará en el
+                  mantenimiento de fases
+                </Alert>
+              </Fade>
+            )}
+          </Stack>
+        </TabPanel>
       </DialogContent>
 
       <DialogActions
         sx={{
           px: 3,
-          py: 2.5,
-          borderTop: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+          pt: 2,
+          pb: 3,
+          borderTop: `1px solid ${alpha(theme.palette.divider, 0.12)}`,
           gap: 1.5,
         }}
       >
@@ -355,9 +743,9 @@ export default function AddPhaseDialog({
           Cancelar
         </Button>
         <Button
-          onClick={submitPhase}
+          onClick={handleSubmit}
           variant="contained"
-          disabled={!isFormValid}
+          disabled={!canSubmit}
           startIcon={<AddIcon sx={{ fontSize: 18 }} />}
           sx={{
             textTransform: "none",
@@ -366,14 +754,16 @@ export default function AddPhaseDialog({
             px: 3,
             py: 1,
             borderRadius: 1.5,
-            boxShadow: theme.palette.mode === "dark"
-              ? `0 4px 12px ${alpha(theme.palette.primary.main, 0.3)}`
-              : `0 4px 12px ${alpha(theme.palette.primary.main, 0.2)}`,
+            boxShadow:
+              theme.palette.mode === "dark"
+                ? `0 4px 12px ${alpha(theme.palette.primary.main, 0.3)}`
+                : `0 4px 12px ${alpha(theme.palette.primary.main, 0.2)}`,
             transition: "all 0.2s ease",
             "&:hover": {
-              boxShadow: theme.palette.mode === "dark"
-                ? `0 6px 16px ${alpha(theme.palette.primary.main, 0.4)}`
-                : `0 6px 16px ${alpha(theme.palette.primary.main, 0.3)}`,
+              boxShadow:
+                theme.palette.mode === "dark"
+                  ? `0 6px 16px ${alpha(theme.palette.primary.main, 0.4)}`
+                  : `0 6px 16px ${alpha(theme.palette.primary.main, 0.3)}`,
               transform: "translateY(-1px)",
             },
             "&:disabled": {
@@ -381,7 +771,9 @@ export default function AddPhaseDialog({
             },
           }}
         >
-          Agregar Fase
+          {tabValue === 0
+            ? `Agregar ${selectedBasePhaseIds.size} Fase${selectedBasePhaseIds.size !== 1 ? "s" : ""}`
+            : "Crear Fase"}
         </Button>
       </DialogActions>
     </Dialog>

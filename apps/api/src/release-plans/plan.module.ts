@@ -12,6 +12,8 @@ import { PlanTask } from './domain/plan-task.entity';
 import { PlanMilestone } from './domain/plan-milestone.entity';
 import { PlanReference } from './domain/plan-reference.entity';
 import { GanttCellData, GanttCellComment, GanttCellFile, GanttCellLink } from './domain/gantt-cell-data.entity';
+import { FeatureModule } from '../features/feature.module';
+import { Feature } from '../features/domain/feature.entity';
 
 @Module({
   imports: [
@@ -25,7 +27,9 @@ import { GanttCellData, GanttCellComment, GanttCellFile, GanttCellLink } from '.
       GanttCellComment,
       GanttCellFile,
       GanttCellLink,
+      Feature, // Import Feature entity for transactional updates
     ]),
+    FeatureModule, // Import FeatureModule to access FeatureRepository
   ],
   controllers: [PlanController],
   providers: [

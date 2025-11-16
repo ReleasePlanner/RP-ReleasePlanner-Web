@@ -134,13 +134,13 @@ export function PlanComponentsTab({
   return (
     <Box
       sx={{
-        p: 2,
+        p: { xs: 1.5, sm: 2 },
         height: "100%",
         display: "flex",
         flexDirection: "column",
       }}
     >
-      <Stack spacing={2} sx={{ flex: 1, minHeight: 0 }}>
+      <Stack spacing={1.5} sx={{ flex: 1, minHeight: 0 }}>
         {/* Header */}
         <Box
           sx={{
@@ -151,22 +151,30 @@ export function PlanComponentsTab({
             borderBottom: `1px solid ${alpha(theme.palette.divider, 0.08)}`,
           }}
         >
-          <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-            Components for {productName} ({planComponentsWithDetails.length})
+          <Typography 
+            variant="subtitle2" 
+            sx={{ 
+              fontWeight: 600,
+              fontSize: "0.8125rem",
+              color: theme.palette.text.primary,
+            }}
+          >
+            Componentes para {productName} ({planComponentsWithDetails.length})
           </Typography>
-          <Tooltip title="Add components from product" arrow placement="top">
+          <Tooltip title="Agregar componentes del producto" arrow placement="top">
             <Button
               variant="outlined"
               size="small"
-              startIcon={<AddIcon />}
+              startIcon={<AddIcon sx={{ fontSize: 16 }} />}
               onClick={() => setSelectDialogOpen(true)}
               sx={{
                 textTransform: "none",
-                fontSize: "0.8125rem",
+                fontSize: "0.75rem",
                 fontWeight: 500,
-                px: 1.75,
-                py: 0.625,
+                px: 1.5,
+                py: 0.5,
                 borderRadius: 1,
+                minHeight: 28,
                 borderColor: alpha(theme.palette.primary.main, 0.5),
                 color: theme.palette.primary.main,
                 "&:hover": {
@@ -175,7 +183,7 @@ export function PlanComponentsTab({
                 },
               }}
             >
-              Add Components
+              Agregar
             </Button>
           </Tooltip>
         </Box>
@@ -185,14 +193,17 @@ export function PlanComponentsTab({
           {planComponentsWithDetails.length === 0 ? (
             <Box
               sx={{
-                p: 4,
+                p: 3,
                 textAlign: "center",
                 color: "text.secondary",
               }}
             >
-              <Typography variant="body2">
-                No components added to this plan yet. Click "Add Components" to
-                select components from the product.
+              <Typography 
+                variant="body2"
+                sx={{ fontSize: "0.8125rem" }}
+              >
+                No hay componentes agregados a este plan. Haz clic en "Agregar" para
+                seleccionar componentes del producto.
               </Typography>
             </Box>
           ) : (

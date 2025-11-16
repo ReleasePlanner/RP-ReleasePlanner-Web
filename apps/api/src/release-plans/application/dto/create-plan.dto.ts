@@ -122,11 +122,10 @@ export class CreatePlanDto {
     description: PLAN_API_PROPERTY_DESCRIPTIONS.STATUS,
     enum: PlanStatus,
     example: PlanStatus.PLANNED,
-    required: false,
   })
   @IsEnum(PlanStatus)
-  @IsOptional()
-  status?: PlanStatus;
+  @IsNotEmpty({ message: PLAN_VALIDATION_MESSAGES.PLAN_STATUS_REQUIRED || 'Status is required' })
+  status: PlanStatus;
 
   @ApiProperty({
     description: PLAN_API_PROPERTY_DESCRIPTIONS.DESCRIPTION,
@@ -151,11 +150,10 @@ export class CreatePlanDto {
   @ApiProperty({
     description: PLAN_API_PROPERTY_DESCRIPTIONS.PRODUCT_ID,
     example: PLAN_API_PROPERTY_EXAMPLES.PRODUCT_ID,
-    required: false,
   })
   @IsString()
-  @IsOptional()
-  productId?: string;
+  @IsNotEmpty({ message: PLAN_VALIDATION_MESSAGES.PLAN_PRODUCT_ID_REQUIRED || 'Product ID is required' })
+  productId: string;
 
   @ApiProperty({
     description: PLAN_API_PROPERTY_DESCRIPTIONS.IT_OWNER,

@@ -16,6 +16,10 @@ export function usePlans() {
   return useQuery({
     queryKey: QUERY_KEYS.list(),
     queryFn: () => plansService.getAll(),
+    staleTime: 5 * 60 * 1000, // 5 minutes - data stays fresh longer
+    gcTime: 10 * 60 * 1000, // 10 minutes - cache persists longer (formerly cacheTime)
+    refetchOnWindowFocus: false, // Don't refetch on window focus
+    refetchOnMount: false, // Use cached data if available
   });
 }
 
@@ -44,7 +48,31 @@ export function useUpdatePlan() {
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: UpdatePlanDto }) =>
       plansService.update(id, data),
+    onMutate: async ({ id, data }) => {
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: QUERY_KEYS.list() });
+      
+      // Snapshot previous value
+      const previousPlans = queryClient.getQueryData(QUERY_KEYS.list());
+      
+      // Optimistically update cache - merge data into plan object (API format is flat)
+      queryClient.setQueryData(QUERY_KEYS.list(), (old: any) => {
+        if (!old) return old;
+        return old.map((plan: any) => 
+          plan.id === id ? { ...plan, ...data } : plan
+        );
+      });
+      
+      return { previousPlans };
+    },
+    onError: (err, variables, context) => {
+      // Rollback on error
+      if (context?.previousPlans) {
+        queryClient.setQueryData(QUERY_KEYS.list(), context.previousPlans);
+      }
+    },
     onSuccess: (_, variables) => {
+      // Invalidate to ensure consistency
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.list() });
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.detail(variables.id) });
     },

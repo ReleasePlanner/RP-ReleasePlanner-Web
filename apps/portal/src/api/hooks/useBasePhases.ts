@@ -16,6 +16,10 @@ export function useBasePhases() {
   return useQuery({
     queryKey: QUERY_KEYS.list(),
     queryFn: () => basePhasesService.getAll(),
+    staleTime: 30 * 60 * 1000, // 30 minutes - base phases change rarely
+    gcTime: 60 * 60 * 1000, // 1 hour - cache persists longer
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
   });
 }
 

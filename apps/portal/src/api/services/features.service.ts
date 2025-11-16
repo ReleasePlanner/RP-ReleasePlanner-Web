@@ -33,7 +33,7 @@ export interface Feature {
   name: string;
   description: string;
   category: FeatureCategory;
-  status: 'planned' | 'in-progress' | 'completed' | 'on-hold';
+  status: 'planned' | 'in-progress' | 'completed' | 'on-hold' | 'assigned';
   createdBy: ProductOwner;
   technicalDescription: string;
   businessDescription: string;
@@ -56,7 +56,7 @@ export interface CreateFeatureDto {
   description: string;
   categoryId?: string;
   category?: CreateFeatureCategoryDto;
-  status: 'planned' | 'in-progress' | 'completed' | 'on-hold';
+  status: 'planned' | 'in-progress' | 'completed' | 'on-hold' | 'assigned';
   createdBy: CreateProductOwnerDto;
   technicalDescription: string;
   businessDescription: string;
@@ -77,7 +77,7 @@ export interface UpdateFeatureDto {
   description?: string;
   categoryId?: string;
   category?: UpdateFeatureCategoryDto;
-  status?: 'planned' | 'in-progress' | 'completed' | 'on-hold';
+  status?: 'planned' | 'in-progress' | 'completed' | 'on-hold' | 'assigned';
   createdBy?: UpdateProductOwnerDto;
   technicalDescription?: string;
   businessDescription?: string;

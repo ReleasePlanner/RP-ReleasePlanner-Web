@@ -7,8 +7,9 @@ import {
   TableRow,
   IconButton,
   useTheme,
+  CircularProgress,
 } from "@mui/material";
-import { Edit as EditIcon, Delete as DeleteIcon } from "@mui/icons-material";
+import { Delete as DeleteIcon } from "@mui/icons-material";
 import type { Feature } from "../types";
 import { STATUS_LABELS } from "../constants";
 
@@ -17,7 +18,6 @@ import { STATUS_LABELS } from "../constants";
  */
 interface FeaturesTableProps {
   features: Feature[];
-  onEditFeature: (feature: Feature) => void;
   onDeleteFeature: (featureId: string) => void;
 }
 
@@ -38,8 +38,8 @@ interface FeaturesTableProps {
  */
 export function FeaturesTable({
   features,
-  onEditFeature,
   onDeleteFeature,
+  isRemoving = null,
 }: FeaturesTableProps) {
   const theme = useTheme();
 
@@ -100,17 +100,15 @@ export function FeaturesTable({
               <TableCell align="right">
                 <IconButton
                   size="small"
-                  onClick={() => onEditFeature(feature)}
-                  title="Edit feature"
-                >
-                  <EditIcon sx={{ fontSize: { xs: 18, sm: 20 } }} />
-                </IconButton>
-                <IconButton
-                  size="small"
                   onClick={() => onDeleteFeature(feature.id)}
-                  title="Delete feature"
+                  disabled={isRemoving === feature.id}
+                  title="Remover feature del plan"
                 >
-                  <DeleteIcon sx={{ fontSize: { xs: 18, sm: 20 } }} />
+                  {isRemoving === feature.id ? (
+                    <CircularProgress size={16} />
+                  ) : (
+                    <DeleteIcon sx={{ fontSize: { xs: 18, sm: 20 } }} />
+                  )}
                 </IconButton>
               </TableCell>
             </TableRow>

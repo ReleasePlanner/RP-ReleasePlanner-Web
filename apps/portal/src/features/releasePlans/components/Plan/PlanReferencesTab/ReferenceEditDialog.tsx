@@ -134,8 +134,11 @@ export function ReferenceEditDialog({
       <DialogContent sx={{ pt: 3 }}>
         <Stack spacing={2}>
           <FormControl fullWidth size="small">
-            <InputLabel>Type</InputLabel>
+            <InputLabel id="reference-type-label">Type</InputLabel>
             <Select
+              id="reference-type-select"
+              name="referenceType"
+              labelId="reference-type-label"
               value={type}
               onChange={(e) => setType(e.target.value as PlanReferenceType)}
               label="Type"
@@ -185,6 +188,8 @@ export function ReferenceEditDialog({
           </FormControl>
 
           <TextField
+            id="reference-title-input"
+            name="referenceTitle"
             label="Title"
             fullWidth
             required
@@ -197,6 +202,8 @@ export function ReferenceEditDialog({
 
           {(type === "link" || type === "document" || type === "file") && (
             <TextField
+              id="reference-url-input"
+              name="referenceUrl"
               label={
                 type === "link"
                   ? "URL"
@@ -227,6 +234,8 @@ export function ReferenceEditDialog({
           )}
 
           <TextField
+            id="reference-description-input"
+            name="referenceDescription"
             label="Description"
             fullWidth
             multiline

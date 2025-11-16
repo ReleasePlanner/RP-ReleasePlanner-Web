@@ -53,6 +53,7 @@ export const STATUS_LABELS: Record<FeatureStatus, string> = {
   "in-progress": "🚀 In Progress",
   completed: "✅ Completed",
   "on-hold": "⏸️ On Hold",
+  assigned: "📌 Assigned",
 };
 
 /**
@@ -66,4 +67,5 @@ export const STATUS_COLORS: Record<
   "in-progress": "info",
   completed: "success",
   "on-hold": "warning",
+  assigned: "info",
 };

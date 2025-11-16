@@ -25,6 +25,7 @@ import {
   getTimelineColors,
   TIMELINE_DIMENSIONS,
 } from "../Gantt/GanttTimeline/constants";
+import { TimelineToolbar, TOOLBAR_HEIGHT } from "../Gantt/GanttTimeline/TimelineToolbar";
 import { GanttCell } from "../Gantt/GanttCell";
 
 // header timeline moved to GanttTimeline component
@@ -56,6 +57,10 @@ export type GanttChartProps = {
   onToggleCellMilestone?: (phaseId: string, date: string) => void;
   // Scroll to date callback - exposes scroll function to parent
   onScrollToDateReady?: (scrollToDate: (date: string) => void) => void;
+  // Timeline toolbar props
+  onSaveTimeline?: () => void;
+  hasTimelineChanges?: boolean;
+  isSavingTimeline?: boolean;
 };
 
 export default function GanttChart({
@@ -79,6 +84,9 @@ export default function GanttChart({
   onAddCellLink,
   onToggleCellMilestone,
   onScrollToDateReady,
+  onSaveTimeline,
+  hasTimelineChanges = false,
+  isSavingTimeline = false,
 }: GanttChartProps) {
   const labelWidth = LABEL_WIDTH; // sticky label column width for phase names
   // mark intentionally unused until we support non-year-spanning views
@@ -360,7 +368,7 @@ export default function GanttChart({
               onAdd={onAddPhase ?? (() => {})}
               onEdit={onEditPhase ?? (() => {})}
               onAutoGenerate={onAutoGenerate}
-              headerOffsetTopPx={TIMELINE_DIMENSIONS.TOTAL_HEIGHT + LANE_GAP}
+              headerOffsetTopPx={TIMELINE_DIMENSIONS.TOTAL_HEIGHT + LANE_GAP + TOOLBAR_HEIGHT}
               calendarStart={start.toISOString().slice(0, 10)}
               calendarEnd={end.toISOString().slice(0, 10)}
             />
@@ -374,8 +382,25 @@ export default function GanttChart({
               display: "flex",
               flexDirection: "column",
               backgroundColor: colors.TRACKS_BACKGROUND,
+              position: "relative",
             }}
           >
+            {/* Elegant floating toolbar - always visible above timeline */}
+            <TimelineToolbar
+              onJumpToToday={() => {
+                const el = containerRef.current;
+                if (!el) return;
+                const index = typeof todayIndex === "number" ? todayIndex : 0;
+                const visibleWidth = Math.max(0, el.clientWidth);
+                const target = index * pxPerDay - visibleWidth / 2;
+                const left = Math.max(0, target);
+                safeScrollToX(el, left, "smooth");
+              }}
+              onSave={onSaveTimeline}
+              hasChanges={hasTimelineChanges}
+              isSaving={isSavingTimeline}
+            />
+            
             <div
               ref={contentRef}
               className="min-w-full"
@@ -388,44 +413,44 @@ export default function GanttChart({
                 flexDirection: "column",
               }}
             >
-              <GanttTimeline
-                start={start}
-                totalDays={totalDays}
-                pxPerDay={pxPerDay}
-                todayIndex={todayIndex}
-                milestones={milestones}
-                onJumpToToday={() => {
-                  const el = containerRef.current;
-                  if (!el) return;
-                  const index = typeof todayIndex === "number" ? todayIndex : 0;
-                  const visibleWidth = Math.max(0, el.clientWidth);
-                  const target = index * pxPerDay - visibleWidth / 2;
-                  const left = Math.max(0, target);
-                  safeScrollToX(el, left, "smooth");
-                }}
-                onDayClick={handleDayClick}
-                cellData={cellData}
-                onAddCellComment={(date) => {
-                  if (onAddCellComment) {
-                    onAddCellComment("", date);
-                  }
-                }}
-                onAddCellFile={(date) => {
-                  if (onAddCellFile) {
-                    onAddCellFile("", date);
-                  }
-                }}
-                onAddCellLink={(date) => {
-                  if (onAddCellLink) {
-                    onAddCellLink("", date);
-                  }
-                }}
-                onToggleCellMilestone={(date) => {
-                  if (onToggleCellMilestone) {
-                    onToggleCellMilestone("", date);
-                  }
-                }}
-              />
+            <GanttTimeline
+              start={start}
+              totalDays={totalDays}
+              pxPerDay={pxPerDay}
+              todayIndex={todayIndex}
+              milestones={milestones}
+              onJumpToToday={() => {
+                const el = containerRef.current;
+                if (!el) return;
+                const index = typeof todayIndex === "number" ? todayIndex : 0;
+                const visibleWidth = Math.max(0, el.clientWidth);
+                const target = index * pxPerDay - visibleWidth / 2;
+                const left = Math.max(0, target);
+                safeScrollToX(el, left, "smooth");
+              }}
+              onDayClick={handleDayClick}
+              cellData={cellData}
+              onAddCellComment={(date) => {
+                if (onAddCellComment) {
+                  onAddCellComment("", date);
+                }
+              }}
+              onAddCellFile={(date) => {
+                if (onAddCellFile) {
+                  onAddCellFile("", date);
+                }
+              }}
+              onAddCellLink={(date) => {
+                if (onAddCellLink) {
+                  onAddCellLink("", date);
+                }
+              }}
+              onToggleCellMilestone={(date) => {
+                if (onToggleCellMilestone) {
+                  onToggleCellMilestone("", date);
+                }
+              }}
+            />
               {/* Tracks: phases only */}
               <div
                 className="relative"
@@ -814,6 +839,9 @@ export default function GanttChart({
                   onToggleCellMilestone("", date);
                 }
               }}
+              onSave={onSaveTimeline}
+              hasTimelineChanges={hasTimelineChanges}
+              isSaving={isSavingTimeline}
             />
             {/* Tracks */}
             <div

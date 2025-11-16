@@ -9,6 +9,7 @@ export enum FeatureStatus {
   IN_PROGRESS = 'in-progress',
   COMPLETED = 'completed',
   ON_HOLD = 'on-hold',
+  ASSIGNED = 'assigned',
 }
 
 @Entity('features')

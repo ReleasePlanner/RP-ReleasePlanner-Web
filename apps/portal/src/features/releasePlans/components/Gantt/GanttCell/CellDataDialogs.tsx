@@ -78,6 +78,8 @@ export function CellCommentsDialog({
         <Stack spacing={2}>
           {/* Add new comment */}
           <TextField
+            id="cell-comment-input"
+            name="cellComment"
             multiline
             rows={3}
             placeholder="Escribe un comentario..."
@@ -214,6 +216,8 @@ export function CellFilesDialog({
         <Stack spacing={2}>
           {/* Add new file */}
           <TextField
+            id="cell-file-name-input"
+            name="cellFileName"
             label="Nombre del archivo"
             value={fileName}
             onChange={(e) => setFileName(e.target.value)}
@@ -221,6 +225,8 @@ export function CellFilesDialog({
             fullWidth
           />
           <TextField
+            id="cell-file-url-input"
+            name="cellFileUrl"
             label="URL del archivo"
             value={fileUrl}
             onChange={(e) => setFileUrl(e.target.value)}
@@ -361,6 +367,8 @@ export function CellLinksDialog({
         <Stack spacing={2}>
           {/* Add new link */}
           <TextField
+            id="cell-link-title-input"
+            name="cellLinkTitle"
             label="Título del enlace"
             value={linkTitle}
             onChange={(e) => setLinkTitle(e.target.value)}
@@ -368,6 +376,8 @@ export function CellLinksDialog({
             fullWidth
           />
           <TextField
+            id="cell-link-url-input"
+            name="cellLinkUrl"
             label="URL"
             value={linkUrl}
             onChange={(e) => setLinkUrl(e.target.value)}
@@ -376,6 +386,8 @@ export function CellLinksDialog({
             placeholder="https://..."
           />
           <TextField
+            id="cell-link-description-input"
+            name="cellLinkDescription"
             label="Descripción (opcional)"
             value={linkDescription}
             onChange={(e) => setLinkDescription(e.target.value)}

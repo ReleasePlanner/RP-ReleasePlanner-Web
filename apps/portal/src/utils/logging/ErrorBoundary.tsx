@@ -144,7 +144,15 @@ export class ErrorBoundary extends Component<
       // Example: Send to error reporting service
       // errorReportingService.report(errorReport);
 
-      console.log("Error Report Generated:", errorReport);
+      // Log error report without printing full details to console
+      logger.error("Error Report Generated", new Error(errorReport.message), {
+        component: this.props.component || "ErrorBoundary",
+        action: "reportError",
+        metadata: {
+          errorId: errorReport.errorId,
+          timestamp: errorReport.timestamp,
+        },
+      });
     }
   };
 

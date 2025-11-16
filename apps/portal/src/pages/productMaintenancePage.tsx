@@ -205,8 +205,6 @@ export function ProductMaintenancePage() {
       // Map component data - handle both version formats
       const componentData = editingProduct.component as any;
       
-      console.log('handleSaveComponent - componentData received:', JSON.stringify(componentData, null, 2));
-      
       // Check if component exists by comparing valid UUIDs only
       const componentExists = editingComponentId && 
         isValidUUID(editingComponentId) &&
@@ -218,16 +216,10 @@ export function ProductMaintenancePage() {
       // The dialog uses 'version' field which should be used as the new currentVersion
       let currentVersion = componentData.version || componentData.currentVersion || '';
       
-      console.log('handleSaveComponent - currentVersion extracted:', currentVersion, {
-        'componentData.version': componentData.version,
-        'componentData.currentVersion': componentData.currentVersion,
-        'componentExists': componentExists
-      });
-      
       // For new components, if version is still empty, throw error
       if (!currentVersion && !componentExists) {
         // This shouldn't happen if dialog validation works, but add defensive check
-        console.error('Missing currentVersion for new component:', componentData);
+        console.error('Missing currentVersion for new component');
         throw new Error('Component currentVersion is required. Please enter a Current Version.');
       }
       
@@ -236,7 +228,7 @@ export function ProductMaintenancePage() {
         const existingComp = existingProduct.components.find((c: ComponentVersion) => c.id === editingComponentId);
         currentVersion = existingComp?.currentVersion || '';
         if (!currentVersion) {
-          console.error('Missing currentVersion for existing component:', componentData);
+          console.error('Missing currentVersion for existing component');
           throw new Error('Component currentVersion is required');
         }
       }
@@ -264,7 +256,7 @@ export function ProductMaintenancePage() {
       
       // Final validation
       if (!currentVersion) {
-        console.error('Missing currentVersion:', componentData);
+        console.error('Missing currentVersion');
         throw new Error('Component currentVersion is required');
       }
       
@@ -298,11 +290,6 @@ export function ProductMaintenancePage() {
             },
           ];
 
-      console.log('handleSaveComponent - updatedComponents:', JSON.stringify(updatedComponents, null, 2));
-      console.log('handleSaveComponent - componentExists:', componentExists);
-      console.log('handleSaveComponent - currentVersion:', currentVersion);
-      console.log('handleSaveComponent - previousVersion:', previousVersion);
-
       await updateMutation.mutateAsync({
         id: product.id,
         data: {
@@ -323,7 +310,6 @@ export function ProductMaintenancePage() {
             if (c.id && isValidUUID(c.id)) {
               componentPayload.id = c.id;
             }
-            console.log('handleSaveComponent - componentPayload:', JSON.stringify(componentPayload, null, 2));
             return componentPayload;
           }),
         },

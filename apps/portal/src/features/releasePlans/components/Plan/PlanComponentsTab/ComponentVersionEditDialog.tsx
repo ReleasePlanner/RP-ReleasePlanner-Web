@@ -133,6 +133,8 @@ export function ComponentVersionEditDialog({
           )}
 
           <TextField
+            id="component-final-version-input"
+            name="componentFinalVersion"
             label="Final Version"
             fullWidth
             required

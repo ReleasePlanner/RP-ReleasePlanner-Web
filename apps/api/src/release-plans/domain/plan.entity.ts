@@ -36,10 +36,10 @@ export class Plan extends BaseEntity {
   @Column({ type: 'text', nullable: true })
   description?: string;
 
-  @Column({ type: 'uuid', nullable: true })
+  @Column({ type: 'varchar', length: 255, nullable: true })
   productId?: string;
 
-  @Column({ type: 'uuid', nullable: true })
+  @Column({ type: 'varchar', length: 255, nullable: true })
   itOwner?: string;
 
   // Arrays stored as JSON columns

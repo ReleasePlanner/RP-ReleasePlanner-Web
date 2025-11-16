@@ -110,12 +110,12 @@ export function GanttPhases({
 
   return (
     <>
-      {phaseSegments.map((phaseData) => {
-        if (!phaseData) return null;
+      {phaseSegments.flatMap((phaseData) => {
+        if (!phaseData) return [];
 
         const { phase, idx, top, color, offset, len, segments } = phaseData;
 
-        if (segments.length === 0) return null;
+        if (segments.length === 0) return [];
 
         return segments.map((seg, sIdx) => {
           const left = seg.startIdx * pxPerDay;

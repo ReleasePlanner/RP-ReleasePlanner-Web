@@ -58,44 +58,30 @@ export function usePlanCard(
   );
 
   const handleAddPhase = useCallback(
-    async (name: string) => {
-      const newPhase: PlanPhase = {
-        id: `phase-${Date.now()}`,
-        name,
-      };
-      const updatedPhases = [...(plan.metadata.phases || []), newPhase];
-      try {
-        await updatePlanMutation.mutateAsync({
-          id: plan.id,
-          data: createPartialUpdateDto(plan, {
-            phases: updatedPhases,
-          }),
-        });
-        setPhaseOpen(false);
-      } catch (error) {
-        console.error('Error adding phase:', error);
+    (phasesToAdd: PlanPhase[], onPhasesChange?: (phases: PlanPhase[]) => void) => {
+      if (phasesToAdd.length === 0) return;
+      
+      const updatedPhases = [...(plan.metadata.phases || []), ...phasesToAdd];
+      // Only update local state - save via save button
+      if (onPhasesChange) {
+        onPhasesChange(updatedPhases);
       }
+      setPhaseOpen(false);
     },
-    [plan, updatePlanMutation]
+    [plan.metadata.phases]
   );
 
   const handlePhaseRangeChange = useCallback(
-    async (phaseId: string, startDate: string, endDate: string) => {
+    (phaseId: string, startDate: string, endDate: string, onPhasesChange?: (phases: PlanPhase[]) => void) => {
       const updatedPhases = (plan.metadata.phases || []).map((p) =>
         p.id === phaseId ? { ...p, startDate, endDate } : p
       );
-      try {
-        await updatePlanMutation.mutateAsync({
-          id: plan.id,
-          data: createPartialUpdateDto(plan, {
-            phases: updatedPhases,
-          }),
-        });
-      } catch (error) {
-        console.error('Error updating phase range:', error);
+      // Only update local state - save via save button
+      if (onPhasesChange) {
+        onPhasesChange(updatedPhases);
       }
     },
-    [plan, updatePlanMutation]
+    [plan.metadata.phases]
   );
 
   return {

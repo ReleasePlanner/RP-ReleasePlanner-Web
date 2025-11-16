@@ -196,6 +196,21 @@ export class FeatureService {
       throw new NotFoundException('Feature', id);
     }
 
+    // Optimistic locking: Check if feature was modified since client last fetched it
+    if (dto.updatedAt) {
+      const clientUpdatedAt = new Date(dto.updatedAt);
+      const serverUpdatedAt = new Date(feature.updatedAt);
+      
+      // Allow small time difference for clock skew (1 second tolerance)
+      const timeDiff = Math.abs(serverUpdatedAt.getTime() - clientUpdatedAt.getTime());
+      if (timeDiff > 1000 && serverUpdatedAt > clientUpdatedAt) {
+        throw new ConflictException(
+          'Feature was modified by another user. Please refresh and try again.',
+          'CONCURRENT_MODIFICATION',
+        );
+      }
+    }
+
     // Update nested entities if provided
     if (dto.categoryId) {
       // Use existing category by ID
@@ -263,7 +278,34 @@ export class FeatureService {
       }
     }
 
-    const updated = await this.repository.update(id, dto);
+    // Update status if provided (must be done before repository.update)
+    if (dto.status !== undefined) {
+      feature.status = dto.status;
+      console.log('FeatureService.update - Updating status to:', dto.status, 'for feature:', id);
+    }
+
+    // Update other fields from DTO (name, description, technicalDescription, businessDescription)
+    if (dto.name !== undefined) {
+      feature.name = dto.name;
+    }
+    if (dto.description !== undefined) {
+      feature.description = dto.description;
+    }
+    if (dto.technicalDescription !== undefined) {
+      feature.technicalDescription = dto.technicalDescription;
+    }
+    if (dto.businessDescription !== undefined) {
+      feature.businessDescription = dto.businessDescription;
+    }
+
+    // Save the feature entity directly (status and other fields already updated)
+    const saved = await this.repository.save(feature);
+    
+    if (!saved) {
+      throw new Error('Failed to save updated feature');
+    }
+    
+    const updated = saved;
     
     // Defensive: Validate update result
     if (!updated) {

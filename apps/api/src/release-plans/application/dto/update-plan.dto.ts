@@ -273,5 +273,13 @@ export class UpdatePlanDto extends PartialType(CreatePlanDto) {
   @IsArray()
   @IsOptional()
   components?: Array<{ componentId: string; finalVersion: string }>;
+
+  @ApiProperty({
+    description: 'Timestamp for optimistic locking. If provided, update will fail if plan was modified since this timestamp.',
+    required: false,
+  })
+  @IsDateString()
+  @IsOptional()
+  updatedAt?: string;
 }
 

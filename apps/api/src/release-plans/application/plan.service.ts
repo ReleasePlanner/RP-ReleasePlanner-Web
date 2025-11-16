@@ -12,6 +12,8 @@ import { CreatePlanDto } from './dto/create-plan.dto';
 import { UpdatePlanDto } from './dto/update-plan.dto';
 import { PlanResponseDto } from './dto/plan-response.dto';
 import type { IPlanRepository } from '../infrastructure/plan.repository';
+import type { IFeatureRepository } from '../../features/infrastructure/feature.repository';
+import { Feature, FeatureStatus } from '../../features/domain/feature.entity';
 import { ConflictException, NotFoundException } from '../../common/exceptions/business-exception';
 import { validateId, validateObject, validateString, validateArray, validateDateString } from '@rp-release-planner/rp-shared';
 
@@ -20,6 +22,8 @@ export class PlanService {
   constructor(
     @Inject('IPlanRepository')
     private readonly repository: IPlanRepository,
+    @Inject('IFeatureRepository')
+    private readonly featureRepository: IFeatureRepository,
   ) {}
 
   async findAll(): Promise<PlanResponseDto[]> {
@@ -51,6 +55,14 @@ export class PlanService {
     validateString(dto.owner, 'Plan owner');
     validateDateString(dto.startDate, 'Start date');
     validateDateString(dto.endDate, 'End date');
+    
+    // Validate required fields
+    if (!dto.status) {
+      throw new Error('Status is required');
+    }
+    if (!dto.productId) {
+      throw new Error('Product ID is required');
+    }
 
     // Defensive: Validate date logic
     const startDate = new Date(dto.startDate);
@@ -59,31 +71,46 @@ export class PlanService {
       throw new Error('End date must be after start date');
     }
 
-    // Check name uniqueness
-    const existing = await this.repository.findByName(dto.name);
+    // Normalize plan name: trim and normalize multiple spaces
+    const normalizedName = dto.name.trim().replace(/\s+/g, ' ');
+    
+    console.log(`[PlanService.create] Checking name uniqueness:`, {
+      original: dto.name,
+      normalized: normalizedName,
+      normalizedLower: normalizedName.toLowerCase(),
+    });
+
+    // Check name uniqueness (case-insensitive and space-normalized)
+    const existing = await this.repository.findByName(normalizedName);
     if (existing) {
+      console.log(`[PlanService.create] Duplicate found:`, {
+        searched: normalizedName,
+        searchedLower: normalizedName.toLowerCase(),
+        existingId: existing.id,
+        existingName: existing.name,
+        existingNormalized: existing.name.trim().replace(/\s+/g, ' '),
+        existingLower: existing.name.trim().replace(/\s+/g, ' ').toLowerCase(),
+      });
       throw new ConflictException(
-        `Plan with name "${dto.name}" already exists`,
+        `Ya existe un plan con el nombre "${existing.name}". Por favor, usa un nombre diferente.`,
         'DUPLICATE_PLAN_NAME',
       );
     }
 
-    // Create plan
+    // Create plan with normalized name
     const plan = new Plan(
-      dto.name,
+      normalizedName,
       dto.owner,
       dto.startDate,
       dto.endDate,
-      dto.status || PlanStatus.PLANNED,
+      dto.status,
     );
 
     if (dto.description) {
       plan.description = dto.description;
     }
-    if (dto.productId) {
-      validateId(dto.productId, 'Product');
-      plan.productId = dto.productId;
-    }
+    validateId(dto.productId, 'Product');
+    plan.productId = dto.productId;
     if (dto.itOwner) {
       validateId(dto.itOwner, 'IT Owner');
       plan.itOwner = dto.itOwner;
@@ -117,12 +144,24 @@ export class PlanService {
 
     const created = await this.repository.create(plan);
     
+    console.log(`[PlanService.create] Plan created successfully:`, {
+      id: created?.id,
+      name: created?.name,
+      normalizedName: created?.name?.trim().replace(/\s+/g, ' ').toLowerCase(),
+    });
+    
     // Defensive: Validate creation result
     if (!created) {
       throw new Error('Failed to create plan');
     }
     
-    return new PlanResponseDto(created);
+    const response = new PlanResponseDto(created);
+    console.log(`[PlanService.create] Returning PlanResponseDto:`, {
+      id: response.id,
+      name: response.name,
+    });
+    
+    return response;
   }
 
   async update(id: string, dto: UpdatePlanDto): Promise<PlanResponseDto> {
@@ -135,15 +174,40 @@ export class PlanService {
       throw new NotFoundException('Plan', id);
     }
 
+    // Optimistic locking: Check if plan was modified since client last fetched it
+    if (dto.updatedAt) {
+      const clientUpdatedAt = new Date(dto.updatedAt);
+      const serverUpdatedAt = new Date(plan.updatedAt);
+      
+      // Allow small time difference for clock skew (1 second tolerance)
+      const timeDiff = Math.abs(serverUpdatedAt.getTime() - clientUpdatedAt.getTime());
+      if (timeDiff > 1000 && serverUpdatedAt > clientUpdatedAt) {
+        throw new ConflictException(
+          'Plan was modified by another user. Please refresh and try again.',
+          'CONCURRENT_MODIFICATION',
+        );
+      }
+    }
+
     // Check name uniqueness if name is being updated
     if (dto.name && dto.name !== plan.name) {
       validateString(dto.name, 'Plan name');
-      const existing = await this.repository.findByName(dto.name);
-      if (existing && existing.id !== id) {
-        throw new ConflictException(
-          `Plan with name "${dto.name}" already exists`,
-          'DUPLICATE_PLAN_NAME',
-        );
+      
+      // Normalize plan name: trim and normalize multiple spaces
+      const normalizedName = dto.name.trim().replace(/\s+/g, ' ');
+      
+      // Only check uniqueness if normalized name is different from current plan's normalized name
+      const currentNormalizedName = plan.name.trim().replace(/\s+/g, ' ');
+      if (normalizedName.toLowerCase() !== currentNormalizedName.toLowerCase()) {
+        const existing = await this.repository.findByName(normalizedName);
+        if (existing && existing.id !== id) {
+          throw new ConflictException(
+            `Plan with name "${normalizedName}" already exists`,
+            'DUPLICATE_PLAN_NAME',
+          );
+        }
+        // Update with normalized name
+        plan.name = normalizedName;
       }
     }
 
@@ -226,7 +290,9 @@ export class PlanService {
     // Update phases if provided (replace all phases)
     if (dto.phases !== undefined) {
       validateArray(dto.phases, 'Phases');
+      // Clear existing phases array (TypeORM will handle deletion via cascade)
       plan.phases = [];
+      // Create new phases with explicit planId
       dto.phases.forEach((p) => {
         // Defensive: Validate phase data
         if (!p || !p.name) {
@@ -236,6 +302,9 @@ export class PlanService {
         if (p.startDate) validateDateString(p.startDate, 'Phase start date');
         if (p.endDate) validateDateString(p.endDate, 'Phase end date');
         const phase = new PlanPhase(p.name, p.startDate, p.endDate, p.color);
+        // Explicitly set planId before adding to ensure it's not null
+        // This is critical to prevent null constraint violations
+        phase.planId = plan.id;
         plan.addPhase(phase);
       });
     }
@@ -411,6 +480,114 @@ export class PlanService {
       throw new NotFoundException('Plan', id);
     }
     await this.repository.delete(id);
+  }
+
+  /**
+   * Transactional method to update plan and features status atomically
+   * This ensures that both operations succeed or fail together (ACID)
+   * Uses optimistic locking for both plan and features
+   */
+  async updatePlanWithFeaturesTransactionally(
+    planId: string,
+    planDto: UpdatePlanDto,
+    featureUpdates: Array<{ id: string; status: FeatureStatus; updatedAt: string }>,
+  ): Promise<PlanResponseDto> {
+    // Defensive: Validate inputs
+    validateId(planId, 'Plan');
+    validateObject(planDto, 'UpdatePlanDto');
+    if (featureUpdates && !Array.isArray(featureUpdates)) {
+      throw new Error('Feature updates must be an array');
+    }
+
+    // Use transaction to ensure atomicity
+    // Access the EntityManager through the repository's manager property
+    const planRepo = this.repository as any;
+    if (!planRepo.repository || !planRepo.repository.manager) {
+      throw new Error('Repository manager not available for transactions');
+    }
+    
+    return await planRepo.repository.manager.transaction(async (transactionalEntityManager) => {
+      // Step 1: Load plan with optimistic locking check
+      const plan = await transactionalEntityManager.findOne(Plan, {
+        where: { id: planId } as any,
+      });
+
+      if (!plan) {
+        throw new NotFoundException('Plan', planId);
+      }
+
+      // Optimistic locking: Check if plan was modified since client last fetched it
+      if (planDto.updatedAt) {
+        const clientUpdatedAt = new Date(planDto.updatedAt);
+        const serverUpdatedAt = new Date(plan.updatedAt);
+        
+        const timeDiff = Math.abs(serverUpdatedAt.getTime() - clientUpdatedAt.getTime());
+        if (timeDiff > 1000 && serverUpdatedAt > clientUpdatedAt) {
+          throw new ConflictException(
+            'Plan was modified by another user. Please refresh and try again.',
+            'CONCURRENT_MODIFICATION',
+          );
+        }
+      }
+
+      // Step 2: Update plan fields (simplified - full update logic would go here)
+      if (planDto.name) {
+        plan.name = planDto.name.trim().replace(/\s+/g, ' ');
+      }
+      if (planDto.description !== undefined) {
+        plan.description = planDto.description;
+      }
+      if (planDto.status) {
+        plan.status = planDto.status;
+      }
+      if (planDto.startDate) {
+        plan.startDate = new Date(planDto.startDate);
+      }
+      if (planDto.endDate) {
+        plan.endDate = new Date(planDto.endDate);
+      }
+      if (planDto.featureIds) {
+        plan.featureIds = planDto.featureIds;
+      }
+
+      // Step 3: Update features status with optimistic locking
+      if (featureUpdates && featureUpdates.length > 0) {
+        for (const featureUpdate of featureUpdates) {
+          const feature = await transactionalEntityManager.findOne(Feature, {
+            where: { id: featureUpdate.id } as any,
+          });
+
+          if (!feature) {
+            throw new NotFoundException('Feature', featureUpdate.id);
+          }
+
+          // Optimistic locking: Check if feature was modified since client last fetched it
+          const clientUpdatedAt = new Date(featureUpdate.updatedAt);
+          const serverUpdatedAt = new Date(feature.updatedAt);
+          
+          const timeDiff = Math.abs(serverUpdatedAt.getTime() - clientUpdatedAt.getTime());
+          if (timeDiff > 1000 && serverUpdatedAt > clientUpdatedAt) {
+            throw new ConflictException(
+              `Feature ${featureUpdate.id} was modified by another user. Please refresh and try again.`,
+              'CONCURRENT_MODIFICATION',
+            );
+          }
+
+          // Update feature status
+          feature.status = featureUpdate.status;
+          await transactionalEntityManager.save(Feature, feature);
+        }
+      }
+
+      // Step 4: Save plan (all changes are committed atomically)
+      const savedPlan = await transactionalEntityManager.save(Plan, plan);
+      
+      if (!savedPlan) {
+        throw new Error('Failed to save plan');
+      }
+
+      return new PlanResponseDto(savedPlan);
+    });
   }
 }
 

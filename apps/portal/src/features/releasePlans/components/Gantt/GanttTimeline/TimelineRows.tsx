@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback } from "react";
 import { TIMELINE_DIMENSIONS, getTimelineColors } from "./constants";
 import {
   Tooltip,
@@ -128,6 +128,7 @@ export type DaysRowProps = {
   onToggleCellMilestone?: (date: string) => void;
 };
 
+/* @refresh reset */
 export function DaysRow({
   days,
   pxPerDay,
@@ -229,34 +230,32 @@ export function DaysRow({
           const totalDataItems = commentsCount + filesCount + linksCount;
           const hasMultipleItems = totalDataItems > 1;
           
-          const dataItems = useMemo(() => {
-            const items: Array<{ type: "comment" | "file" | "link"; count: number; icon: React.ReactNode; color: string }> = [];
-            if (commentsCount > 0) {
-              items.push({
-                type: "comment",
-                count: commentsCount,
-                icon: <CommentIcon sx={{ fontSize: 8 }} />,
-                color: theme.palette.info.main,
-              });
-            }
-            if (filesCount > 0) {
-              items.push({
-                type: "file",
-                count: filesCount,
-                icon: <FileIcon sx={{ fontSize: 8 }} />,
-                color: theme.palette.success.main,
-              });
-            }
-            if (linksCount > 0) {
-              items.push({
-                type: "link",
-                count: linksCount,
-                icon: <LinkIcon sx={{ fontSize: 8 }} />,
-                color: theme.palette.primary.main,
-              });
-            }
-            return items;
-          }, [commentsCount, filesCount, linksCount, theme]);
+          // Calculate data items directly (no useMemo inside map - violates hooks rules)
+          const dataItems: Array<{ type: "comment" | "file" | "link"; count: number; icon: React.ReactNode; color: string }> = [];
+          if (commentsCount > 0) {
+            dataItems.push({
+              type: "comment",
+              count: commentsCount,
+              icon: <CommentIcon sx={{ fontSize: 8 }} />,
+              color: theme.palette.info.main,
+            });
+          }
+          if (filesCount > 0) {
+            dataItems.push({
+              type: "file",
+              count: filesCount,
+              icon: <FileIcon sx={{ fontSize: 8 }} />,
+              color: theme.palette.success.main,
+            });
+          }
+          if (linksCount > 0) {
+            dataItems.push({
+              type: "link",
+              count: linksCount,
+              icon: <LinkIcon sx={{ fontSize: 8 }} />,
+              color: theme.palette.primary.main,
+            });
+          }
 
           return (
             <div

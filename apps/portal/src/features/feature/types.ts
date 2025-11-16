@@ -32,7 +32,7 @@ export interface Country {
 /**
  * Feature Status enumeration
  */
-export type FeatureStatus = "planned" | "in-progress" | "completed" | "on-hold";
+export type FeatureStatus = "planned" | "in-progress" | "completed" | "on-hold" | "assigned";
 
 /**
  * Individual feature within a product

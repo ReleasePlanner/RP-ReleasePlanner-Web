@@ -152,6 +152,8 @@ export function SelectCalendarsDialog({
         >
           {/* Search */}
           <TextField
+            id="select-calendars-search-input"
+            name="calendarsSearch"
             size="small"
             placeholder="Search calendars..."
             value={searchQuery}
@@ -209,6 +211,8 @@ export function SelectCalendarsDialog({
                   <TableRow>
                     <TableCell padding="checkbox" sx={{ width: 50 }}>
                       <Checkbox
+                        id="select-all-calendars-checkbox"
+                        name="selectAllCalendars"
                         indeterminate={isSomeSelected}
                         checked={isAllSelected}
                         onChange={handleSelectAll}
@@ -242,6 +246,8 @@ export function SelectCalendarsDialog({
                       >
                         <TableCell padding="checkbox">
                           <Checkbox
+                            id={`calendar-checkbox-${calendar.id}`}
+                            name={`calendar-${calendar.id}`}
                             checked={isSelected}
                             onChange={() => handleToggleCalendar(calendar.id)}
                             onClick={(e) => e.stopPropagation()}
