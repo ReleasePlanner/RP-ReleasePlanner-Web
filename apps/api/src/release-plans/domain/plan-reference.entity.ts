@@ -31,6 +31,9 @@ export class PlanReference extends BaseEntity {
   @Column({ type: 'uuid', nullable: true })
   phaseId?: string;
 
+  @Column({ type: 'varchar', length: 7, nullable: true })
+  milestoneColor?: string; // Color for milestone type references
+
   @Column({ type: 'uuid' })
   planId: string;
 
@@ -45,6 +48,7 @@ export class PlanReference extends BaseEntity {
     description?: string,
     date?: string,
     phaseId?: string,
+    milestoneColor?: string,
   ) {
     super();
     if (type !== undefined) {
@@ -64,6 +68,9 @@ export class PlanReference extends BaseEntity {
     }
     if (phaseId !== undefined) {
       this.phaseId = phaseId;
+    }
+    if (milestoneColor !== undefined) {
+      this.milestoneColor = milestoneColor;
     }
     if (type !== undefined && title !== undefined) {
       this.validate();

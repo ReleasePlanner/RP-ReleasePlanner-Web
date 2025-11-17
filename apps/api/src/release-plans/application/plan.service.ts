@@ -32,7 +32,8 @@ export class PlanService {
   ) {}
 
   async findAll(): Promise<PlanResponseDto[]> {
-    const plans = await this.repository.findAll();
+    // Use findAllWithOwnerName to get owner name from it_owners table via JOIN
+    const plans = await (this.repository as any).findAllWithOwnerName();
     // Defensive: Handle null/undefined results
     if (!plans) {
       return [];
@@ -102,13 +103,13 @@ export class PlanService {
       );
     }
 
-    // Create plan with normalized name
+    // Create plan with normalized name (owner field removed - use itOwner instead)
     const plan = new Plan(
       normalizedName,
-      dto.owner,
       dto.startDate,
       dto.endDate,
       dto.status,
+      dto.description,
     );
 
     if (dto.description) {
@@ -591,28 +592,38 @@ export class PlanService {
       });
     }
 
-    // Update milestones if provided (replace all milestones)
-    if (dto.milestones !== undefined) {
-      validateArray(dto.milestones, 'Milestones');
-      plan.milestones = [];
-      dto.milestones.forEach((m) => {
-        // Defensive: Validate milestone data
-        if (!m || !m.date || !m.name) {
-          throw new Error('Milestone date and name are required');
-        }
-        validateDateString(m.date, 'Milestone date');
-        validateString(m.name, 'Milestone name');
-        const milestone = new PlanMilestone(m.date, m.name, m.description);
-        milestone.planId = plan.id;
-        if (!plan.milestones) plan.milestones = [];
-        plan.milestones.push(milestone);
-      });
-    }
-
     // Update references if provided (replace all references)
+    // IMPORTANT: Also sync milestones from milestone-type references
+    // Process references FIRST to collect milestone references before processing explicit milestones
+    let milestoneReferencesFromRefs: Array<{ date: string; name: string; description?: string; phaseId?: string }> = [];
+    
     if (dto.references !== undefined) {
       validateArray(dto.references, 'References');
+      
+      // IMPORTANT: TypeORM requires explicit deletion of existing references before replacing
+      // Simply setting plan.references = [] doesn't delete from database
+      if (plan.references && plan.references.length > 0) {
+        // Remove existing references from database
+        const planRepo = this.repository as any;
+        if (planRepo.repository && planRepo.repository.manager) {
+          await planRepo.repository.manager.remove(PlanReference, plan.references);
+        } else {
+          // Fallback: use repository's manager directly if available
+          const repo = (this.repository as any).repository;
+          if (repo && repo.manager) {
+            await repo.manager.remove(PlanReference, plan.references);
+          }
+        }
+      }
+      
+      // Now create new references array
       plan.references = [];
+      
+      // Collect milestone references to sync with plan.milestones
+      // Use a Set to track unique milestone keys to prevent duplicates
+      const milestoneReferences: Array<{ date: string; name: string; description?: string; phaseId?: string }> = [];
+      const milestoneKeys = new Set<string>();
+      
       dto.references.forEach((r) => {
         // Defensive: Validate reference data
         if (!r || !r.type || !r.title) {
@@ -621,18 +632,162 @@ export class PlanService {
         validateString(r.type, 'Reference type');
         validateString(r.title, 'Reference title');
         if (r.date) validateDateString(r.date, 'Reference date');
-        if (r.phaseId) validateId(r.phaseId, 'Phase');
+        
+        // Validate phaseId if provided (must be a valid UUID, not a temporary ID like "phase-..." or empty string)
+        let validPhaseId: string | undefined = undefined;
+        if (r.phaseId && typeof r.phaseId === 'string' && r.phaseId.trim() !== '') {
+          const trimmedPhaseId = r.phaseId.trim();
+          // Filter out temporary IDs that start with "phase-"
+          if (trimmedPhaseId.startsWith('phase-')) {
+            console.warn(`[PlanService.update] Skipping temporary phaseId: ${trimmedPhaseId}`);
+            validPhaseId = undefined;
+          } else {
+            validateId(trimmedPhaseId, 'Phase');
+            validPhaseId = trimmedPhaseId;
+          }
+        }
+        
+        // If this is a milestone reference with date, collect it for milestone sync
+        // Deduplicate based on phaseId-date key to prevent duplicate milestones
+        if (r.type === 'milestone' && r.date) {
+          const milestoneKey = `${validPhaseId || ''}-${r.date}`;
+          if (!milestoneKeys.has(milestoneKey)) {
+            milestoneKeys.add(milestoneKey);
+            milestoneReferences.push({
+              date: r.date,
+              name: r.title,
+              description: r.description,
+              phaseId: validPhaseId, // Use validated phaseId
+            });
+          } else {
+            this.logger.warn(`[PlanService.update] Skipping duplicate milestone reference: ${milestoneKey}`);
+          }
+        }
+        
         const reference = new PlanReference(
           r.type as PlanReferenceType,
           r.title,
           r.url,
           r.description,
           r.date,
-          r.phaseId,
+          validPhaseId, // Use validated phaseId (can be undefined for NULL in DB)
+          (r as any).milestoneColor, // Include milestoneColor for milestone type references
         );
         reference.planId = plan.id;
+        
+        // Explicitly set phaseId to ensure it's saved (even if undefined, TypeORM will save as NULL)
+        // This is important because the constructor only sets phaseId if it's not undefined
+        // But we want to ensure it's explicitly set (or null) for proper database storage
+        if (validPhaseId === undefined) {
+          // Explicitly set to null to ensure database stores NULL instead of potentially skipping the field
+          (reference as any).phaseId = null;
+        }
+        
+        // Log for debugging
+        if (r.type === 'milestone' && r.date) {
+          this.logger.log(`[PlanService.update] Creating milestone reference:`, {
+            title: r.title,
+            date: r.date,
+            phaseId: validPhaseId || null,
+            originalPhaseId: r.phaseId,
+            milestoneColor: (r as any).milestoneColor,
+            referencePhaseId: reference.phaseId,
+          });
+        }
         if (!plan.references) plan.references = [];
         plan.references.push(reference);
+      });
+      
+      // Sync milestones from milestone-type references
+      // IMPORTANT: When saving references tab, milestones from milestone-type references
+      // should always be synced to plan_milestones table
+      if (milestoneReferences.length > 0) {
+        // IMPORTANT: TypeORM requires explicit deletion of existing milestones before replacing
+        // Simply setting plan.milestones = [] doesn't delete from database
+        if (plan.milestones && plan.milestones.length > 0) {
+          // Save existing milestones to a temporary array before clearing
+          const existingMilestones = [...plan.milestones];
+          
+          // Clear plan.milestones FIRST to prevent TypeORM from trying to save them
+          plan.milestones = [];
+          
+          // Remove existing milestones from database
+          const planRepo = this.repository as any;
+          if (planRepo.repository && planRepo.repository.manager) {
+            await planRepo.repository.manager.remove(PlanMilestone, existingMilestones);
+          } else {
+            // Fallback: use repository's manager directly if available
+            const repo = (this.repository as any).repository;
+            if (repo && repo.manager) {
+              await repo.manager.remove(PlanMilestone, existingMilestones);
+            }
+          }
+        } else {
+          // Ensure milestones array is initialized
+          plan.milestones = [];
+        }
+        
+        // When milestone references are present, use them as the ONLY source of truth
+        // The frontend may also send dto.milestones extracted from references, but we should
+        // IGNORE them to avoid duplicates. Milestones are created ONLY from milestone references.
+        milestoneReferences.forEach((m) => {
+          const milestone = new PlanMilestone(m.date, m.name, m.description, m.phaseId);
+          milestone.planId = plan.id;
+          plan.milestones.push(milestone);
+        });
+        
+        // IMPORTANT: When milestone references are present, ignore dto.milestones completely
+        // to prevent duplicates. The milestones are already created from references above.
+      }
+    }
+
+    // Update milestones explicitly if provided (separate from references)
+    // This handles the case where dto.milestones is provided but dto.references is not or doesn't contain milestone references
+    // Only process if references were not provided OR references were provided but didn't contain milestone references
+    const hasMilestoneReferences = dto.references !== undefined && 
+      dto.references.some((r) => r.type === 'milestone' && r.date);
+    
+    if (dto.milestones !== undefined && !hasMilestoneReferences) {
+      validateArray(dto.milestones, 'Milestones');
+      
+      // IMPORTANT: TypeORM requires explicit deletion of existing milestones before replacing
+      // Simply setting plan.milestones = [] doesn't delete from database
+      if (plan.milestones && plan.milestones.length > 0) {
+        // Save existing milestones to a temporary array before clearing
+        const existingMilestones = [...plan.milestones];
+        
+        // Clear plan.milestones FIRST to prevent TypeORM from trying to save them
+        plan.milestones = [];
+        
+        // Remove existing milestones from database
+        const planRepo = this.repository as any;
+        if (planRepo.repository && planRepo.repository.manager) {
+          await planRepo.repository.manager.remove(PlanMilestone, existingMilestones);
+        } else {
+          // Fallback: use repository's manager directly if available
+          const repo = (this.repository as any).repository;
+          if (repo && repo.manager) {
+            await repo.manager.remove(PlanMilestone, existingMilestones);
+          }
+        }
+      } else {
+        // Ensure milestones array is initialized
+        plan.milestones = [];
+      }
+      
+      // Create new milestones array
+      dto.milestones.forEach((m) => {
+        // Defensive: Validate milestone data
+        if (!m || !m.date || !m.name) {
+          throw new Error('Milestone date and name are required');
+        }
+        validateDateString(m.date, 'Milestone date');
+        validateString(m.name, 'Milestone name');
+        if (m.phaseId) validateId(m.phaseId, 'Phase');
+        
+        const milestone = new PlanMilestone(m.date, m.name, m.description, m.phaseId);
+        milestone.planId = plan.id;
+        plan.milestones.push(milestone);
       });
     }
 

@@ -16,11 +16,14 @@ export class PlanMilestone extends BaseEntity {
   @Column({ type: 'uuid' })
   planId: string;
 
+  @Column({ type: 'uuid', nullable: true })
+  phaseId?: string;
+
   @ManyToOne(() => require('../../release-plans/domain/plan.entity').Plan, (plan: any) => plan.milestones, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'planId' })
   plan: any;
 
-  constructor(date?: string, name?: string, description?: string) {
+  constructor(date?: string, name?: string, description?: string, phaseId?: string) {
     super();
     if (date !== undefined) {
       this.date = date;
@@ -30,6 +33,9 @@ export class PlanMilestone extends BaseEntity {
     }
     if (description !== undefined) {
       this.description = description;
+    }
+    if (phaseId !== undefined) {
+      this.phaseId = phaseId;
     }
     if (date !== undefined && name !== undefined) {
       this.validate();

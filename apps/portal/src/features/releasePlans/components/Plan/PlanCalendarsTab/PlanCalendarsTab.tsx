@@ -9,11 +9,15 @@ import {
   Tooltip,
   IconButton,
   Chip,
+  CircularProgress,
+  Alert,
 } from "@mui/material";
 import { Add as AddIcon, Delete as DeleteIcon } from "@mui/icons-material";
 import type { Calendar } from "@/features/calendar/types";
 import { SelectCalendarsDialog } from "./SelectCalendarsDialog";
-import { useAppSelector } from "@/store/hooks";
+import { useQueries } from "@tanstack/react-query";
+import type { Calendar as APICalendar, CalendarDay as APICalendarDay } from "@/api/services/calendars.service";
+import { calendarsService } from "@/api/services/calendars.service";
 
 export type PlanCalendarsTabProps = {
   calendarIds?: string[];
@@ -27,14 +31,51 @@ export function PlanCalendarsTab({
   const theme = useTheme();
   const [selectDialogOpen, setSelectDialogOpen] = useState(false);
 
-  // Get calendars from Redux store
-  const allCalendars = useAppSelector((state) => state.calendars.calendars);
+  // Load calendars from API using the calendar IDs
+  const calendarQueries = useQueries({
+    queries: calendarIds.map((id) => ({
+      queryKey: ['calendars', 'detail', id],
+      queryFn: () => calendarsService.getById(id),
+      enabled: !!id,
+      staleTime: 5 * 60 * 1000, // 5 minutes
+    })),
+  });
+
+  // Convert API calendar to local Calendar type
+  const convertAPICalendarToLocal = (apiCalendar: APICalendar): Calendar => {
+    return {
+      id: apiCalendar.id,
+      name: apiCalendar.name,
+      description: apiCalendar.description,
+      country: apiCalendar.country ? {
+        id: apiCalendar.country.id,
+        name: apiCalendar.country.name,
+        code: apiCalendar.country.code,
+      } : undefined,
+      days: apiCalendar.days?.map((day: APICalendarDay) => ({
+        id: day.id,
+        name: day.name,
+        date: day.date,
+        type: day.type,
+        description: day.description,
+        recurring: day.recurring,
+        createdAt: day.createdAt,
+        updatedAt: day.updatedAt,
+      })) || [],
+      createdAt: apiCalendar.createdAt,
+      updatedAt: apiCalendar.updatedAt,
+    };
+  };
 
   // Get calendars that are in the plan
   const planCalendars = useMemo(() => {
-    if (calendarIds.length === 0) return [];
-    return allCalendars.filter((c: Calendar) => calendarIds.includes(c.id));
-  }, [allCalendars, calendarIds]);
+    return calendarQueries
+      .filter((query) => query.isSuccess && query.data)
+      .map((query) => convertAPICalendarToLocal(query.data!));
+  }, [calendarQueries]);
+
+  const isLoading = calendarQueries.some((query) => query.isLoading);
+  const hasError = calendarQueries.some((query) => query.isError);
 
   const handleAddCalendars = (newCalendarIds: string[]) => {
     if (onCalendarIdsChange) {
@@ -114,7 +155,29 @@ export function PlanCalendarsTab({
 
         {/* Calendars List */}
         <Box sx={{ flex: 1, overflow: "auto", minHeight: 0 }}>
-          {planCalendars.length === 0 ? (
+          {isLoading ? (
+            <Box
+              sx={{
+                p: 4,
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                flexDirection: "column",
+                gap: 2,
+              }}
+            >
+              <CircularProgress size={40} />
+              <Typography variant="body2" color="text.secondary">
+                Cargando calendarios...
+              </Typography>
+            </Box>
+          ) : hasError ? (
+            <Box sx={{ p: 2 }}>
+              <Alert severity="error">
+                Error al cargar algunos calendarios. Por favor intente nuevamente.
+              </Alert>
+            </Box>
+          ) : planCalendars.length === 0 ? (
             <Box
               sx={{
                 p: 3,
@@ -193,8 +256,24 @@ export function PlanCalendarsTab({
                           alignItems: "center",
                         }}
                       >
+                        {calendar.country && (
+                          <Chip
+                            label={calendar.country.name}
+                            size="small"
+                            sx={{
+                              height: 20,
+                              fontSize: "0.6875rem",
+                              fontWeight: 500,
+                              bgcolor: alpha(theme.palette.info.main, 0.08),
+                              color: theme.palette.info.main,
+                              "& .MuiChip-label": {
+                                px: 1,
+                              },
+                            }}
+                          />
+                        )}
                         <Chip
-                          label={`${calendar.days.length} day${
+                          label={`${calendar.days.length} día${
                             calendar.days.length !== 1 ? "s" : ""
                           }`}
                           size="small"
@@ -221,12 +300,12 @@ export function PlanCalendarsTab({
                         </Typography>
                       </Box>
                     </Box>
-                    <Tooltip title="Remove calendar" arrow>
+                    <Tooltip title="Eliminar calendario" arrow>
                       <IconButton
                         size="small"
                         onClick={() => handleDeleteCalendar(calendar.id)}
                         sx={{
-                          color: alpha(theme.palette.text.secondary, 0.7),
+                          color: alpha(theme.palette.error.main, 0.7),
                           "&:hover": {
                             color: theme.palette.error.main,
                             bgcolor: alpha(theme.palette.error.main, 0.08),
@@ -258,3 +337,5 @@ export function PlanCalendarsTab({
     </Box>
   );
 }
+
+// Force Vite cache refresh - updated to use API instead of Redux

@@ -1,12 +1,12 @@
 import { useState, useCallback, useMemo } from "react";
-import { useTheme, alpha, Menu, MenuItem, Divider, Chip, Box, Badge } from "@mui/material";
+import { useTheme, alpha, Menu, MenuItem, Divider, Chip, Box, Badge, Tooltip } from "@mui/material";
 import {
   Comment as CommentIcon,
   AttachFile as FileIcon,
   Link as LinkIcon,
   Flag as MilestoneIcon,
 } from "@mui/icons-material";
-import type { GanttCellData } from "../../../types";
+import type { GanttCellData, PlanReference } from "../../../types";
 import { getTimelineColors } from "../GanttTimeline/constants";
 
 export type GanttCellProps = {
@@ -17,6 +17,7 @@ export type GanttCellProps = {
   width: number;
   height: number;
   cellData?: GanttCellData;
+  milestoneReference?: PlanReference; // Full milestone reference with title, description, etc.
   onCellDataChange?: (data: GanttCellData) => void;
   onAddComment?: (phaseId: string, date: string) => void;
   onAddFile?: (phaseId: string, date: string) => void;
@@ -32,6 +33,7 @@ export default function GanttCell({
   width,
   height,
   cellData,
+  milestoneReference,
   onCellDataChange,
   onAddComment,
   onAddFile,
@@ -93,7 +95,8 @@ export default function GanttCell({
     }
   }, [handleClose, onToggleMilestone, phaseId, date]);
 
-  const isMilestone = cellData?.isMilestone ?? false;
+  // Show milestone if cellData has isMilestone flag OR if there's a milestoneReference
+  const isMilestone = (cellData?.isMilestone ?? false) || milestoneReference !== undefined;
   const commentsCount = cellData?.comments?.length ?? 0;
   const filesCount = cellData?.files?.length ?? 0;
   const linksCount = cellData?.links?.length ?? 0;
@@ -150,23 +153,96 @@ export default function GanttCell({
           e.stopPropagation();
         }}
       >
-        {/* Milestone indicator */}
+        {/* Milestone indicator - Enhanced with tooltip */}
         {isMilestone && (
-          <Box
-            sx={{
-              position: "absolute",
-              top: 0,
-              right: 0,
-              width: 0,
-              height: 0,
-              borderLeft: `5px solid transparent`,
-              borderRight: `5px solid transparent`,
-              borderTop: `5px solid ${
-                cellData?.milestoneColor ?? theme.palette.warning.main
-              }`,
-              zIndex: 3,
+          <Tooltip
+            title={
+              <div style={{ fontSize: "0.8125rem", maxWidth: 300 }}>
+                <div style={{ fontWeight: 600, marginBottom: "6px", fontSize: "0.875rem" }}>
+                  {milestoneReference?.title || "Milestone"}
+                </div>
+                {milestoneReference?.description && (
+                  <div
+                    style={{
+                      fontSize: "0.75rem",
+                      opacity: 0.9,
+                      marginBottom: "4px",
+                      lineHeight: 1.5,
+                    }}
+                  >
+                    {milestoneReference.description}
+                  </div>
+                )}
+                <div style={{ fontSize: "0.6875rem", opacity: 0.8, marginTop: "4px" }}>
+                  📅 {date}
+                </div>
+                {milestoneReference?.milestoneColor && (
+                  <div
+                    style={{
+                      fontSize: "0.6875rem",
+                      opacity: 0.8,
+                      marginTop: "4px",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "6px",
+                    }}
+                  >
+                    <span
+                      style={{
+                        display: "inline-block",
+                        width: 12,
+                        height: 12,
+                        borderRadius: "50%",
+                        backgroundColor: milestoneReference.milestoneColor,
+                        border: "1px solid rgba(255, 255, 255, 0.3)",
+                      }}
+                    />
+                    Color: {milestoneReference.milestoneColor}
+                  </div>
+                )}
+              </div>
+            }
+            arrow
+            placement="top"
+            componentsProps={{
+              tooltip: {
+                sx: {
+                  bgcolor: 'rgba(0, 0, 0, 0.9)',
+                  '& .MuiTooltip-arrow': {
+                    color: 'rgba(0, 0, 0, 0.9)',
+                  },
+                },
+              },
             }}
-          />
+          >
+            <Box
+              sx={{
+                position: "absolute",
+                top: -2,
+                right: -2,
+                width: 0,
+                height: 0,
+                borderLeft: `8px solid transparent`,
+                borderRight: `8px solid transparent`,
+                borderTop: `12px solid ${
+                  cellData?.milestoneColor ?? milestoneReference?.milestoneColor ?? theme.palette.warning.main
+                }`,
+                zIndex: 3,
+                filter: `drop-shadow(0 2px 4px ${alpha(
+                  cellData?.milestoneColor ?? milestoneReference?.milestoneColor ?? theme.palette.warning.main,
+                  0.4
+                )})`,
+                transition: "all 0.2s ease",
+                "&:hover": {
+                  transform: "scale(1.15)",
+                  filter: `drop-shadow(0 3px 6px ${alpha(
+                    cellData?.milestoneColor ?? milestoneReference?.milestoneColor ?? theme.palette.warning.main,
+                    0.6
+                  )})`,
+                },
+              }}
+            />
+          </Tooltip>
         )}
 
         {/* Data indicators - Column layout when multiple items */}

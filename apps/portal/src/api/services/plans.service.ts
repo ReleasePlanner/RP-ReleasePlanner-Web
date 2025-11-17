@@ -29,6 +29,7 @@ export interface PlanMilestone {
   date: string;
   name: string;
   description?: string;
+  phaseId?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -41,6 +42,7 @@ export interface PlanReference {
   description?: string;
   date?: string;
   phaseId?: string;
+  milestoneColor?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -183,6 +185,7 @@ export interface UpdatePlanReferenceDto {
   description?: string;
   date?: string;
   phaseId?: string;
+  milestoneColor?: string;
 }
 
 export interface UpdatePlanDto {

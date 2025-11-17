@@ -1,3 +1,7 @@
+/**
+ * SelectCalendarsDialog Component
+ * Dialog for selecting calendars from maintenance to add to a release plan
+ */
 import { useState, useMemo } from "react";
 import {
   Dialog,
@@ -20,14 +24,22 @@ import {
   alpha,
   Tooltip,
   Chip,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  CircularProgress,
+  Alert,
 } from "@mui/material";
 import {
   Search as SearchIcon,
   CheckBox,
   CheckBoxOutlineBlank,
 } from "@mui/icons-material";
-import { useAppSelector } from "@/store/hooks";
 import type { Calendar } from "@/features/calendar/types";
+import { useCountries } from "@/api/hooks/useCountries";
+import { useCalendars } from "@/api/hooks/useCalendars";
+import type { Calendar as APICalendar, CalendarDay as APICalendarDay } from "@/api/services/calendars.service";
 
 export type SelectCalendarsDialogProps = {
   open: boolean;
@@ -45,9 +57,48 @@ export function SelectCalendarsDialog({
   const theme = useTheme();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [selectedCountryId, setSelectedCountryId] = useState<string>("");
 
-  // Get all calendars from Redux store
-  const allCalendars = useAppSelector((state) => state.calendars.calendars);
+  // Load countries from maintenance
+  const { data: countries = [], isLoading: countriesLoading } = useCountries();
+
+  // Load calendars from API when a country is selected
+  const { 
+    data: apiCalendars = [], 
+    isLoading: calendarsLoading, 
+    error: calendarsError 
+  } = useCalendars(selectedCountryId || undefined);
+
+  // Convert API calendar to local Calendar type
+  const convertAPICalendarToLocal = (apiCalendar: APICalendar): Calendar => {
+    return {
+      id: apiCalendar.id,
+      name: apiCalendar.name,
+      description: apiCalendar.description,
+      country: apiCalendar.country ? {
+        id: apiCalendar.country.id,
+        name: apiCalendar.country.name,
+        code: apiCalendar.country.code,
+      } : undefined,
+      days: apiCalendar.days.map((day: APICalendarDay) => ({
+        id: day.id,
+        name: day.name,
+        date: day.date,
+        type: day.type,
+        description: day.description,
+        recurring: day.recurring,
+        createdAt: day.createdAt,
+        updatedAt: day.updatedAt,
+      })),
+      createdAt: apiCalendar.createdAt,
+      updatedAt: apiCalendar.updatedAt,
+    };
+  };
+
+  // Convert API calendars to local format
+  const allCalendars = useMemo(() => {
+    return apiCalendars.map(convertAPICalendarToLocal);
+  }, [apiCalendars]);
 
   // Filter out calendars already in the plan
   const availableCalendars = useMemo(() => {
@@ -63,7 +114,8 @@ export function SelectCalendarsDialog({
     return availableCalendars.filter(
       (c: Calendar) =>
         c.name.toLowerCase().includes(query) ||
-        (c.description && c.description.toLowerCase().includes(query))
+        (c.description && c.description.toLowerCase().includes(query)) ||
+        (c.country?.name && c.country.name.toLowerCase().includes(query))
     );
   }, [availableCalendars, searchQuery]);
 
@@ -94,7 +146,14 @@ export function SelectCalendarsDialog({
   const handleClose = () => {
     setSelectedIds([]);
     setSearchQuery("");
+    setSelectedCountryId("");
     onClose();
+  };
+
+  const handleCountryChange = (countryId: string) => {
+    setSelectedCountryId(countryId);
+    // Clear selected calendars when country changes
+    setSelectedIds([]);
   };
 
   const isAllSelected =
@@ -125,7 +184,7 @@ export function SelectCalendarsDialog({
           }}
         >
           <Typography variant="h6" component="div">
-            Select Calendars to Add
+            Seleccionar Calendarios para Agregar
           </Typography>
           {selectedIds.length > 0 && (
             <Typography variant="body2" color="primary">
@@ -150,12 +209,38 @@ export function SelectCalendarsDialog({
             flexWrap: "wrap",
           }}
         >
+          {/* Country Filter */}
+          <FormControl
+            size="small"
+            sx={{
+              minWidth: 200,
+              flex: { xs: "1 1 100%", sm: "0 1 200px" },
+            }}
+          >
+            <InputLabel id="country-filter-label">País</InputLabel>
+            <Select
+              labelId="country-filter-label"
+              id="country-filter-select"
+              value={selectedCountryId}
+              label="País"
+              onChange={(e) => handleCountryChange(e.target.value)}
+              disabled={countriesLoading}
+              required
+            >
+              {countries.map((country) => (
+                <MenuItem key={country.id} value={country.id}>
+                  {country.name} ({country.code})
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
           {/* Search */}
           <TextField
             id="select-calendars-search-input"
             name="calendarsSearch"
             size="small"
-            placeholder="Search calendars..."
+            placeholder="Buscar calendarios..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             slotProps={{
@@ -183,14 +268,48 @@ export function SelectCalendarsDialog({
               }
               sx={{ textTransform: "none" }}
             >
-              {isAllSelected ? "Deselect All" : "Select All"}
+              {isAllSelected ? "Deseleccionar todo" : "Seleccionar todo"}
             </Button>
           )}
         </Box>
 
         {/* Calendars Table */}
         <Box sx={{ flex: 1, overflow: "auto", minHeight: 0 }}>
-          {filteredCalendars.length === 0 ? (
+          {!selectedCountryId ? (
+            <Box
+              sx={{
+                p: 4,
+                textAlign: "center",
+                color: "text.secondary",
+              }}
+            >
+              <Typography variant="body2">
+                Por favor seleccione un país para ver los calendarios disponibles.
+              </Typography>
+            </Box>
+          ) : calendarsLoading ? (
+            <Box
+              sx={{
+                p: 4,
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                flexDirection: "column",
+                gap: 2,
+              }}
+            >
+              <CircularProgress size={40} />
+              <Typography variant="body2" color="text.secondary">
+                Cargando calendarios...
+              </Typography>
+            </Box>
+          ) : calendarsError ? (
+            <Box sx={{ p: 2 }}>
+              <Alert severity="error">
+                Error al cargar los calendarios. Por favor intente nuevamente.
+              </Alert>
+            </Box>
+          ) : filteredCalendars.length === 0 ? (
             <Box
               sx={{
                 p: 4,
@@ -200,8 +319,8 @@ export function SelectCalendarsDialog({
             >
               <Typography variant="body2">
                 {searchQuery
-                  ? "No calendars match your search."
-                  : "No available calendars to add."}
+                  ? "No hay calendarios que coincidan con la búsqueda."
+                  : "No hay calendarios disponibles para este país."}
               </Typography>
             </Box>
           ) : (
@@ -219,9 +338,10 @@ export function SelectCalendarsDialog({
                         size="small"
                       />
                     </TableCell>
-                    <TableCell sx={{ fontWeight: 600 }}>Calendar</TableCell>
-                    <TableCell sx={{ fontWeight: 600 }}>Description</TableCell>
-                    <TableCell sx={{ fontWeight: 600 }}>Days</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>Calendario</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>País</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>Descripción</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>Días</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -271,6 +391,29 @@ export function SelectCalendarsDialog({
                           </Tooltip>
                         </TableCell>
                         <TableCell>
+                          {calendar.country ? (
+                            <Chip
+                              label={calendar.country.name}
+                              size="small"
+                              sx={{
+                                height: 22,
+                                fontSize: "0.75rem",
+                                fontWeight: 500,
+                                bgcolor: alpha(theme.palette.primary.main, 0.08),
+                                color: theme.palette.primary.main,
+                              }}
+                            />
+                          ) : (
+                            <Typography
+                              variant="body2"
+                              color="text.disabled"
+                              sx={{ fontSize: "0.75rem" }}
+                            >
+                              -
+                            </Typography>
+                          )}
+                        </TableCell>
+                        <TableCell>
                           <Tooltip title={calendar.description || ""} arrow>
                             <Typography
                               variant="body2"
@@ -288,7 +431,7 @@ export function SelectCalendarsDialog({
                         </TableCell>
                         <TableCell>
                           <Chip
-                            label={`${calendar.days.length} day${
+                            label={`${calendar.days.length} día${
                               calendar.days.length !== 1 ? "s" : ""
                             }`}
                             size="small"
@@ -315,15 +458,17 @@ export function SelectCalendarsDialog({
           borderTop: `1px solid ${alpha(theme.palette.divider, 0.08)}`,
         }}
       >
-        <Button onClick={handleClose}>Cancel</Button>
+        <Button onClick={handleClose}>Cancelar</Button>
         <Button
           onClick={handleAdd}
           variant="contained"
           disabled={selectedIds.length === 0}
         >
-          Add {selectedIds.length > 0 ? `(${selectedIds.length})` : ""}
+          Agregar {selectedIds.length > 0 ? `(${selectedIds.length})` : ""}
         </Button>
       </DialogActions>
     </Dialog>
   );
 }
+
+// Force Vite cache refresh - updated to use API instead of Redux

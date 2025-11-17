@@ -30,6 +30,14 @@ export class UpdatePlanMilestoneDto {
   @IsString()
   @IsOptional()
   description?: string;
+
+  @ApiProperty({
+    description: PLAN_API_PROPERTY_DESCRIPTIONS.REFERENCE_PHASE_ID,
+    required: false,
+  })
+  @IsString()
+  @IsOptional()
+  phaseId?: string;
 }
 
 export class UpdatePlanReferenceDto {
@@ -79,6 +87,14 @@ export class UpdatePlanReferenceDto {
   @IsString()
   @IsOptional()
   phaseId?: string;
+
+  @ApiProperty({
+    description: PLAN_API_PROPERTY_DESCRIPTIONS.CELL_MILESTONE_COLOR,
+    required: false,
+  })
+  @IsString()
+  @IsOptional()
+  milestoneColor?: string;
 }
 
 export class UpdateGanttCellCommentDto {

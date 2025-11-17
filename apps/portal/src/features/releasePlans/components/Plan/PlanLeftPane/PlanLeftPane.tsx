@@ -1223,9 +1223,23 @@ function PlanLeftPaneComponent({
           hasPendingChanges={hasTabChanges[4] || false}
         >
           <PlanReferencesTab
-            references={references}
+            references={(() => {
+              // Debug: Log references received by PlanLeftPane
+              console.log('[PlanLeftPane] Passing references to PlanReferencesTab:', {
+                references,
+                referencesLength: references?.length,
+                referencesType: typeof references,
+                isArray: Array.isArray(references),
+                firstReference: references?.[0],
+              });
+              return references;
+            })()}
             onReferencesChange={onReferencesChange}
             onScrollToDate={onScrollToDate}
+            phases={plan?.metadata?.phases || []}
+            startDate={startDate}
+            endDate={endDate}
+            calendarIds={calendarIds}
           />
         </TabPanel>
       </Box>

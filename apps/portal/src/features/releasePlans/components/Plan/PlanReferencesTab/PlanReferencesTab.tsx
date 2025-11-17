@@ -6,19 +6,15 @@ import {
   Typography,
   useTheme,
   alpha,
-  Card,
-  CardContent,
   IconButton,
   Chip,
-  Divider,
+  Tooltip,
 } from "@mui/material";
 import {
   Add as AddIcon,
   Link as LinkIcon,
   Description as DocumentIcon,
   Note as NoteIcon,
-  Comment as CommentIcon,
-  AttachFile as FileIcon,
   Flag as MilestoneIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
@@ -26,21 +22,38 @@ import {
   CalendarToday as CalendarIcon,
   Timeline as TimelineIcon,
 } from "@mui/icons-material";
-import type { PlanReference, PlanReferenceType } from "../../../types";
+import type { PlanReference, PlanReferenceType, PlanPhase } from "../../../types";
 import { ReferenceEditDialog } from "./ReferenceEditDialog";
 
 export type PlanReferencesTabProps = {
   references?: PlanReference[];
   onReferencesChange?: (references: PlanReference[]) => void;
   onScrollToDate?: (date: string) => void;
+  phases?: PlanPhase[];
+  startDate?: string;
+  endDate?: string;
+  calendarIds?: string[];
 };
 
 export function PlanReferencesTab({
   references = [],
   onReferencesChange,
   onScrollToDate,
+  phases = [],
+  startDate,
+  endDate,
+  calendarIds = [],
 }: PlanReferencesTabProps) {
   const theme = useTheme();
+  
+  // Debug: Log references received by PlanReferencesTab
+  console.log('[PlanReferencesTab] Received references:', {
+    references,
+    referencesLength: references?.length,
+    referencesType: typeof references,
+    isArray: Array.isArray(references),
+    firstReference: references?.[0],
+  });
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editingReference, setEditingReference] =
     useState<PlanReference | null>(null);
@@ -54,10 +67,6 @@ export function PlanReferencesTab({
         return <DocumentIcon sx={{ fontSize: 18 }} />;
       case "note":
         return <NoteIcon sx={{ fontSize: 18 }} />;
-      case "comment":
-        return <CommentIcon sx={{ fontSize: 18 }} />;
-      case "file":
-        return <FileIcon sx={{ fontSize: 18 }} />;
       case "milestone":
         return <MilestoneIcon sx={{ fontSize: 18 }} />;
     }
@@ -101,7 +110,19 @@ export function PlanReferencesTab({
   const handleSave = (reference: PlanReference) => {
     if (onReferencesChange) {
       if (isCreating) {
-        onReferencesChange([...references, reference]);
+        // Check if reference already exists (by ID or by content for milestones)
+        const existsById = reference.id && references.some((r) => r.id === reference.id);
+        const existsByContent = reference.type === "milestone" && reference.date
+          ? references.some((r) => 
+              r.type === "milestone" && 
+              r.date === reference.date && 
+              r.phaseId === reference.phaseId
+            )
+          : false;
+        
+        if (!existsById && !existsByContent) {
+          onReferencesChange([...references, reference]);
+        }
       } else {
         onReferencesChange(
           references.map((r) => (r.id === reference.id ? reference : r))
@@ -180,34 +201,54 @@ export function PlanReferencesTab({
             justifyContent: "center",
             color: "text.secondary",
             textAlign: "center",
-            p: 3,
+            p: 4,
           }}
         >
-          <Stack spacing={1} alignItems="center">
-            <NoteIcon sx={{ fontSize: 40, opacity: 0.3 }} />
+          <Stack spacing={1.5} alignItems="center">
+            <Box
+              sx={{
+                width: 64,
+                height: 64,
+                borderRadius: "50%",
+                bgcolor: alpha(theme.palette.primary.main, 0.08),
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                mb: 1,
+              }}
+            >
+              <NoteIcon sx={{ fontSize: 32, color: theme.palette.primary.main, opacity: 0.6 }} />
+            </Box>
             <Typography 
               variant="body2"
-              sx={{ fontSize: "0.8125rem" }}
+              sx={{ 
+                fontSize: "0.875rem",
+                fontWeight: 500,
+                color: theme.palette.text.primary,
+              }}
             >
               No hay referencias agregadas aún
             </Typography>
             <Typography 
               variant="caption" 
-              sx={{ opacity: 0.7, fontSize: "0.75rem" }}
+              sx={{ 
+                opacity: 0.7, 
+                fontSize: "0.75rem",
+                maxWidth: 280,
+                lineHeight: 1.5,
+              }}
             >
               Agrega enlaces, documentos o notas relacionadas con este plan
             </Typography>
           </Stack>
         </Box>
       ) : (
-        <Stack spacing={1} sx={{ overflow: "auto", flex: 1 }}>
+        <Stack spacing={1.25} sx={{ overflow: "auto", flex: 1 }}>
           {references.map((reference) => (
-            <Card
+            <Box
               key={reference.id}
               onClick={(e) => {
-                // Prevent click propagation to avoid triggering parent handlers
                 e.stopPropagation();
-                // When clicking on a reference with a date, scroll to that date
                 if (
                   reference.date &&
                   typeof reference.date === "string" &&
@@ -217,185 +258,229 @@ export function PlanReferencesTab({
                   onScrollToDate(reference.date);
                 }
               }}
+              onDoubleClick={(e) => {
+                e.stopPropagation();
+                // Allow editing all references (including milestones with date/phaseId)
+                // Auto-generated references from cellData will be filtered out by handleEdit
+                handleEdit(reference);
+              }}
               sx={{
-                borderRadius: 1.25,
-                border: `1px solid ${alpha(theme.palette.divider, 0.2)}`,
-                cursor: reference.date ? "pointer" : "default",
+                p: { xs: 1.5, sm: 1.75 },
+                borderRadius: 1.5,
+                border: `1px solid ${alpha(theme.palette.divider, 0.12)}`,
+                bgcolor: theme.palette.background.paper,
+                cursor: "pointer",
+                transition: theme.transitions.create(
+                  ["border-color", "box-shadow", "background-color"],
+                  {
+                    duration: theme.transitions.duration.shorter,
+                  }
+                ),
                 "&:hover": {
-                  boxShadow: `0 1px 3px ${alpha(theme.palette.common.black, 0.08)}`,
                   borderColor: alpha(theme.palette.primary.main, 0.3),
-                  backgroundColor: reference.date
+                  boxShadow: `0 2px 8px ${alpha(theme.palette.common.black, 0.06)}`,
+                  bgcolor: reference.date
                     ? alpha(theme.palette.primary.main, 0.02)
-                    : undefined,
+                    : alpha(theme.palette.action.hover, 0.02),
                 },
-                transition: "all 0.2s ease",
               }}
             >
-              <CardContent sx={{ p: { xs: 1.25, sm: 1.5 }, "&:last-child": { pb: { xs: 1.25, sm: 1.5 } } }}>
-                <Stack spacing={1}>
+              <Stack key={`main-stack-${reference.id}`} spacing={1.25}>
+                {/* Header */}
+                <Stack
+                  key={`header-${reference.id}`}
+                  direction="row"
+                  justifyContent="space-between"
+                  alignItems="flex-start"
+                  spacing={1.5}
+                >
                   <Stack
+                    key={`header-content-${reference.id}`}
                     direction="row"
-                    justifyContent="space-between"
+                    spacing={1.25}
                     alignItems="flex-start"
+                    flex={1}
+                    sx={{ minWidth: 0 }}
                   >
-                    <Stack
-                      direction="row"
-                      spacing={1}
-                      alignItems="center"
-                      flex={1}
-                    >
-                      <Chip
-                        icon={getTypeIcon(reference.type)}
-                        label={
-                          reference.type.charAt(0).toUpperCase() +
-                          reference.type.slice(1)
-                        }
-                        size="small"
-                        sx={{
-                          bgcolor: alpha(getTypeColor(reference.type), 0.1),
+                    <Chip
+                      icon={getTypeIcon(reference.type)}
+                      label={
+                        reference.type === "link" ? "Enlace" :
+                        reference.type === "document" ? "Documento" :
+                        reference.type === "note" ? "Nota" :
+                        "Hito"
+                      }
+                      size="small"
+                      sx={{
+                        bgcolor: alpha(getTypeColor(reference.type), 0.1),
+                        color: getTypeColor(reference.type),
+                        fontWeight: 500,
+                        fontSize: "0.6875rem",
+                        height: 24,
+                        flexShrink: 0,
+                        "& .MuiChip-icon": {
+                          fontSize: 16,
                           color: getTypeColor(reference.type),
-                          fontWeight: 500,
-                          fontSize: "0.6875rem",
-                          height: 22,
-                          "& .MuiChip-icon": {
-                            fontSize: 14,
-                          },
-                        }}
-                      />
-                      <Typography
-                        variant="subtitle2"
-                        sx={{
-                          fontWeight: 600,
-                          fontSize: "0.8125rem",
-                          flex: 1,
-                          color: theme.palette.text.primary,
-                        }}
-                      >
-                        {reference.title}
-                      </Typography>
-                    </Stack>
-                    <Stack direction="row" spacing={0.5}>
-                      {(reference.type === "link" ||
-                        reference.type === "document" ||
-                        reference.type === "file") &&
-                        reference.url && (
+                        },
+                      }}
+                    />
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        fontWeight: 600,
+                        fontSize: "0.875rem",
+                        flex: 1,
+                        color: theme.palette.text.primary,
+                        lineHeight: 1.4,
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        display: "-webkit-box",
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: "vertical",
+                      }}
+                    >
+                      {reference.title}
+                    </Typography>
+                  </Stack>
+                  <Stack 
+                    key={`actions-${reference.id}`}
+                    direction="row" 
+                    spacing={0.25} 
+                    sx={{ flexShrink: 0 }}
+                  >
+                    {reference.type === "link" && reference.url && (
+                        <Tooltip title="Abrir enlace" arrow>
                           <IconButton
                             size="small"
-                            onClick={() => handleOpenLink(reference.url)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleOpenLink(reference.url);
+                            }}
                             sx={{
                               color: alpha(theme.palette.primary.main, 0.7),
                               "&:hover": {
                                 color: theme.palette.primary.main,
                                 bgcolor: alpha(theme.palette.primary.main, 0.08),
                               },
-                              "&:focus-visible": {
-                                outline: `2px solid ${alpha(theme.palette.primary.main, 0.5)}`,
-                                outlineOffset: 2,
-                              },
                             }}
                           >
                             <OpenInNewIcon sx={{ fontSize: 18 }} />
                           </IconButton>
-                        )}
-                      {/* Only show edit/delete for plan-level references (not auto-generated) */}
-                      {!reference.date && !reference.phaseId && (
-                        <>
+                        </Tooltip>
+                      )}
+                    {!reference.date && !reference.phaseId && (
+                      <Box key={`edit-delete-${reference.id}`} component="span">
+                        <Tooltip title="Editar" arrow>
                           <IconButton
                             size="small"
-                            onClick={() => handleEdit(reference)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEdit(reference);
+                            }}
                             sx={{
                               color: alpha(theme.palette.text.secondary, 0.7),
                               "&:hover": {
                                 color: theme.palette.primary.main,
                                 bgcolor: alpha(theme.palette.primary.main, 0.08),
                               },
-                              "&:focus-visible": {
-                                outline: `2px solid ${alpha(theme.palette.primary.main, 0.5)}`,
-                                outlineOffset: 2,
-                              },
                             }}
                           >
                             <EditIcon sx={{ fontSize: 18 }} />
                           </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Eliminar" arrow>
                           <IconButton
                             size="small"
-                            onClick={() => handleDelete(reference.id)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDelete(reference.id);
+                            }}
                             sx={{
                               color: alpha(theme.palette.error.main, 0.7),
                               "&:hover": {
                                 color: theme.palette.error.main,
                                 bgcolor: alpha(theme.palette.error.main, 0.08),
                               },
-                              "&:focus-visible": {
-                                outline: `2px solid ${alpha(theme.palette.error.main, 0.5)}`,
-                                outlineOffset: 2,
-                              },
                             }}
                           >
                             <DeleteIcon sx={{ fontSize: 18 }} />
                           </IconButton>
-                        </>
-                      )}
-                    </Stack>
+                        </Tooltip>
+                      </Box>
+                    )}
                   </Stack>
-
-                  {(reference.date || reference.description || reference.url) && (
-                    <>
-                      <Divider sx={{ my: 0.5 }} />
-                      {reference.date && (
-                        <Stack
-                          direction="row"
-                          spacing={0.5}
-                          alignItems="center"
-                          sx={{
-                            color: "text.secondary",
-                            fontSize: "0.75rem",
-                            mb: reference.description || reference.url ? 0.5 : 0,
-                          }}
-                        >
-                          <CalendarIcon sx={{ fontSize: 14 }} />
-                          <Typography variant="caption" sx={{ fontSize: "0.75rem" }}>
-                            {reference.phaseId ? (
-                              <>
-                                <TimelineIcon sx={{ fontSize: 12, mx: 0.5 }} />
-                                Celda: {reference.date}
-                              </>
-                            ) : (
-                              <>Día: {reference.date}</>
-                            )}
-                          </Typography>
-                        </Stack>
-                      )}
-                      {reference.description && (
-                        <Typography
-                          variant="body2"
-                          sx={{
-                            color: "text.secondary",
-                            fontSize: "0.8rem",
-                            whiteSpace: "pre-wrap",
-                          }}
-                        >
-                          {reference.description}
-                        </Typography>
-                      )}
-                      {reference.url && (
-                        <Typography
-                          variant="caption"
-                          sx={{
-                            color: "text.secondary",
-                            fontSize: "0.75rem",
-                            fontFamily: "monospace",
-                            wordBreak: "break-all",
-                          }}
-                        >
-                          {reference.url}
-                        </Typography>
-                      )}
-                    </>
-                  )}
                 </Stack>
-              </CardContent>
-            </Card>
+
+                {/* Content */}
+                {(reference.date || reference.description || reference.url) && (
+                  <Stack key={`content-${reference.id}`} spacing={1}>
+                    {reference.date && (
+                      <Stack
+                        key={`date-${reference.id}`}
+                        direction="row"
+                        spacing={0.75}
+                        alignItems="center"
+                        sx={{
+                          color: theme.palette.text.secondary,
+                        }}
+                      >
+                        <CalendarIcon sx={{ fontSize: 16, opacity: 0.7 }} />
+                        <Typography 
+                          variant="caption" 
+                          sx={{ 
+                            fontSize: "0.75rem",
+                            fontWeight: 500,
+                          }}
+                        >
+                          {reference.phaseId ? (
+                            <>
+                              <TimelineIcon sx={{ fontSize: 14, mx: 0.5, verticalAlign: "middle" }} />
+                              Celda: {reference.date}
+                            </>
+                          ) : (
+                            <>Día: {reference.date}</>
+                          )}
+                        </Typography>
+                      </Stack>
+                    )}
+                    {reference.description && (
+                      <Typography
+                        key={`description-${reference.id}`}
+                        variant="body2"
+                        sx={{
+                          color: theme.palette.text.secondary,
+                          fontSize: "0.8125rem",
+                          lineHeight: 1.6,
+                          whiteSpace: "pre-wrap",
+                          wordBreak: "break-word",
+                        }}
+                      >
+                        {reference.description}
+                      </Typography>
+                    )}
+                    {reference.url && (
+                      <Typography
+                        key={`url-${reference.id}`}
+                        variant="caption"
+                        sx={{
+                          color: theme.palette.text.secondary,
+                          fontSize: "0.75rem",
+                          fontFamily: "monospace",
+                          wordBreak: "break-all",
+                          opacity: 0.8,
+                          bgcolor: alpha(theme.palette.action.hover, 0.3),
+                          px: 1,
+                          py: 0.5,
+                          borderRadius: 0.5,
+                        }}
+                      >
+                        {reference.url}
+                      </Typography>
+                    )}
+                  </Stack>
+                )}
+              </Stack>
+            </Box>
           ))}
         </Stack>
       )}
@@ -410,7 +495,13 @@ export function PlanReferencesTab({
           setIsCreating(false);
         }}
         onSave={handleSave}
+        phases={phases}
+        startDate={startDate}
+        endDate={endDate}
+        calendarIds={calendarIds}
       />
     </Box>
   );
 }
+
+// Force Vite cache refresh - PlanReferencesTab updated with Tooltip imports

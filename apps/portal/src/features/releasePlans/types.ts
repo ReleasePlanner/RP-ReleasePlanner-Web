@@ -24,6 +24,7 @@ export type PlanMilestone = {
   date: string; // ISO date (YYYY-MM-DD)
   name: string;
   description?: string;
+  phaseId?: string; // Phase ID if milestone is associated with a specific phase
 };
 
 // Gantt Cell data - represents intersection of phase and day
@@ -62,13 +63,13 @@ export type GanttCellData = {
   links?: GanttCellLink[];
 };
 
-export type PlanReferenceType = "link" | "document" | "note" | "comment" | "file" | "milestone";
+export type PlanReferenceType = "link" | "document" | "note" | "milestone";
 
 export type PlanReference = {
   id: string;
   type: PlanReferenceType;
   title: string;
-  url?: string; // For links and documents
+  url?: string; // For links only
   description?: string; // For notes and general description
   createdAt: string; // ISO date
   updatedAt?: string; // ISO date
@@ -77,6 +78,8 @@ export type PlanReference = {
   phaseId?: string; // If set along with date, reference is associated with a specific cell (phase + day)
   // If only date is set (no phaseId), reference is associated with the entire day
   // If neither date nor phaseId is set, reference is at plan level (general)
+  // For milestone type:
+  milestoneColor?: string; // Custom color for milestone marker (hex color, e.g., "#FF5733")
 };
 
 export type PlanMetadata = {

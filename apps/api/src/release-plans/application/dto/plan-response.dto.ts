@@ -50,6 +50,7 @@ export class PlanMilestoneResponseDto {
   date: string;
   name: string;
   description?: string;
+  phaseId?: string;
   createdAt: Date;
   updatedAt: Date;
 
@@ -58,6 +59,7 @@ export class PlanMilestoneResponseDto {
     this.date = entity.date;
     this.name = entity.name;
     this.description = entity.description;
+    this.phaseId = entity.phaseId;
     this.createdAt = entity.createdAt;
     this.updatedAt = entity.updatedAt;
   }
@@ -71,6 +73,7 @@ export class PlanReferenceResponseDto {
   description?: string;
   date?: string;
   phaseId?: string;
+  milestoneColor?: string;
   createdAt: Date;
   updatedAt: Date;
 
@@ -82,6 +85,7 @@ export class PlanReferenceResponseDto {
     this.description = entity.description;
     this.date = entity.date;
     this.phaseId = entity.phaseId;
+    this.milestoneColor = entity.milestoneColor;
     this.createdAt = entity.createdAt;
     this.updatedAt = entity.updatedAt;
   }
@@ -123,7 +127,7 @@ export class GanttCellDataResponseDto {
 export class PlanResponseDto {
   id: string;
   name: string;
-  owner: string;
+  owner: string; // Owner name from it_owners table (via JOIN)
   startDate: string;
   endDate: string;
   status: PlanStatus;
@@ -141,10 +145,11 @@ export class PlanResponseDto {
   createdAt: Date;
   updatedAt: Date;
 
-  constructor(entity: Plan) {
+  constructor(entity: Plan & { ownerName?: string }) {
     this.id = entity.id;
     this.name = entity.name;
-    this.owner = entity.owner;
+    // Use ownerName from JOIN with it_owners table, fallback to empty string if not available
+    this.owner = (entity as any).ownerName || '';
     this.startDate = entity.startDate;
     this.endDate = entity.endDate;
     this.status = entity.status;

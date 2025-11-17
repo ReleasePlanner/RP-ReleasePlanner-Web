@@ -12,6 +12,7 @@ import type {
   PlanComponent,
   PlanMilestone,
   PlanReference,
+  PlanReferenceType,
 } from "../../types";
 import { usePlanCard } from "../../hooks";
 import { PlanCardLayout } from "./components/PlanCardLayout";
@@ -73,11 +74,33 @@ const PlanCard = forwardRef<PlanCardHandle, PlanCardProps>(function PlanCard({ p
 
   const { metadata: originalMetadata, tasks } = plan;
   
+  // Debug: Log originalMetadata when plan is loaded
+  console.log('[PlanCard] Initial plan load - originalMetadata:', {
+    planId: plan.id,
+    planName: plan.metadata.name,
+    references: originalMetadata.references,
+    referencesLength: originalMetadata.references?.length,
+    referencesType: typeof originalMetadata.references,
+    isArray: Array.isArray(originalMetadata.references),
+  });
+  
   // Local state for pending changes - only saved when user clicks save button
   const [localMetadata, setLocalMetadata] = useState(originalMetadata);
   
   // Sync local metadata when plan changes from external source
   useEffect(() => {
+    // Debug: Log references when plan changes
+    if (originalMetadata.references && originalMetadata.references.length > 0) {
+      console.log('[PlanCard] Syncing references from originalMetadata:', {
+        count: originalMetadata.references.length,
+        references: originalMetadata.references.map(r => ({ id: r.id, type: r.type, title: r.title })),
+      });
+    } else {
+      console.log('[PlanCard] No references in originalMetadata:', {
+        references: originalMetadata.references,
+        referencesLength: originalMetadata.references?.length,
+      });
+    }
     setLocalMetadata(originalMetadata);
   }, [originalMetadata]);
   
@@ -159,17 +182,108 @@ const PlanCard = forwardRef<PlanCardHandle, PlanCardProps>(function PlanCard({ p
   };
 
   const handleReferencesChange = useCallback((newReferences: PlanReference[]) => {
-    // Only update local state - save via save button
-    // Only save plan-level references (without date/phaseId)
-    // Auto-generated references from cellData and milestones are filtered out
-    const planLevelReferences = newReferences.filter(
-      (ref) => !ref.date && !ref.phaseId
+    // Deduplicate references by ID to prevent duplicates
+    const referencesMap = new Map<string, PlanReference>();
+    newReferences.forEach((ref) => {
+      if (ref.id) {
+        // If ID exists, use it as key (prefer existing entry if duplicate)
+        if (!referencesMap.has(ref.id)) {
+          referencesMap.set(ref.id, ref);
+        }
+      } else {
+        // If no ID, use a combination of type, title, date, and phaseId as key
+        const key = `${ref.type}-${ref.title}-${ref.date || ""}-${ref.phaseId || ""}`;
+        if (!referencesMap.has(key)) {
+          referencesMap.set(key, ref);
+        }
+      }
+    });
+    
+    // Convert map back to array
+    const deduplicatedReferences = Array.from(referencesMap.values());
+    
+    // Separate references: plan-level (no date/phaseId) and milestone references (with date)
+    const planLevelReferences: PlanReference[] = [];
+    const milestoneReferences: PlanReference[] = [];
+    
+    deduplicatedReferences.forEach((ref) => {
+      if (ref.type === "milestone" && ref.date) {
+        // Milestone references with date should be saved AND update cellData
+        milestoneReferences.push(ref);
+        planLevelReferences.push(ref); // Also save milestone references
+      } else if (!ref.date && !ref.phaseId) {
+        // Plan-level references (without date/phaseId)
+        planLevelReferences.push(ref);
+      }
+    });
+
+    // Update cellData for milestone references
+    const existingCellData = metadata.cellData || [];
+    const updatedCellData = [...existingCellData];
+    
+    // Process milestone references - add or update cellData
+    milestoneReferences.forEach((milestoneRef) => {
+      const existingIndex = updatedCellData.findIndex(
+        (cd) => cd.phaseId === milestoneRef.phaseId && cd.date === milestoneRef.date
+      );
+      
+      if (existingIndex >= 0) {
+        // Update existing cellData
+        updatedCellData[existingIndex] = {
+          ...updatedCellData[existingIndex],
+          isMilestone: true,
+          milestoneColor: milestoneRef.milestoneColor || "#F44336",
+        };
+      } else {
+        // Add new cellData for milestone
+        updatedCellData.push({
+          phaseId: milestoneRef.phaseId,
+          date: milestoneRef.date,
+          isMilestone: true,
+          milestoneColor: milestoneRef.milestoneColor || "#F44336",
+        });
+      }
+    });
+
+    // Remove milestones from cellData if they're no longer in references
+    const milestoneRefKeys = new Set(
+      milestoneReferences.map((ref) => `${ref.phaseId || ""}-${ref.date}`)
     );
+
+    // Remove cellData milestones that are no longer referenced
+    const filteredCellData = updatedCellData.map((cell) => {
+      if (cell.isMilestone) {
+        const key = `${cell.phaseId || ""}-${cell.date}`;
+        if (!milestoneRefKeys.has(key)) {
+          // Remove milestone flag but keep other data (comments, files, links)
+          const { isMilestone, milestoneColor, ...rest } = cell;
+          // Keep cellData if it has other data besides phaseId and date
+          const hasOtherData = Object.keys(rest).some(
+            (k) => k !== "phaseId" && k !== "date"
+          );
+          return hasOtherData ? rest : undefined;
+        }
+      }
+      return cell;
+    }).filter((cell): cell is GanttCellData => cell !== undefined);
+
+    // Sync milestones from milestone references
+    // Convert milestone references to PlanMilestone format for plan_milestones table
+    const syncedMilestones: PlanMilestone[] = milestoneReferences.map((ref) => ({
+      id: ref.id || `milestone-${ref.phaseId || ""}-${ref.date}-${Date.now()}`,
+      date: ref.date!,
+      name: ref.title,
+      description: ref.description,
+      phaseId: ref.phaseId,
+    }));
+
     setLocalMetadata(prev => ({
       ...prev,
-          references: planLevelReferences,
+      references: planLevelReferences,
+      cellData: filteredCellData,
+      milestones: syncedMilestones, // Sync milestones for plan_milestones table
     }));
-  }, []);
+  }, [metadata.cellData, metadata.references]);
 
   // Cell data handlers - only update local state, save via save button
   const handleCellDataChange = useCallback(
@@ -521,109 +635,55 @@ const PlanCard = forwardRef<PlanCardHandle, PlanCardProps>(function PlanCard({ p
 
   // Optimize consolidatedReferences - only recalculate when relevant fields change
   // This prevents recalculation when description or other unrelated fields change
+  // IMPORTANT: Only show plan-level references (metadata.references), not auto-generated ones from cellData
+  // The references from cellData (comments, files, links) are shown in the Gantt chart cells, not in the references list
   const consolidatedReferences = useMemo(() => {
     const allReferences: PlanReference[] = [];
 
-    // 1. Add existing plan-level references (without date/phaseId)
-    const planReferences = (metadata.references || []).filter(
-      (ref) => !ref.date && !ref.phaseId
-    );
+    // 1. Add ALL plan-level references (including milestone references)
+    // This includes:
+    // - Plan-level references (without date/phaseId): link, document, note
+    // - Milestone references (with date and optionally phaseId): milestone type
+    const planReferences = metadata.references || [];
+    
+    // Debug: Log references to verify they're being loaded
+    console.log('[PlanCard] consolidatedReferences - metadata.references:', {
+      references: metadata.references,
+      referencesLength: metadata.references?.length,
+      planReferencesLength: planReferences.length,
+      planReferences: planReferences.map(r => ({ id: r.id, type: r.type, title: r.title })),
+    });
+    
     allReferences.push(...planReferences);
-
-    // 2. Generate references from cellData (comments, files, links)
-    const cellData = metadata.cellData || [];
-    cellData.forEach((cell) => {
-      const phase = cell.phaseId ? phasesMap.get(cell.phaseId) : undefined;
-
-      // Comments
-      if (cell.comments && cell.comments.length > 0) {
-        cell.comments.forEach((comment) => {
-          const referenceTitle = cell.phaseId
-            ? `Comentario: ${phase?.name || "Fase"} - ${cell.date}`
-            : `Comentario: ${cell.date}`;
-          allReferences.push({
-            id: `ref-comment-${comment.id}`,
-            type: "comment",
-            title: referenceTitle,
-            description: comment.text,
-            date: cell.date,
-            phaseId: cell.phaseId,
-            createdAt: comment.createdAt,
-            updatedAt: comment.updatedAt || comment.createdAt,
-          });
-        });
-      }
-
-      // Files
-      if (cell.files && cell.files.length > 0) {
-        cell.files.forEach((file) => {
-          const referenceTitle = cell.phaseId
-            ? `Archivo: ${file.name} - ${phase?.name || "Fase"} - ${cell.date}`
-            : `Archivo: ${file.name} - ${cell.date}`;
-          allReferences.push({
-            id: `ref-file-${file.id}`,
-            type: "file",
-            title: referenceTitle,
-            url: file.url,
-            description: file.mimeType ? `Tipo: ${file.mimeType}` : undefined,
-            date: cell.date,
-            phaseId: cell.phaseId,
-            createdAt: file.uploadedAt,
-            updatedAt: file.uploadedAt,
-          });
-        });
-      }
-
-      // Links
-      if (cell.links && cell.links.length > 0) {
-        cell.links.forEach((link) => {
-          const referenceTitle = cell.phaseId
-            ? `${link.title} - ${phase?.name || "Fase"} - ${cell.date}`
-            : `${link.title} - ${cell.date}`;
-          allReferences.push({
-            id: `ref-link-${link.id}`,
-            type: "link",
-            title: referenceTitle,
-            url: link.url,
-            description: link.description,
-            date: cell.date,
-            phaseId: cell.phaseId,
-            createdAt: link.createdAt,
-            updatedAt: link.createdAt,
-          });
-        });
-      }
-
-      // Cell-level milestones (from cellData)
-      if (cell.isMilestone) {
-        const milestoneTitle = cell.phaseId
-          ? `Milestone: ${phase?.name || "Fase"} - ${cell.date}`
-          : `Milestone: ${cell.date}`;
+    
+    // Note: References from cellData (comments, files, links) are NOT added here
+    // They are shown in the Gantt chart cells, not in the references list
+    // This ensures the references list only shows actual plan-level references that can be edited/deleted
+    // Milestones from cellData are also NOT added here - they should be converted to milestone-type references first
+    
+    // 2. Generate references from plan-level milestones that don't already have milestone-type references
+    // Only create note-type references for milestones that aren't already represented as milestone-type references
+    const milestones = metadata.milestones || [];
+    const milestoneRefKeys = new Set(
+      (metadata.references || [])
+        .filter((ref) => ref.type === "milestone" && ref.date)
+        .map((ref) => `${ref.phaseId || ""}-${ref.date}`)
+    );
+    
+    milestones.forEach((milestone: PlanMilestone) => {
+      // Only create a note reference if this milestone doesn't already have a milestone-type reference
+      const milestoneKey = `${milestone.phaseId || ""}-${milestone.date}`;
+      if (!milestoneRefKeys.has(milestoneKey)) {
         allReferences.push({
-          id: `ref-cell-milestone-${cell.date}-${cell.phaseId || "day"}`,
+          id: `ref-milestone-${milestone.id}`,
           type: "note",
-          title: milestoneTitle,
-          description: `Milestone marcado${cell.milestoneColor ? ` (Color: ${cell.milestoneColor})` : ""}`,
-          date: cell.date,
-          phaseId: cell.phaseId,
+          title: `Milestone: ${milestone.name} - ${milestone.date}`,
+          description: milestone.description || `Milestone del plan en ${milestone.date}`,
+          date: milestone.date,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         });
       }
-    });
-
-    // 3. Generate references from plan-level milestones
-    const milestones = metadata.milestones || [];
-    milestones.forEach((milestone: PlanMilestone) => {
-      allReferences.push({
-        id: `ref-milestone-${milestone.id}`,
-        type: "note",
-        title: `Milestone: ${milestone.name} - ${milestone.date}`,
-        description: milestone.description || `Milestone del plan en ${milestone.date}`,
-        date: milestone.date,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      });
     });
 
     // Sort by date (most recent first), then by createdAt
@@ -637,7 +697,7 @@ const PlanCard = forwardRef<PlanCardHandle, PlanCardProps>(function PlanCard({ p
       const createdB = b.createdAt || "";
       return createdB.localeCompare(createdA);
     });
-  }, [metadata.references, metadata.cellData, metadata.milestones, phasesMap]);
+  }, [metadata.references, metadata.milestones, phasesMap]);
 
   // Products are now loaded directly in PlanLeftPane from Redux store
 
@@ -926,7 +986,28 @@ const PlanCard = forwardRef<PlanCardHandle, PlanCardProps>(function PlanCard({ p
           updateData.calendarIds = metadata.calendarIds;
           break;
         case 4: // Referencias
-          updateData.references = consolidatedReferences;
+          // Only save actual references (not auto-generated ones from cellData)
+          updateData.references = metadata.references;
+          
+          // IMPORTANT: Always sync milestones from milestone-type references to plan_milestones table
+          // Extract milestones from milestone-type references
+          const milestoneRefs = (metadata.references || []).filter(
+            (ref) => ref.type === "milestone" && ref.date
+          );
+          
+          if (milestoneRefs.length > 0) {
+            // Convert milestone references to PlanMilestone format for plan_milestones table
+            updateData.milestones = milestoneRefs.map((ref) => ({
+              id: ref.id || `milestone-${ref.phaseId || ""}-${ref.date}-${Date.now()}`,
+              date: ref.date!,
+              name: ref.title,
+              description: ref.description,
+              phaseId: ref.phaseId,
+            }));
+          } else {
+            // No milestone references - clear milestones if they exist
+            updateData.milestones = [];
+          }
           break;
       }
 
@@ -1188,9 +1269,16 @@ const PlanCard = forwardRef<PlanCardHandle, PlanCardProps>(function PlanCard({ p
         await queryClient.refetchQueries({ queryKey: ['features'] });
         await queryClient.refetchQueries({ queryKey: ['products'] });
         
-        // Sync local metadata with saved data after successful save
-        // This ensures UI reflects the saved state immediately
-        setLocalMetadata(prev => ({ ...prev, ...updateData }));
+        // After refetch, the plan prop will be updated with fresh data from backend
+        // The useEffect hook will sync localMetadata with originalMetadata automatically
+        // For immediate UI update, merge updateData with current metadata
+        // But don't overwrite - let the refetch update take precedence
+        setLocalMetadata(prev => {
+          const merged = { ...prev, ...updateData };
+          // After a short delay, the useEffect will sync with refetched data
+          // This ensures we don't lose data during the transition
+          return merged;
+        });
         
           return; // Success
         } catch (error: any) {
@@ -1687,7 +1775,17 @@ const PlanCard = forwardRef<PlanCardHandle, PlanCardProps>(function PlanCard({ p
             onComponentsChange={handleComponentsChange}
             calendarIds={metadata.calendarIds}
             onCalendarIdsChange={handleCalendarIdsChange}
-            references={consolidatedReferences}
+            references={(() => {
+              // Debug: Log what we're passing to PlanLeftPane
+              console.log('[PlanCard] Passing references to PlanLeftPane:', {
+                consolidatedReferences,
+                consolidatedReferencesLength: consolidatedReferences?.length,
+                consolidatedReferencesType: typeof consolidatedReferences,
+                isArray: Array.isArray(consolidatedReferences),
+                firstReference: consolidatedReferences?.[0],
+              });
+              return consolidatedReferences;
+            })()}
             onReferencesChange={handleReferencesChange}
             onScrollToDate={
               scrollToDateFn
@@ -1719,6 +1817,9 @@ const PlanCard = forwardRef<PlanCardHandle, PlanCardProps>(function PlanCard({ p
             onEditPhase={openEditOptimized}
             onPhaseRangeChange={handlePhaseRangeChangeOptimized}
             cellData={metadata.cellData}
+            milestoneReferences={(metadata.references || []).filter(
+              (ref) => ref.type === "milestone" && ref.date
+            )}
             onCellDataChange={handleCellDataChange}
             onAddCellComment={handleAddCellComment}
             onAddCellFile={handleAddCellFile}

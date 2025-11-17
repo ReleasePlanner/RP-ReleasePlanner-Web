@@ -94,13 +94,14 @@ export class CreatePlanDto {
   @IsNotEmpty({ message: PLAN_VALIDATION_MESSAGES.PLAN_NAME_REQUIRED })
   name: string;
 
-  @ApiProperty({
-    description: PLAN_API_PROPERTY_DESCRIPTIONS.OWNER,
-    example: PLAN_API_PROPERTY_EXAMPLES.OWNER,
-  })
-  @IsString()
-  @IsNotEmpty({ message: PLAN_VALIDATION_MESSAGES.PLAN_OWNER_REQUIRED })
-  owner: string;
+  // Removed: owner field - use itOwner field instead and join with it_owners table
+  // @ApiProperty({
+  //   description: PLAN_API_PROPERTY_DESCRIPTIONS.OWNER,
+  //   example: PLAN_API_PROPERTY_EXAMPLES.OWNER,
+  // })
+  // @IsString()
+  // @IsNotEmpty({ message: PLAN_VALIDATION_MESSAGES.PLAN_OWNER_REQUIRED })
+  // owner: string;
 
   @ApiProperty({
     description: PLAN_API_PROPERTY_DESCRIPTIONS.START_DATE,

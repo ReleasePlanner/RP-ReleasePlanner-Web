@@ -22,8 +22,9 @@ export class Plan extends BaseEntity {
   @Column({ type: 'varchar', length: 255 })
   name: string;
 
-  @Column({ type: 'varchar', length: 255 })
-  owner: string;
+  // Removed: owner field - use itOwner field and join with it_owners table instead
+  // @Column({ type: 'varchar', length: 255 })
+  // owner: string;
 
   @Column({ type: 'date' })
   startDate: string; // ISO date
@@ -92,7 +93,6 @@ export class Plan extends BaseEntity {
 
   constructor(
     name?: string,
-    owner?: string,
     startDate?: string,
     endDate?: string,
     status?: PlanStatus,
@@ -102,9 +102,7 @@ export class Plan extends BaseEntity {
     if (name !== undefined) {
       this.name = name;
     }
-    if (owner !== undefined) {
-      this.owner = owner;
-    }
+    // Removed: owner parameter - use itOwner field instead
     if (startDate !== undefined) {
       this.startDate = startDate;
     }
@@ -124,7 +122,7 @@ export class Plan extends BaseEntity {
     this.featureIds = [];
     this.components = [];
     this.calendarIds = [];
-    if (name !== undefined && owner !== undefined && startDate !== undefined && endDate !== undefined) {
+    if (name !== undefined && startDate !== undefined && endDate !== undefined) {
       this.validate();
     }
   }
@@ -133,9 +131,7 @@ export class Plan extends BaseEntity {
     if (!this.name || this.name.trim().length === 0) {
       throw new Error('Plan name is required');
     }
-    if (!this.owner || this.owner.trim().length === 0) {
-      throw new Error('Plan owner is required');
-    }
+    // Removed: owner validation - use itOwner field instead
     if (!this.startDate || !this.isValidDate(this.startDate)) {
       throw new Error('Valid start date in YYYY-MM-DD format is required');
     }
