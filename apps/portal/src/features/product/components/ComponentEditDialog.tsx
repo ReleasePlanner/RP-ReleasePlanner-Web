@@ -1,11 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   TextField,
-  Button,
   Box,
   Typography,
   useTheme,
@@ -19,7 +14,9 @@ import {
   MenuItem,
   CircularProgress,
   Alert,
+  Grid,
 } from "@mui/material";
+import { BaseEditDialog } from "@/components";
 import type { ComponentVersion } from "@/features/releasePlans/components/Plan/CommonDataCard";
 import { useComponentTypes } from "@/api/hooks/useComponentTypes";
 
@@ -425,200 +422,210 @@ export function ComponentEditDialog({
     }
   };
 
+  const isFormValid = 
+    component.name && 
+    component.type && 
+    !versionError &&
+    !currentVersionError &&
+    (editing || currentVersionInput || newVersion);
+
   return (
-    <Dialog
+    <BaseEditDialog
       open={open}
       onClose={onClose}
+      editing={editing}
+      title={editing ? "Editar Componente" : "Nuevo Componente"}
+      subtitle={
+        selectedProductName
+          ? `Producto: ${selectedProductName}`
+          : editing
+          ? "Modifica los detalles del componente"
+          : "Agrega un nuevo componente al producto"
+      }
       maxWidth="sm"
-      fullWidth
-      PaperProps={{
-        sx: {
-          borderRadius: 2,
-        },
-      }}
+      onSave={handleSave}
+      saveButtonText={editing ? "Guardar Cambios" : "Crear Componente"}
+      isFormValid={isFormValid}
     >
-      <DialogTitle
-        sx={{
-          px: 3,
-          pt: 3,
-          pb: 2,
-          borderBottom: `1px solid ${alpha(theme.palette.divider, 0.12)}`,
-          fontWeight: 600,
-          fontSize: "1.25rem",
-          color: theme.palette.text.primary,
-        }}
-      >
-        {editing ? "Edit Component" : "Add Component"}
-        {selectedProductName && (
-          <Typography
-            variant="body2"
-            component="div"
-            sx={{
-              color: theme.palette.text.secondary,
-              fontSize: "0.8125rem",
-              mt: 1,
-              fontWeight: 400,
-              display: "flex",
-              alignItems: "center",
-              gap: 0.5,
+      <Stack spacing={3}>
+        {/* Component Name */}
+        <Box sx={{ pt: 3 }}>
+          <TextField
+            autoFocus
+            fullWidth
+            size="small"
+            label="Nombre del Componente"
+            placeholder="Ej: Web Portal"
+            value={component.name || ""}
+            onChange={(e) => {
+              onComponentChange({
+                ...component,
+                name: e.target.value,
+              });
             }}
-          >
-            <Chip
-              label="Product"
-              size="small"
-              sx={{
-                height: 20,
-                fontSize: "0.6875rem",
+            required
+            InputLabelProps={{
+              shrink: true,
+              sx: {
+                fontSize: "0.75rem",
                 fontWeight: 500,
-                bgcolor: alpha(theme.palette.primary.main, 0.08),
-                color: theme.palette.primary.main,
-              }}
-            />
-            {selectedProductName}
-          </Typography>
-        )}
-      </DialogTitle>
+                transform: "translate(14px, -9px) scale(0.875)",
+                "&.MuiInputLabel-shrink": {
+                  transform: "translate(14px, -9px) scale(0.875)",
+                  backgroundColor: theme.palette.background.paper,
+                  paddingLeft: "6px",
+                  paddingRight: "6px",
+                  zIndex: 1,
+                },
+              },
+            }}
+            sx={{
+              "& .MuiOutlinedInput-root": {
+                fontSize: "0.75rem",
+                "& input": {
+                  py: 0.75,
+                  fontSize: "0.75rem",
+                },
+                "& .MuiSelect-select": {
+                  py: 0.75,
+                  fontSize: "0.75rem",
+                },
+                "&:hover": {
+                  "& .MuiOutlinedInput-notchedOutline": {
+                    borderColor: theme.palette.primary.main,
+                  },
+                },
+                "&.Mui-focused": {
+                  "& .MuiOutlinedInput-notchedOutline": {
+                    borderWidth: 2,
+                    borderColor: theme.palette.primary.main,
+                  },
+                },
+              },
+              "& .MuiFormHelperText-root": {
+                marginTop: "6px",
+                marginLeft: "0px",
+              },
+            }}
+          />
+        </Box>
 
-      <DialogContent sx={{ px: 3, pt: 4, pb: 2 }}>
-        <Stack spacing={3}>
-          {/* Basic Information */}
-          <Box>
-            <Typography
-              variant="subtitle2"
+        {/* Component Type */}
+          <FormControl fullWidth required size="medium">
+            <InputLabel
+              shrink
               sx={{
-                mb: 2,
-                fontWeight: 600,
-                fontSize: "0.875rem",
-                color: theme.palette.text.primary,
-                textTransform: "uppercase",
-                letterSpacing: "0.5px",
+                fontSize: "0.75rem",
+                fontWeight: 500,
+                transform: "translate(14px, -9px) scale(0.875)",
+                "&.MuiInputLabel-shrink": {
+                  transform: "translate(14px, -9px) scale(0.875)",
+                  backgroundColor: theme.palette.background.paper,
+                  paddingLeft: "6px",
+                  paddingRight: "6px",
+                  zIndex: 1,
+                },
               }}
             >
-              Basic Information
-            </Typography>
-            <Stack spacing={2.5}>
-              <TextField
-                label="Component Name"
-                fullWidth
-                required
-                value={component.name || ""}
-                onChange={(e) => {
+              Tipo de Componente
+            </InputLabel>
+            <Select
+              value={(() => {
+                // If componentTypeId exists and is a valid UUID, use it
+                if ((component as any).componentTypeId && 
+                    typeof (component as any).componentTypeId === 'string' &&
+                    (component as any).componentTypeId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+                  return (component as any).componentTypeId;
+                }
+                // Otherwise, try to find ComponentType by code or name
+                if (component.type) {
+                  const foundType = componentTypes.find(
+                    (ct) => ct.code?.toLowerCase() === component.type?.toLowerCase() ||
+                            ct.name?.toLowerCase() === component.type?.toLowerCase()
+                  );
+                  if (foundType) {
+                    return foundType.id;
+                  }
+                }
+                return "";
+              })()}
+              label="Tipo de Componente"
+              disabled={componentTypesLoading || componentTypesError !== null}
+              onChange={(e) => {
+                const selectedType = componentTypes.find((ct) => ct.id === e.target.value);
+                if (selectedType) {
+                  // Normalize type to lowercase to match enum values (web, services, mobile)
+                  const normalizedType = (selectedType.code || selectedType.name || '').toLowerCase();
                   onComponentChange({
                     ...component,
-                    name: e.target.value,
-                  });
-                }}
-                placeholder="e.g., Web Portal"
-                variant="outlined"
-                size="medium"
-                sx={{
-                  "& .MuiOutlinedInput-root": {
-                    borderRadius: 1.5,
-                  },
-                }}
-              />
-
-              <FormControl fullWidth required>
-                <InputLabel>Component Type</InputLabel>
-                <Select
-                  value={(() => {
-                    // If componentTypeId exists and is a valid UUID, use it
-                    if ((component as any).componentTypeId && 
-                        typeof (component as any).componentTypeId === 'string' &&
-                        (component as any).componentTypeId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
-                      return (component as any).componentTypeId;
-                    }
-                    // Otherwise, try to find ComponentType by code or name
-                    if (component.type) {
-                      const foundType = componentTypes.find(
-                        (ct) => ct.code?.toLowerCase() === component.type?.toLowerCase() ||
-                                ct.name?.toLowerCase() === component.type?.toLowerCase()
-                      );
-                      if (foundType) {
-                        return foundType.id;
-                      }
-                    }
-                    return "";
-                  })()}
-                  label="Component Type"
-                  size="medium"
-                  disabled={componentTypesLoading || componentTypesError !== null}
-                  onChange={(e) => {
-                    const selectedType = componentTypes.find((ct) => ct.id === e.target.value);
-                    if (selectedType) {
-                      // Normalize type to lowercase to match enum values (web, services, mobile)
-                      const normalizedType = (selectedType.code || selectedType.name || '').toLowerCase();
-                      onComponentChange({
-                        ...component,
-                        type: normalizedType,
-                        componentTypeId: selectedType.id,
-                      } as any);
-                    }
-                  }}
-                  sx={{
-                    borderRadius: 1.5,
-                  }}
-                  renderValue={(value) => {
-                    if (!value) return "";
-                    const selectedType = componentTypes.find((ct) => ct.id === value);
-                    return selectedType?.name || value;
-                  }}
-                >
-                  {componentTypesLoading ? (
-                    <MenuItem disabled>
-                      <Box display="flex" alignItems="center" gap={1}>
-                        <CircularProgress size={16} />
-                        <Typography variant="body2" color="text.secondary">
-                          Loading Component Types...
-                        </Typography>
-                      </Box>
-                    </MenuItem>
-                  ) : componentTypesError ? (
-                    <MenuItem disabled>
-                      <Alert severity="error" sx={{ width: "100%" }}>
-                        Failed to load Component Types
-                      </Alert>
-                    </MenuItem>
-                  ) : componentTypes.length === 0 ? (
-                    <MenuItem disabled>
-                      <Typography variant="body2" color="text.secondary">
-                        No Component Types available
-                      </Typography>
-                    </MenuItem>
-                  ) : (
-                    componentTypes.map((type) => (
-                      <MenuItem key={type.id} value={type.id}>
-                        {type.name} {type.code && `(${type.code})`}
-                      </MenuItem>
-                    ))
-                  )}
-                </Select>
-                {componentTypesError && (
-                  <Typography variant="caption" color="error" sx={{ mt: 0.5, ml: 1.75 }}>
-                    Error loading Component Types. Please refresh the page.
-                  </Typography>
-                )}
-              </FormControl>
-            </Stack>
-          </Box>
-
-          <Divider sx={{ my: 0.5 }} />
-
-          {/* Version Control Section */}
-          <Box>
-            <Typography
-              variant="subtitle2"
+                    type: normalizedType,
+                    componentTypeId: selectedType.id,
+                  } as any);
+                }
+              }}
               sx={{
-                mb: 2.5,
-                fontWeight: 600,
-                fontSize: "0.875rem",
-                color: theme.palette.text.primary,
-                textTransform: "uppercase",
-                letterSpacing: "0.5px",
+                fontSize: "0.75rem",
+                "& input": {
+                  py: 0.75,
+                  fontSize: "0.75rem",
+                },
+                "& .MuiSelect-select": {
+                  py: 0.75,
+                  fontSize: "0.75rem",
+                },
+                "& .MuiOutlinedInput-notchedOutline": {
+                  "&:hover": {
+                    borderColor: theme.palette.primary.main,
+                  },
+                },
+                "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                  borderWidth: 2,
+                  borderColor: theme.palette.primary.main,
+                },
+              }}
+              renderValue={(value) => {
+                if (!value) return "";
+                const selectedType = componentTypes.find((ct) => ct.id === value);
+                return selectedType?.name || value;
               }}
             >
-              Version Control
-            </Typography>
+              {componentTypesLoading ? (
+                <MenuItem disabled>
+                  <Box display="flex" alignItems="center" gap={1}>
+                    <CircularProgress size={16} />
+                    <Typography variant="body2" color="text.secondary" sx={{ fontSize: "0.6875rem" }}>
+                      Cargando tipos de componente...
+                    </Typography>
+                  </Box>
+                </MenuItem>
+              ) : componentTypesError ? (
+                <MenuItem disabled>
+                  <Alert severity="error" sx={{ width: "100%" }}>
+                    Error al cargar los tipos de componente
+                  </Alert>
+                </MenuItem>
+              ) : componentTypes.length === 0 ? (
+                <MenuItem disabled>
+                  <Typography variant="body2" color="text.secondary" sx={{ fontSize: "0.6875rem" }}>
+                    No hay tipos de componente disponibles
+                  </Typography>
+                </MenuItem>
+              ) : (
+                componentTypes.map((type) => (
+                  <MenuItem key={type.id} value={type.id} sx={{ fontSize: "0.6875rem" }}>
+                    {type.name} {type.code && `(${type.code})`}
+                  </MenuItem>
+                ))
+              )}
+            </Select>
+            {componentTypesError && (
+              <Typography variant="caption" color="error" sx={{ mt: 0.5, ml: 1.75 }}>
+                Error al cargar los tipos de componente. Por favor, actualiza la página.
+              </Typography>
+            )}
+          </FormControl>
+
+          {/* Version Control Fields */}
 
             {editing ? (
               // When editing: show current version as reference, allow entering new version
@@ -656,14 +663,14 @@ export function ComponentEditDialog({
                       </Typography>
                       <Chip
                         label={currentVersion}
-                        size="medium"
+                        size="small"
                         sx={{
                           fontFamily: "monospace",
                           fontWeight: 600,
                           bgcolor: theme.palette.primary.main,
                           color: theme.palette.primary.contrastText,
-                          height: 32,
-                          fontSize: "0.875rem",
+                          height: 26,
+                          fontSize: "0.6875rem",
                           px: 1,
                         }}
                       />
@@ -702,14 +709,14 @@ export function ComponentEditDialog({
                       </Typography>
                       <Chip
                         label={previousVersion}
-                        size="medium"
+                        size="small"
                         sx={{
                           fontFamily: "monospace",
                           fontWeight: 500,
                           bgcolor: theme.palette.info.main,
                           color: theme.palette.info.contrastText,
-                          height: 32,
-                          fontSize: "0.875rem",
+                          height: 26,
+                          fontSize: "0.6875rem",
                           px: 1,
                         }}
                       />
@@ -718,25 +725,59 @@ export function ComponentEditDialog({
                 </Stack>
 
                 <TextField
-                  label="New Version"
+                  label="Nueva Versión"
                   fullWidth
+                  size="small"
                   value={newVersion}
                   onChange={(e) => handleVersionChange(e.target.value)}
                   onBlur={handleVersionBlur}
-                  placeholder={currentVersion ? `e.g., ${incrementVersion(currentVersion)}` : "e.g., 1.0.0.0"}
+                  placeholder={currentVersion ? `Ej: ${incrementVersion(currentVersion)}` : "Ej: 1.0.0.0"}
                   helperText={
                     versionError
                       ? versionError
                       : currentVersion
-                      ? `Enter a new version (current: ${currentVersion}). Leave empty to keep current version. Format: MAJOR.SUBVERSION.MINOR.PATCH (e.g., 1.0.0.0). Partial versions like '1' or '1.2' will be auto-completed.`
-                      : "Enter a new version. Format: MAJOR.SUBVERSION.MINOR.PATCH (e.g., 1.0.0.0). Partial versions like '1' or '1.2' will be auto-completed."
+                      ? `Ingresa una nueva versión (actual: ${currentVersion}). Deja vacío para mantener la versión actual. Formato: MAJOR.SUBVERSION.MINOR.PATCH (ej: 1.0.0.0). Versiones parciales como '1' o '1.2' se completarán automáticamente.`
+                      : "Ingresa una nueva versión. Formato: MAJOR.SUBVERSION.MINOR.PATCH (ej: 1.0.0.0). Versiones parciales como '1' o '1.2' se completarán automáticamente."
                   }
                   error={!!versionError}
-                  variant="outlined"
-                  size="medium"
+                  InputLabelProps={{
+                    shrink: true,
+                    sx: {
+                      fontSize: "0.75rem",
+                      fontWeight: 500,
+                      transform: "translate(14px, -9px) scale(0.875)",
+                      "&.MuiInputLabel-shrink": {
+                        transform: "translate(14px, -9px) scale(0.875)",
+                        backgroundColor: theme.palette.background.paper,
+                        paddingLeft: "6px",
+                        paddingRight: "6px",
+                        zIndex: 1,
+                      },
+                    },
+                  }}
                   sx={{
                     "& .MuiOutlinedInput-root": {
-                      borderRadius: 1.5,
+                      fontSize: "0.75rem",
+                      "& input": {
+                        py: 0.75,
+                        fontSize: "0.75rem",
+                      },
+                      "&:hover": {
+                        "& .MuiOutlinedInput-notchedOutline": {
+                          borderColor: versionError ? theme.palette.error.main : theme.palette.primary.main,
+                        },
+                      },
+                      "&.Mui-focused": {
+                        "& .MuiOutlinedInput-notchedOutline": {
+                          borderWidth: 2,
+                          borderColor: versionError ? theme.palette.error.main : theme.palette.primary.main,
+                        },
+                      },
+                    },
+                    "& .MuiFormHelperText-root": {
+                      marginTop: "6px",
+                      marginLeft: "0px",
+                      fontSize: "0.6875rem",
                     },
                   }}
                   inputProps={{
@@ -747,159 +788,218 @@ export function ComponentEditDialog({
               </>
             ) : (
               // When creating: show two fields for Current Version and New Version
-              <Stack spacing={2.5}>
-                <TextField
-                  label="Current Version"
-                  fullWidth
-                  required
-                  value={currentVersionInput}
-                  onChange={(e) => handleCurrentVersionChange(e.target.value)}
-                  onBlur={handleCurrentVersionBlur}
-                  placeholder="e.g., 1.0.0.0"
-                  helperText={
-                    currentVersionError
-                      ? currentVersionError
-                      : "Enter the current version. Format: MAJOR.SUBVERSION.MINOR.PATCH (e.g., 1.0.0.0). Partial versions like '1' or '1.2' will be auto-completed."
-                  }
-                  error={!!currentVersionError}
-                  variant="outlined"
-                  size="medium"
-                  sx={{
-                    "& .MuiOutlinedInput-root": {
-                      borderRadius: 1.5,
-                    },
-                  }}
-                  inputProps={{
-                    pattern: "\\d+(\\.\\d+)*",
-                    inputMode: "numeric",
-                  }}
-                />
-
-                <TextField
-                  label="New Version"
-                  fullWidth
-                  value={newVersion}
-                  onChange={(e) => handleVersionChange(e.target.value)}
-                  onBlur={handleVersionBlur}
-                  placeholder="e.g., 1.0.0.1"
-                  helperText={
-                    versionError
-                      ? versionError
-                      : "Optional: Enter a new version to update to. If empty, Current Version will be used. Format: MAJOR.SUBVERSION.MINOR.PATCH (e.g., 1.0.0.0). Partial versions like '1' or '1.2' will be auto-completed."
-                  }
-                  error={!!versionError}
-                  variant="outlined"
-                  size="medium"
-                  sx={{
-                    "& .MuiOutlinedInput-root": {
-                      borderRadius: 1.5,
-                    },
-                  }}
-                  inputProps={{
-                    pattern: "\\d+(\\.\\d+)*",
-                    inputMode: "numeric",
-                  }}
-                />
-              </Stack>
+              <Grid container spacing={2}>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <TextField
+                    label="Versión Actual"
+                    fullWidth
+                    size="small"
+                    required
+                    value={currentVersionInput}
+                    onChange={(e) => handleCurrentVersionChange(e.target.value)}
+                    onBlur={handleCurrentVersionBlur}
+                    placeholder="Ej: 1.0.0.0"
+                    helperText={
+                      currentVersionError
+                        ? currentVersionError
+                        : "Formato: MAJOR.SUBVERSION.MINOR.PATCH"
+                    }
+                    error={!!currentVersionError}
+                    InputLabelProps={{
+                      shrink: true,
+                      sx: {
+                        fontSize: "0.75rem",
+                        fontWeight: 500,
+                        transform: "translate(14px, -9px) scale(0.875)",
+                        "&.MuiInputLabel-shrink": {
+                          transform: "translate(14px, -9px) scale(0.875)",
+                          backgroundColor: theme.palette.background.paper,
+                          paddingLeft: "6px",
+                          paddingRight: "6px",
+                          zIndex: 1,
+                        },
+                      },
+                    }}
+                    sx={{
+                      "& .MuiOutlinedInput-root": {
+                        fontSize: "0.75rem",
+                        "& input": {
+                          py: 0.75,
+                          fontSize: "0.75rem",
+                        },
+                        "&:hover": {
+                          "& .MuiOutlinedInput-notchedOutline": {
+                            borderColor: currentVersionError ? theme.palette.error.main : theme.palette.primary.main,
+                          },
+                        },
+                        "&.Mui-focused": {
+                          "& .MuiOutlinedInput-notchedOutline": {
+                            borderWidth: 2,
+                            borderColor: currentVersionError ? theme.palette.error.main : theme.palette.primary.main,
+                          },
+                        },
+                      },
+                      "& .MuiFormHelperText-root": {
+                        marginTop: "6px",
+                        marginLeft: "0px",
+                        fontSize: "0.6875rem",
+                      },
+                    }}
+                    inputProps={{
+                      pattern: "\\d+(\\.\\d+)*",
+                      inputMode: "numeric",
+                    }}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <TextField
+                    label="Nueva Versión"
+                    fullWidth
+                    size="small"
+                    value={newVersion}
+                    onChange={(e) => handleVersionChange(e.target.value)}
+                    onBlur={handleVersionBlur}
+                    placeholder="Ej: 1.0.0.1"
+                    helperText={
+                      versionError
+                        ? versionError
+                        : "Opcional: Si está vacío, se usará la versión actual"
+                    }
+                    error={!!versionError}
+                    InputLabelProps={{
+                      shrink: true,
+                      sx: {
+                        fontSize: "0.75rem",
+                        fontWeight: 500,
+                        transform: "translate(14px, -9px) scale(0.875)",
+                        "&.MuiInputLabel-shrink": {
+                          transform: "translate(14px, -9px) scale(0.875)",
+                          backgroundColor: theme.palette.background.paper,
+                          paddingLeft: "6px",
+                          paddingRight: "6px",
+                          zIndex: 1,
+                        },
+                      },
+                    }}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <CodeIcon
+                            sx={{
+                              fontSize: 18,
+                              color: versionError ? theme.palette.error.main : theme.palette.text.secondary,
+                            }}
+                          />
+                        </InputAdornment>
+                      ),
+                    }}
+                    sx={{
+                      "& .MuiOutlinedInput-root": {
+                        fontSize: "0.75rem",
+                        "& input": {
+                          py: 0.75,
+                          fontSize: "0.75rem",
+                        },
+                        "&:hover": {
+                          "& .MuiOutlinedInput-notchedOutline": {
+                            borderColor: versionError ? theme.palette.error.main : theme.palette.primary.main,
+                          },
+                        },
+                        "&.Mui-focused": {
+                          "& .MuiOutlinedInput-notchedOutline": {
+                            borderWidth: 2,
+                            borderColor: versionError ? theme.palette.error.main : theme.palette.primary.main,
+                          },
+                        },
+                      },
+                      "& .MuiFormHelperText-root": {
+                        marginTop: "6px",
+                        marginLeft: "0px",
+                        fontSize: "0.6875rem",
+                      },
+                    }}
+                    inputProps={{
+                      pattern: "\\d+(\\.\\d+)*",
+                      inputMode: "numeric",
+                    }}
+                  />
+                </Grid>
+              </Grid>
             )}
-          </Box>
-
-          <Divider sx={{ my: 0.5 }} />
 
           {/* Description */}
-          <Box>
-            <Typography
-              variant="subtitle2"
-              sx={{
-                mb: 2,
-                fontWeight: 600,
-                fontSize: "0.875rem",
-                color: theme.palette.text.primary,
-                textTransform: "uppercase",
-                letterSpacing: "0.5px",
-              }}
-            >
-              Additional Information
-            </Typography>
-            <TextField
-              label="Description"
-              fullWidth
-              multiline
-              rows={3}
-              value={component.description || ""}
-              onChange={(e) => {
-                onComponentChange({
-                  ...component,
-                  description: e.target.value,
-                });
-              }}
-              placeholder="Brief description of the component..."
-              variant="outlined"
-              size="medium"
-              sx={{
-                "& .MuiOutlinedInput-root": {
-                  borderRadius: 1.5,
+          <TextField
+            fullWidth
+            size="small"
+            label="Descripción"
+            multiline
+            rows={3}
+            value={component.description || ""}
+            onChange={(e) => {
+              onComponentChange({
+                ...component,
+                description: e.target.value,
+              });
+            }}
+            placeholder="Breve descripción del componente..."
+            InputLabelProps={{
+              shrink: true,
+              sx: {
+                fontSize: "0.75rem",
+                fontWeight: 500,
+                transform: "translate(14px, -9px) scale(0.875)",
+                "&.MuiInputLabel-shrink": {
+                  transform: "translate(14px, -9px) scale(0.875)",
+                  backgroundColor: theme.palette.background.paper,
+                  paddingLeft: "6px",
+                  paddingRight: "6px",
+                  zIndex: 1,
                 },
-              }}
-            />
-          </Box>
+              },
+            }}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start" sx={{ alignSelf: "flex-start", mt: 1.5 }}>
+                  <DescriptionIcon
+                    sx={{
+                      fontSize: 18,
+                      color: theme.palette.text.secondary,
+                    }}
+                  />
+                </InputAdornment>
+              ),
+            }}
+            sx={{
+              "& .MuiOutlinedInput-root": {
+                fontSize: "0.75rem",
+                "& input": {
+                  py: 0.75,
+                  fontSize: "0.75rem",
+                },
+                "& .MuiSelect-select": {
+                  py: 0.75,
+                  fontSize: "0.75rem",
+                },
+                "&:hover": {
+                  "& .MuiOutlinedInput-notchedOutline": {
+                    borderColor: theme.palette.primary.main,
+                  },
+                },
+                "&.Mui-focused": {
+                  "& .MuiOutlinedInput-notchedOutline": {
+                    borderWidth: 2,
+                    borderColor: theme.palette.primary.main,
+                  },
+                },
+              },
+              "& .MuiFormHelperText-root": {
+                marginTop: "6px",
+                marginLeft: "0px",
+              },
+            }}
+          />
         </Stack>
-      </DialogContent>
-
-      <DialogActions
-        sx={{
-          px: 3,
-          pt: 2,
-          pb: 3,
-          borderTop: `1px solid ${alpha(theme.palette.divider, 0.12)}`,
-          gap: 1.5,
-        }}
-      >
-        <Button 
-          onClick={onClose} 
-          sx={{ 
-            textTransform: "none",
-            px: 3,
-            py: 1,
-            borderRadius: 1.5,
-            fontWeight: 500,
-            color: theme.palette.text.secondary,
-            "&:hover": {
-              bgcolor: alpha(theme.palette.action.hover, 0.5),
-            },
-          }}
-        >
-          Cancel
-        </Button>
-        <Button
-          onClick={handleSave}
-          variant="contained"
-          disabled={
-            !component.name || 
-            !component.type || 
-            !!versionError ||
-            !!currentVersionError ||
-            (!editing && !currentVersionInput && !newVersion) // Require at least one version field when creating
-          }
-          sx={{ 
-            textTransform: "none", 
-            fontWeight: 600,
-            px: 3,
-            py: 1,
-            borderRadius: 1.5,
-            boxShadow: `0 2px 8px ${alpha(theme.palette.primary.main, 0.24)}`,
-            "&:hover": {
-              boxShadow: `0 4px 12px ${alpha(theme.palette.primary.main, 0.32)}`,
-            },
-            "&:disabled": {
-              boxShadow: "none",
-            },
-          }}
-        >
-          {editing ? "Update Component" : "Create Component"}
-        </Button>
-      </DialogActions>
-    </Dialog>
+    </BaseEditDialog>
   );
 }
 

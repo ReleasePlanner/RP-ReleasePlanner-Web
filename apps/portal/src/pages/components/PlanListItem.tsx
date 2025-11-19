@@ -151,9 +151,9 @@ const PlanListItem = memo(function PlanListItem({
         onClick={handleToggle}
         onContextMenu={handleContextMenu}
         sx={{
-          px: { xs: 1, sm: 1.5, md: 2 },
-          py: { xs: 0.75, sm: 1 },
-          minHeight: 48,
+          px: 2,
+          py: 1.5,
+          minHeight: "auto",
           width: "100%",
           display: "flex",
           flexDirection: "row",
@@ -164,7 +164,7 @@ const PlanListItem = memo(function PlanListItem({
               ? `1px solid ${alpha(theme.palette.divider, 0.08)}`
               : "none",
           "&:hover": {
-            bgcolor: alpha(theme.palette.action.hover, 0.04),
+            bgcolor: alpha(theme.palette.primary.main, 0.04),
           },
         }}
       >
@@ -205,8 +205,8 @@ const PlanListItem = memo(function PlanListItem({
           <Typography
             variant="body2"
             sx={{
-              fontWeight: 600,
-              fontSize: { xs: "0.8125rem", sm: "0.875rem" },
+              fontWeight: 500,
+              fontSize: "0.8125rem",
               color: theme.palette.text.primary,
               overflow: "hidden",
               textOverflow: "ellipsis",
@@ -236,48 +236,48 @@ const PlanListItem = memo(function PlanListItem({
               {...getStatusChipProps(plan.metadata.status)}
               size="small"
               sx={{
-                height: { xs: 18, sm: 20 },
-                fontSize: { xs: "0.625rem", sm: "0.6875rem" },
+                height: 18,
+                fontSize: "0.625rem",
                 fontWeight: 500,
                 "& .MuiChip-label": {
-                  px: { xs: 0.75, sm: 1 },
+                  px: 0.75,
                 },
               }}
             />
 
             {/* Owner */}
             <Chip
-              icon={<PersonIcon sx={{ fontSize: { xs: 10, sm: 12 } }} />}
+              icon={<PersonIcon sx={{ fontSize: 10 }} />}
               label={plan.metadata.owner}
               size="small"
               variant="outlined"
               sx={{
-                height: { xs: 18, sm: 20 },
-                fontSize: { xs: "0.625rem", sm: "0.6875rem" },
+                height: 18,
+                fontSize: "0.625rem",
                 borderColor: alpha(theme.palette.divider, 0.3),
                 color: theme.palette.text.secondary,
                 display: { xs: "none", sm: "flex" },
                 "& .MuiChip-label": {
-                  px: { xs: 0.75, sm: 1 },
+                  px: 0.75,
                 },
               }}
             />
 
             {/* Date Range */}
             <Chip
-              icon={<CalendarIcon sx={{ fontSize: { xs: 10, sm: 12 } }} />}
+              icon={<CalendarIcon sx={{ fontSize: 10 }} />}
               label={`${formatCompactDate(plan.metadata.startDate)} - ${formatCompactDate(
                 plan.metadata.endDate
               )}`}
               size="small"
               variant="outlined"
               sx={{
-                height: { xs: 18, sm: 20 },
-                fontSize: { xs: "0.625rem", sm: "0.6875rem" },
+                height: 18,
+                fontSize: "0.625rem",
                 borderColor: alpha(theme.palette.divider, 0.3),
                 color: theme.palette.text.secondary,
                 "& .MuiChip-label": {
-                  px: { xs: 0.75, sm: 1 },
+                  px: 0.75,
                   overflow: "hidden",
                   textOverflow: "ellipsis",
                   maxWidth: { xs: 120, sm: "none" },
@@ -288,17 +288,17 @@ const PlanListItem = memo(function PlanListItem({
             {/* Phases Count */}
             {phasesCount > 0 && (
               <Chip
-                icon={<TimelineIcon sx={{ fontSize: { xs: 10, sm: 12 } }} />}
-                label={`${phasesCount} ${phasesCount === 1 ? "fase" : "fases"}`}
+                icon={<TimelineIcon sx={{ fontSize: 10 }} />}
+                label={`${phasesCount} ${phasesCount === 1 ? "phase" : "phases"}`}
                 size="small"
                 variant="outlined"
                 sx={{
-                  height: { xs: 18, sm: 20 },
-                  fontSize: { xs: "0.625rem", sm: "0.6875rem" },
+                  height: 18,
+                  fontSize: "0.625rem",
                   borderColor: alpha(theme.palette.divider, 0.3),
                   color: theme.palette.text.secondary,
                   "& .MuiChip-label": {
-                    px: { xs: 0.75, sm: 1 },
+                    px: 0.75,
                   },
                 }}
               />
@@ -307,18 +307,18 @@ const PlanListItem = memo(function PlanListItem({
             {/* Tasks Count */}
             {tasksCount > 0 && (
               <Chip
-                icon={<TaskIcon sx={{ fontSize: { xs: 10, sm: 12 } }} />}
-                label={`${tasksCount} ${tasksCount === 1 ? "tarea" : "tareas"}`}
+                icon={<TaskIcon sx={{ fontSize: 10 }} />}
+                label={`${tasksCount} ${tasksCount === 1 ? "task" : "tasks"}`}
                 size="small"
                 variant="outlined"
                 sx={{
-                  height: { xs: 18, sm: 20 },
-                  fontSize: { xs: "0.625rem", sm: "0.6875rem" },
+                  height: 18,
+                  fontSize: "0.625rem",
                   borderColor: alpha(theme.palette.divider, 0.3),
                   color: theme.palette.text.secondary,
                   display: { xs: "none", md: "flex" },
                   "& .MuiChip-label": {
-                    px: { xs: 0.75, sm: 1 },
+                    px: 0.75,
                   },
                 }}
               />
@@ -337,68 +337,64 @@ const PlanListItem = memo(function PlanListItem({
           }}
         >
           {expanded && (
-            <Tooltip title="Guardar cambios del plan" arrow placement="top">
+            <Tooltip title="Save plan changes" arrow placement="top">
               <span>
                 <IconButton
                   size="small"
                   onClick={handleSave}
                   disabled={isSaving || !hasPendingChanges}
                   sx={{
-                    p: { xs: 0.5, sm: 0.75 },
+                    fontSize: 16,
+                    p: 0.75,
                     color: theme.palette.success.main,
                     opacity: hasPendingChanges ? 1 : 0.5,
                     transition: "all 0.2s ease-in-out",
                     "&:hover:not(:disabled)": {
                       opacity: 1,
                       bgcolor: alpha(theme.palette.success.main, 0.08),
-                      transform: "scale(1.1)",
                     },
                     "&:disabled": {
                       opacity: 0.5,
                     },
                   }}
                 >
-                  <SaveIcon fontSize="small" />
+                  <SaveIcon fontSize="inherit" />
                 </IconButton>
               </span>
             </Tooltip>
           )}
-          <Tooltip title="Copiar ID del plan" arrow placement="top">
+          <Tooltip title="Copy plan ID" arrow placement="top">
             <IconButton
               size="small"
               onClick={handleCopyId}
               sx={{
-                p: { xs: 0.5, sm: 0.75 },
-                color: theme.palette.info.main,
-                opacity: 0.7,
-                transition: "all 0.2s ease-in-out",
+                fontSize: 16,
+                p: 0.75,
+                color: theme.palette.text.secondary,
                 "&:hover": {
-                  opacity: 1,
+                  color: theme.palette.info.main,
                   bgcolor: alpha(theme.palette.info.main, 0.08),
-                  transform: "scale(1.1)",
                 },
               }}
             >
-              <InfoIcon fontSize="small" />
+              <InfoIcon fontSize="inherit" />
             </IconButton>
           </Tooltip>
-          <Tooltip title="Eliminar plan" arrow placement="top">
+          <Tooltip title="Delete plan" arrow placement="top">
             <IconButton
               size="small"
               onClick={handleDelete}
               sx={{
-                p: { xs: 0.5, sm: 0.75 },
-                color: theme.palette.error.main,
-                opacity: 0.7,
-                transition: "all 0.2s ease-in-out",
+                fontSize: 16,
+                p: 0.75,
+                color: theme.palette.text.secondary,
                 "&:hover": {
-                  opacity: 1,
+                  color: theme.palette.error.main,
                   bgcolor: alpha(theme.palette.error.main, 0.08),
-                  transform: "scale(1.1)",
                 },
               }}
             >
-              <DeleteIcon fontSize="small" />
+              <DeleteIcon fontSize="inherit" />
             </IconButton>
           </Tooltip>
         </Box>

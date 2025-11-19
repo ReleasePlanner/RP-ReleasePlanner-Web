@@ -75,27 +75,29 @@ export function PageLayout({
       }}
     >
       {/* Page Header */}
-      <Box sx={{ mb: 4 }}>
+      <Box sx={{ mb: 3 }}>
         <Typography
           variant="h4"
           component="h1"
           sx={{
-            fontWeight: 700,
-            fontSize: { xs: "1.75rem", sm: "2rem", md: "2.125rem" },
+            fontWeight: 600,
+            fontSize: { xs: "1.25rem", sm: "1.375rem", md: "1.5rem" },
             color: theme.palette.text.primary,
-            mb: 1,
-            letterSpacing: "-0.02em",
+            mb: 0.5,
+            letterSpacing: "-0.01em",
+            lineHeight: 1.3,
           }}
         >
           {title}
         </Typography>
         {description && (
           <Typography
-            variant="body1"
+            variant="body2"
             color="text.secondary"
             sx={{
-              fontSize: { xs: "0.875rem", md: "1rem" },
+              fontSize: { xs: "0.75rem", md: "0.8125rem" },
               maxWidth: "600px",
+              lineHeight: 1.5,
             }}
           >
             {description}

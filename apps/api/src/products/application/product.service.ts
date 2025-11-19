@@ -59,10 +59,10 @@ export class ProductService {
     const components = dto.components
       ? dto.components.map((c) => {
           // Defensive: Validate component data
-          if (!c || !c.type || !c.currentVersion || !c.previousVersion) {
-            throw new Error('Invalid component data');
+          if (!c || !c.componentTypeId || !c.currentVersion || !c.previousVersion) {
+            throw new Error('Invalid component data: componentTypeId, currentVersion, and previousVersion are required');
           }
-          return new ProductComponentVersion(c.type, c.currentVersion, c.previousVersion);
+          return new ProductComponentVersion(c.componentTypeId, c.currentVersion, c.previousVersion, c.name);
         })
       : [];
 
@@ -135,10 +135,10 @@ export class ProductService {
       // Pass plain objects with id preserved - repository will handle entity conversion
       updates.components = dto.components.map((c) => {
         // Defensive: Validate component data
-        // Require either type or componentTypeId, and currentVersion
-        if (!c || (!c.type && !c.componentTypeId) || !c.currentVersion) {
+        // Require componentTypeId and currentVersion
+        if (!c || !c.componentTypeId || !c.currentVersion) {
           console.error('ProductService.update - Invalid component:', JSON.stringify(c));
-          throw new Error(`Invalid component data: either 'type' or 'componentTypeId' must be provided, and 'currentVersion' is required. Received: ${JSON.stringify(c)}`);
+          throw new Error(`Invalid component data: 'componentTypeId' and 'currentVersion' are required. Received: ${JSON.stringify(c)}`);
         }
         // If previousVersion is empty, use currentVersion as fallback
         const previousVersion = (c.previousVersion && c.previousVersion.trim() !== '') 
@@ -148,18 +148,11 @@ export class ProductService {
         const componentData: any = {
           id: c.id, // Preserve id if present
           name: c.name, // Include name if present
+          componentTypeId: c.componentTypeId, // Required
           currentVersion: c.currentVersion,
           previousVersion: previousVersion,
           productId: id,
         };
-        // Include type or componentTypeId (prefer componentTypeId)
-        if (c.componentTypeId) {
-          componentData.componentTypeId = c.componentTypeId;
-        }
-        if (c.type) {
-          // Normalize type to lowercase to match enum values (web, services, mobile)
-          componentData.type = c.type.toLowerCase();
-        }
         console.log('ProductService.update - mapped component:', JSON.stringify(componentData, null, 2));
         return componentData;
       }) as any;

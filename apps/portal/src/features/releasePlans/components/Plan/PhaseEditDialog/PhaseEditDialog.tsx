@@ -14,7 +14,6 @@ import {
   Alert,
   Fade,
   Grid,
-  Divider,
 } from "@mui/material";
 import {
   Edit as EditIcon,
@@ -48,6 +47,7 @@ export default function PhaseEditDialog({
 }: PhaseEditDialogProps) {
   const theme = useTheme();
   const basePhases = useAppSelector((state) => state.basePhases.phases);
+  const isNew = !phase?.id || phase.id.startsWith("new-");
 
   // Check if phase is a base phase (from maintenance)
   const isBasePhase = useMemo(() => {
@@ -313,38 +313,39 @@ export default function PhaseEditDialog({
     >
       <DialogTitle
         sx={{
-          py: 2,
-          px: 2.5,
-          borderBottom: `1px solid ${alpha(theme.palette.divider, 0.08)}`,
+          py: 2.5,
+          px: 3,
+          pb: 2,
+          borderBottom: `1px solid ${alpha(theme.palette.divider, 0.12)}`,
         }}
       >
-        <Stack direction="row" spacing={1.5} alignItems="center">
+        <Stack direction="row" spacing={2} alignItems="center">
           <Box
             sx={{
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              width: 36,
-              height: 36,
-              borderRadius: 1.5,
-              backgroundColor: alpha(theme.palette.primary.main, 0.08),
+              width: 40,
+              height: 40,
+              borderRadius: 2,
+              backgroundColor: alpha(theme.palette.primary.main, 0.1),
               color: theme.palette.primary.main,
             }}
           >
-            <EditIcon sx={{ fontSize: 20 }} />
+            <EditIcon sx={{ fontSize: 22 }} />
           </Box>
           <Box sx={{ flex: 1 }}>
             <Typography
               variant="h6"
               sx={{
                 fontWeight: 600,
-                fontSize: "1.125rem",
+                fontSize: "1.25rem",
                 letterSpacing: "-0.01em",
                 color: theme.palette.text.primary,
-                mb: 0.25,
+                mb: 0.5,
               }}
             >
-              Editar Fase
+              {isNew ? "Nueva Fase" : "Editar Fase"}
             </Typography>
             <Typography
               variant="body2"
@@ -364,20 +365,20 @@ export default function PhaseEditDialog({
               sx={{
                 display: "flex",
                 alignItems: "center",
-                gap: 0.5,
+                gap: 0.75,
                 px: 1.5,
-                py: 0.5,
-                borderRadius: 1,
+                py: 0.75,
+                borderRadius: 1.5,
                 backgroundColor: alpha(theme.palette.info.main, 0.1),
                 color: theme.palette.info.main,
               }}
             >
-              <LockIcon sx={{ fontSize: 14 }} />
+              <LockIcon sx={{ fontSize: 16 }} />
               <Typography
                 variant="caption"
                 sx={{
                   fontSize: "0.75rem",
-                  fontWeight: 500,
+                  fontWeight: 600,
                 }}
               >
                 Fase Base
@@ -387,23 +388,176 @@ export default function PhaseEditDialog({
         </Stack>
       </DialogTitle>
 
-      <DialogContent sx={{ pt: 2.5, pb: 2, px: 2.5 }}>
-        <Stack spacing={2.5}>
+      <DialogContent sx={{ pt: 4, pb: 2, px: 3 }}>
+        <Stack spacing={3.5}>
           {/* Phase Name Input - Only for non-base phases */}
           {!isBasePhase && (
-            <Box>
+            <TextField
+              autoFocus
+              fullWidth
+              size="medium"
+              label="Nombre de la Fase"
+              placeholder="Ej: Planning, Development, Testing..."
+              value={formData.name}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, name: e.target.value }))
+              }
+              onKeyDown={handleKeyDown}
+              error={!!errors.name}
+              InputLabelProps={{
+                shrink: true,
+                sx: {
+                  fontSize: "0.875rem",
+                  fontWeight: 500,
+                  transform: "translate(14px, -9px) scale(0.875)",
+                  "&.MuiInputLabel-shrink": {
+                    transform: "translate(14px, -9px) scale(0.875)",
+                    backgroundColor: theme.palette.background.paper,
+                    paddingLeft: "6px",
+                    paddingRight: "6px",
+                    zIndex: 1,
+                  },
+                },
+              }}
+              helperText={
+                errors.name ? (
+                  <Box
+                    component="span"
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 0.5,
+                      fontSize: "0.75rem",
+                    }}
+                  >
+                    <ErrorIcon sx={{ fontSize: 14 }} />
+                    {errors.name}
+                  </Box>
+                ) : isValidating ? (
+                  "Validando..."
+                ) : formData.name.trim() ? (
+                  <Box
+                    component="span"
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 0.5,
+                      fontSize: "0.75rem",
+                      color: theme.palette.success.main,
+                    }}
+                  >
+                    <CheckCircleIcon sx={{ fontSize: 14 }} />
+                    Nombre disponible
+                  </Box>
+                ) : (
+                  "Ingresa un nombre único para la fase"
+                )
+              }
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <TimelineIcon
+                      sx={{
+                        fontSize: 20,
+                        color: errors.name
+                          ? theme.palette.error.main
+                          : formData.name.trim()
+                          ? theme.palette.success.main
+                          : theme.palette.text.secondary,
+                        transition: "color 0.2s ease",
+                      }}
+                    />
+                  </InputAdornment>
+                ),
+              }}
+              sx={{
+                "& .MuiOutlinedInput-root": {
+                  fontSize: "0.9375rem",
+                  paddingTop: "4px",
+                  paddingBottom: "4px",
+                  "&:hover": {
+                    "& .MuiOutlinedInput-notchedOutline": {
+                      borderColor: errors.name
+                        ? theme.palette.error.main
+                        : theme.palette.primary.main,
+                    },
+                  },
+                  "&.Mui-focused": {
+                    "& .MuiOutlinedInput-notchedOutline": {
+                      borderWidth: 2,
+                      borderColor: errors.name
+                        ? theme.palette.error.main
+                        : theme.palette.primary.main,
+                    },
+                  },
+                },
+                "& .MuiFormHelperText-root": {
+                  marginTop: "6px",
+                  marginLeft: "0px",
+                },
+              }}
+            />
+          )}
+
+          {/* Display phase name for base phases (read-only) */}
+          {isBasePhase && (
+            <TextField
+              fullWidth
+              size="medium"
+              label="Nombre de la Fase"
+              value={phase?.name || ""}
+              disabled
+              InputLabelProps={{
+                shrink: true,
+                sx: {
+                  fontSize: "0.875rem",
+                  fontWeight: 500,
+                  transform: "translate(14px, -9px) scale(0.875)",
+                  "&.MuiInputLabel-shrink": {
+                    transform: "translate(14px, -9px) scale(0.875)",
+                    backgroundColor: theme.palette.background.paper,
+                    paddingLeft: "6px",
+                    paddingRight: "6px",
+                    zIndex: 1,
+                  },
+                },
+              }}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <LockIcon sx={{ fontSize: 20, color: theme.palette.text.disabled }} />
+                  </InputAdornment>
+                ),
+              }}
+                sx={{
+                  "& .MuiOutlinedInput-root": {
+                    fontSize: "0.9375rem",
+                    backgroundColor: alpha(theme.palette.action.hover, 0.3),
+                    paddingTop: "4px",
+                    paddingBottom: "4px",
+                  },
+                }}
+            />
+          )}
+
+          {/* Date Range */}
+          <Grid container spacing={2}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
-                autoFocus
+                label="Fecha de Inicio"
+                type="date"
                 fullWidth
-                size="small"
-                label="Nombre de la Fase"
-                placeholder="Ej: Planning, Development, Testing..."
-                value={formData.name}
+                size="medium"
+                value={formData.startDate}
                 onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, name: e.target.value }))
+                  setFormData((prev) => ({
+                    ...prev,
+                    startDate: e.target.value,
+                  }))
                 }
                 onKeyDown={handleKeyDown}
-                error={!!errors.name}
+                error={!!errors.startDate || !!errors.dateRange}
+                helperText={errors.startDate || " "}
                 InputLabelProps={{
                   shrink: true,
                   sx: {
@@ -411,52 +565,15 @@ export default function PhaseEditDialog({
                     fontWeight: 500,
                   },
                 }}
-                helperText={
-                  errors.name ? (
-                    <Box
-                      component="span"
-                      sx={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 0.5,
-                        fontSize: "0.75rem",
-                      }}
-                    >
-                      <ErrorIcon sx={{ fontSize: 14 }} />
-                      {errors.name}
-                    </Box>
-                  ) : isValidating ? (
-                    "Validando..."
-                  ) : formData.name.trim() ? (
-                    <Box
-                      component="span"
-                      sx={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 0.5,
-                        fontSize: "0.75rem",
-                        color: theme.palette.success.main,
-                      }}
-                    >
-                      <CheckCircleIcon sx={{ fontSize: 14 }} />
-                      Nombre disponible
-                    </Box>
-                  ) : (
-                    "Ingresa un nombre único para la fase"
-                  )
-                }
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
-                      <TimelineIcon
+                      <CalendarIcon
                         sx={{
-                          fontSize: 18,
-                          color: errors.name
+                          fontSize: 20,
+                          color: errors.startDate || errors.dateRange
                             ? theme.palette.error.main
-                            : formData.name.trim()
-                            ? theme.palette.success.main
                             : theme.palette.text.secondary,
-                          transition: "color 0.2s ease",
                         }}
                       />
                     </InputAdornment>
@@ -464,18 +581,83 @@ export default function PhaseEditDialog({
                 }}
                 sx={{
                   "& .MuiOutlinedInput-root": {
-                    fontSize: "0.875rem",
+                    fontSize: "0.9375rem",
+                    paddingTop: "4px",
+                    paddingBottom: "4px",
                     "&:hover": {
                       "& .MuiOutlinedInput-notchedOutline": {
-                        borderColor: errors.name
+                        borderColor: errors.startDate || errors.dateRange
                           ? theme.palette.error.main
                           : theme.palette.primary.main,
                       },
                     },
                     "&.Mui-focused": {
                       "& .MuiOutlinedInput-notchedOutline": {
-                        borderWidth: 1.5,
-                        borderColor: errors.name
+                        borderWidth: 2,
+                        borderColor: errors.startDate || errors.dateRange
+                          ? theme.palette.error.main
+                          : theme.palette.primary.main,
+                      },
+                    },
+                  },
+                  "& .MuiFormHelperText-root": {
+                    marginTop: "6px",
+                    marginLeft: "0px",
+                  },
+                }}
+              />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <TextField
+                label="Fecha de Fin"
+                type="date"
+                fullWidth
+                size="medium"
+                value={formData.endDate}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    endDate: e.target.value,
+                  }))
+                }
+                onKeyDown={handleKeyDown}
+                error={!!errors.endDate || !!errors.dateRange}
+                helperText={errors.endDate || errors.dateRange || " "}
+                InputLabelProps={{
+                  shrink: true,
+                  sx: {
+                    fontSize: "0.875rem",
+                    fontWeight: 500,
+                  },
+                }}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <CalendarIcon
+                        sx={{
+                          fontSize: 20,
+                          color: errors.endDate || errors.dateRange
+                            ? theme.palette.error.main
+                            : theme.palette.text.secondary,
+                        }}
+                      />
+                    </InputAdornment>
+                  ),
+                }}
+                sx={{
+                  "& .MuiOutlinedInput-root": {
+                    fontSize: "0.9375rem",
+                    "&:hover": {
+                      "& .MuiOutlinedInput-notchedOutline": {
+                        borderColor: errors.endDate || errors.dateRange
+                          ? theme.palette.error.main
+                          : theme.palette.primary.main,
+                      },
+                    },
+                    "&.Mui-focused": {
+                      "& .MuiOutlinedInput-notchedOutline": {
+                        borderWidth: 2,
+                        borderColor: errors.endDate || errors.dateRange
                           ? theme.palette.error.main
                           : theme.palette.primary.main,
                       },
@@ -483,366 +665,171 @@ export default function PhaseEditDialog({
                   },
                 }}
               />
-            </Box>
-          )}
-
-          {/* Display phase name for base phases (read-only) */}
-          {isBasePhase && (
-            <Box
-              sx={{
-                p: 1.5,
-                borderRadius: 1.5,
-                backgroundColor: alpha(theme.palette.action.hover, 0.3),
-                border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
-              }}
-            >
-              <Stack direction="row" spacing={1.5} alignItems="center">
-                <TimelineIcon
-                  sx={{
-                    fontSize: 20,
-                    color: theme.palette.text.secondary,
-                  }}
-                />
-                <Box sx={{ flex: 1 }}>
-                  <Typography
-                    variant="caption"
-                    sx={{
-                      fontSize: "0.75rem",
-                      color: theme.palette.text.secondary,
-                      fontWeight: 500,
-                      display: "block",
-                      mb: 0.25,
-                    }}
-                  >
-                    Nombre de la Fase
-                  </Typography>
-                  <Typography
-                    variant="body2"
-                    sx={{
-                      fontSize: "0.9375rem",
-                      fontWeight: 600,
-                      color: theme.palette.text.primary,
-                    }}
-                  >
-                    {phase?.name}
-                  </Typography>
-                </Box>
-                <LockIcon
-                  sx={{
-                    fontSize: 16,
-                    color: theme.palette.text.disabled,
-                  }}
-                />
-              </Stack>
-            </Box>
-          )}
-
-          <Divider sx={{ my: 0.5 }} />
-
-          {/* Date Range */}
-          <Box>
-            <Typography
-              variant="subtitle2"
-              sx={{
-                fontSize: "0.8125rem",
-                fontWeight: 600,
-                mb: 1.5,
-                color: theme.palette.text.primary,
-                display: "flex",
-                alignItems: "center",
-                gap: 0.75,
-              }}
-            >
-              <CalendarIcon sx={{ fontSize: 16 }} />
-              Período de Fechas
-            </Typography>
-            <Grid container spacing={1.5}>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  label="Fecha de Inicio"
-                  type="date"
-                  fullWidth
-                  size="small"
-                  value={formData.startDate}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      startDate: e.target.value,
-                    }))
-                  }
-                  onKeyDown={handleKeyDown}
-                  error={!!errors.startDate || !!errors.dateRange}
-                  helperText={errors.startDate || " "}
-                  InputLabelProps={{
-                    shrink: true,
-                    sx: {
-                      fontSize: "0.875rem",
-                      fontWeight: 500,
-                    },
-                  }}
-                  sx={{
-                    "& .MuiOutlinedInput-root": {
-                      fontSize: "0.875rem",
-                      "&:hover": {
-                        "& .MuiOutlinedInput-notchedOutline": {
-                          borderColor: errors.startDate
-                            ? theme.palette.error.main
-                            : theme.palette.primary.main,
-                        },
-                      },
-                      "&.Mui-focused": {
-                        "& .MuiOutlinedInput-notchedOutline": {
-                          borderWidth: 1.5,
-                          borderColor: errors.startDate
-                            ? theme.palette.error.main
-                            : theme.palette.primary.main,
-                        },
-                      },
-                    },
-                  }}
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  label="Fecha de Fin"
-                  type="date"
-                  fullWidth
-                  size="small"
-                  value={formData.endDate}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      endDate: e.target.value,
-                    }))
-                  }
-                  onKeyDown={handleKeyDown}
-                  error={!!errors.endDate || !!errors.dateRange}
-                  helperText={errors.endDate || errors.dateRange || " "}
-                  InputLabelProps={{
-                    shrink: true,
-                    sx: {
-                      fontSize: "0.875rem",
-                      fontWeight: 500,
-                    },
-                  }}
-                  sx={{
-                    "& .MuiOutlinedInput-root": {
-                      fontSize: "0.875rem",
-                      "&:hover": {
-                        "& .MuiOutlinedInput-notchedOutline": {
-                          borderColor: errors.endDate || errors.dateRange
-                            ? theme.palette.error.main
-                            : theme.palette.primary.main,
-                        },
-                      },
-                      "&.Mui-focused": {
-                        "& .MuiOutlinedInput-notchedOutline": {
-                          borderWidth: 1.5,
-                          borderColor: errors.endDate || errors.dateRange
-                            ? theme.palette.error.main
-                            : theme.palette.primary.main,
-                        },
-                      },
-                    },
-                  }}
-                />
-              </Grid>
             </Grid>
-            {errors.dateRange && (
-              <Alert
-                severity="error"
-                icon={<ErrorIcon sx={{ fontSize: 16 }} />}
-                sx={{
-                  mt: 1.5,
-                  borderRadius: 1,
-                  fontSize: "0.75rem",
-                  py: 0.5,
-                }}
-              >
-                {errors.dateRange}
-              </Alert>
-            )}
-          </Box>
+          </Grid>
+          {errors.dateRange && (
+            <Alert
+              severity="error"
+              icon={<ErrorIcon sx={{ fontSize: 16 }} />}
+              sx={{
+                borderRadius: 1.5,
+                fontSize: "0.8125rem",
+                py: 0.75,
+              }}
+            >
+              {errors.dateRange}
+            </Alert>
+          )}
 
           {/* Color Picker - Only for non-base phases */}
           {!isBasePhase && (
-            <>
-              <Divider sx={{ my: 0.5 }} />
-              <Box>
-                <Typography
-                  variant="subtitle2"
+            <Box>
+              <TextField
+                label="Color de la Fase"
+                type="color"
+                fullWidth
+                size="medium"
+                value={formData.color}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, color: e.target.value }))
+                }
+                error={!!errors.color}
+                helperText={errors.color || "El color debe ser único y diferente a las fases base y otras fases del plan"}
+                InputLabelProps={{
+                  shrink: true,
+                  sx: {
+                    fontSize: "0.875rem",
+                    fontWeight: 500,
+                  },
+                }}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <Box
+                        sx={{
+                          width: 32,
+                          height: 32,
+                          borderRadius: 1,
+                          bgcolor: formData.color,
+                          border: `2px solid ${errors.color ? theme.palette.error.main : alpha(theme.palette.divider, 0.2)}`,
+                          flexShrink: 0,
+                          boxShadow: theme.shadows[1],
+                        }}
+                      />
+                    </InputAdornment>
+                  ),
+                }}
+                inputProps={{
+                  style: { padding: 0, height: 48, borderRadius: 4 },
+                }}
+                sx={{
+                  "& .MuiOutlinedInput-root": {
+                    fontSize: "0.9375rem",
+                    paddingTop: "4px",
+                    paddingBottom: "4px",
+                    "&:hover": {
+                      "& .MuiOutlinedInput-notchedOutline": {
+                        borderColor: errors.color
+                          ? theme.palette.error.main
+                          : theme.palette.primary.main,
+                      },
+                    },
+                    "&.Mui-focused": {
+                      "& .MuiOutlinedInput-notchedOutline": {
+                        borderWidth: 2,
+                        borderColor: errors.color
+                          ? theme.palette.error.main
+                          : theme.palette.primary.main,
+                      },
+                    },
+                  },
+                  "& .MuiFormHelperText-root": {
+                    marginTop: "6px",
+                    marginLeft: "0px",
+                  },
+                }}
+              />
+              {errors.color && (
+                <Alert
+                  severity="error"
+                  icon={<ErrorIcon sx={{ fontSize: 16 }} />}
                   sx={{
+                    mt: 1.5,
+                    borderRadius: 1.5,
                     fontSize: "0.8125rem",
-                    fontWeight: 600,
-                    mb: 1.5,
-                    color: theme.palette.text.primary,
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 0.75,
+                    py: 0.75,
                   }}
                 >
-                  <PaletteIcon sx={{ fontSize: 16 }} />
-                  Color de la Fase
-                </Typography>
-                <Box
-                  sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 1.5,
-                  }}
-                >
-                  <Box
-                    sx={{
-                      width: 48,
-                      height: 36,
-                      borderRadius: 1,
-                      bgcolor: formData.color,
-                      border: `2px solid ${errors.color ? theme.palette.error.main : alpha(theme.palette.divider, 0.2)}`,
-                      flexShrink: 0,
-                      boxShadow: theme.shadows[1],
-                    }}
-                  />
-                  <TextField
-                    label="Seleccionar Color"
-                    type="color"
-                    fullWidth
-                    size="small"
-                    value={formData.color}
-                    onChange={(e) =>
-                      setFormData((prev) => ({ ...prev, color: e.target.value }))
-                    }
-                    error={!!errors.color}
-                    helperText={errors.color || "El color debe ser único y diferente a las fases base y otras fases del plan"}
-                    InputLabelProps={{
-                      shrink: true,
-                      sx: {
-                        fontSize: "0.875rem",
-                        fontWeight: 500,
-                      },
-                    }}
-                    inputProps={{
-                      style: { padding: 0, height: 36, borderRadius: 4 },
-                    }}
-                    sx={{
-                      "& .MuiOutlinedInput-root": {
-                        fontSize: "0.875rem",
-                        "&:hover": {
-                          "& .MuiOutlinedInput-notchedOutline": {
-                            borderColor: errors.color
-                              ? theme.palette.error.main
-                              : theme.palette.primary.main,
-                          },
-                        },
-                        "&.Mui-focused": {
-                          "& .MuiOutlinedInput-notchedOutline": {
-                            borderWidth: 1.5,
-                            borderColor: errors.color
-                              ? theme.palette.error.main
-                              : theme.palette.primary.main,
-                          },
-                        },
-                      },
-                    }}
-                  />
-                </Box>
-                {errors.color && (
-                  <Alert
-                    severity="error"
-                    icon={<ErrorIcon sx={{ fontSize: 16 }} />}
-                    sx={{
-                      mt: 1.5,
-                      borderRadius: 1,
-                      fontSize: "0.75rem",
-                      py: 0.5,
-                    }}
-                  >
-                    {errors.color}
-                  </Alert>
-                )}
-              </Box>
-            </>
+                  {errors.color}
+                </Alert>
+              )}
+            </Box>
           )}
 
           {/* Display color for base phases (read-only) */}
           {isBasePhase && (
-            <>
-              <Divider sx={{ my: 0.5 }} />
-              <Box
-                sx={{
-                  p: 1.5,
-                  borderRadius: 1.5,
-                  backgroundColor: alpha(theme.palette.action.hover, 0.3),
-                  border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
-                }}
-              >
-                <Stack direction="row" spacing={1.5} alignItems="center">
-                  <PaletteIcon
-                    sx={{
-                      fontSize: 20,
-                      color: theme.palette.text.secondary,
-                    }}
-                  />
-                  <Box sx={{ flex: 1 }}>
-                    <Typography
-                      variant="caption"
-                      sx={{
-                        fontSize: "0.75rem",
-                        color: theme.palette.text.secondary,
-                        fontWeight: 500,
-                        display: "block",
-                        mb: 0.25,
-                      }}
-                    >
-                      Color de la Fase
-                    </Typography>
+            <TextField
+              fullWidth
+              size="medium"
+              label="Color de la Fase"
+              value={phase?.color || "#185ABD"}
+              disabled
+              InputLabelProps={{
+                shrink: true,
+                sx: {
+                  fontSize: "0.875rem",
+                  fontWeight: 500,
+                  transform: "translate(14px, -9px) scale(0.875)",
+                  "&.MuiInputLabel-shrink": {
+                    transform: "translate(14px, -9px) scale(0.875)",
+                    backgroundColor: theme.palette.background.paper,
+                    paddingLeft: "6px",
+                    paddingRight: "6px",
+                    zIndex: 1,
+                  },
+                },
+              }}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
                     <Box
                       sx={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 1,
+                        width: 32,
+                        height: 32,
+                        borderRadius: 1,
+                        bgcolor: phase?.color || "#185ABD",
+                        border: `2px solid ${alpha(theme.palette.divider, 0.2)}`,
+                        flexShrink: 0,
+                        boxShadow: theme.shadows[1],
                       }}
-                    >
-                      <Box
-                        sx={{
-                          width: 32,
-                          height: 24,
-                          borderRadius: 0.75,
-                          bgcolor: phase?.color || "#185ABD",
-                          border: `1px solid ${alpha(theme.palette.divider, 0.2)}`,
-                          boxShadow: theme.shadows[1],
-                        }}
-                      />
-                      <Typography
-                        variant="body2"
-                        sx={{
-                          fontSize: "0.8125rem",
-                          fontFamily: "monospace",
-                          color: theme.palette.text.secondary,
-                        }}
-                      >
-                        {phase?.color || "#185ABD"}
-                      </Typography>
-                    </Box>
-                  </Box>
-                  <LockIcon
-                    sx={{
-                      fontSize: 16,
-                      color: theme.palette.text.disabled,
-                    }}
-                  />
-                </Stack>
-              </Box>
-            </>
+                    />
+                  </InputAdornment>
+                ),
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <LockIcon sx={{ fontSize: 20, color: theme.palette.text.disabled }} />
+                  </InputAdornment>
+                ),
+              }}
+                sx={{
+                  "& .MuiOutlinedInput-root": {
+                    fontSize: "0.9375rem",
+                    backgroundColor: alpha(theme.palette.action.hover, 0.3),
+                    paddingTop: "4px",
+                    paddingBottom: "4px",
+                  },
+                }}
+            />
           )}
         </Stack>
       </DialogContent>
 
       <DialogActions
         sx={{
-          px: 2.5,
-          py: 2,
-          borderTop: `1px solid ${alpha(theme.palette.divider, 0.08)}`,
-          gap: 1,
+          px: 3,
+          py: 2.5,
+          borderTop: `1px solid ${alpha(theme.palette.divider, 0.12)}`,
+          gap: 1.5,
         }}
       >
         <Button
@@ -850,13 +837,13 @@ export default function PhaseEditDialog({
           sx={{
             textTransform: "none",
             fontWeight: 500,
-            fontSize: "0.8125rem",
-            px: 2,
-            py: 0.75,
-            borderRadius: 1,
+            fontSize: "0.875rem",
+            px: 2.5,
+            py: 1,
+            borderRadius: 1.5,
             color: theme.palette.text.secondary,
             "&:hover": {
-              backgroundColor: alpha(theme.palette.action.hover, 0.4),
+              backgroundColor: alpha(theme.palette.action.hover, 0.5),
             },
           }}
         >
@@ -866,18 +853,18 @@ export default function PhaseEditDialog({
           onClick={handleSave}
           variant="contained"
           disabled={!isFormValid}
-          startIcon={<EditIcon sx={{ fontSize: 16 }} />}
+          startIcon={<EditIcon sx={{ fontSize: 18 }} />}
           sx={{
             textTransform: "none",
             fontWeight: 600,
-            fontSize: "0.8125rem",
-            px: 2.5,
-            py: 0.75,
-            borderRadius: 1,
-            boxShadow: `0 2px 4px ${alpha(theme.palette.primary.main, 0.2)}`,
+            fontSize: "0.875rem",
+            px: 3,
+            py: 1,
+            borderRadius: 1.5,
+            boxShadow: `0 2px 8px ${alpha(theme.palette.primary.main, 0.2)}`,
             transition: "all 0.2s ease",
             "&:hover": {
-              boxShadow: `0 4px 8px ${alpha(theme.palette.primary.main, 0.3)}`,
+              boxShadow: `0 4px 12px ${alpha(theme.palette.primary.main, 0.3)}`,
               transform: "translateY(-1px)",
             },
             "&:disabled": {

@@ -24,7 +24,9 @@ const migrations = [
   '1764000004000-RenameComponentTypesToProductComponents.ts',
   '1764000005000-RenameComponentVersionsToProductComponentVersions.ts',
   '1764000006000-CreatePlanReferenceType.ts',
+  '1764000006001-RenameProductComponentsToProductComponentTypes.ts',
   '1764000007000-UpdatePlanReferencesTable.ts',
+  '1764000007001-RenameProductComponentVersionsToProductComponents.ts',
   '1764000008000-RemoveGanttTables.ts',
 ];
 

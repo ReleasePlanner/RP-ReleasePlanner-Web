@@ -466,7 +466,7 @@ export default function ReleasePlanner() {
               transition: "all 0.2s ease-in-out",
             }}
           >
-            Nuevo Plan
+            New Plan
           </Button>
         }
       >
@@ -511,7 +511,7 @@ export default function ReleasePlanner() {
               transition: "all 0.2s ease-in-out",
             }}
           >
-            Nuevo Plan
+            New Plan
           </Button>
         }
       >
@@ -808,7 +808,7 @@ export default function ReleasePlanner() {
               transition: "all 0.2s ease-in-out",
             }}
           >
-            Nuevo Plan
+            New Plan
           </Button>
         </Box>
       }
@@ -816,8 +816,14 @@ export default function ReleasePlanner() {
       {/* Results count */}
       {filteredAndSortedPlans.length !== plans.length && (
         <Box sx={{ mb: 2 }}>
-          <Typography variant="caption" color="text.secondary">
-            Mostrando {filteredAndSortedPlans.length} de {plans.length} planes
+          <Typography 
+            variant="caption" 
+            color="text.secondary"
+            sx={{
+              fontSize: "0.6875rem",
+            }}
+          >
+            Showing {filteredAndSortedPlans.length} of {plans.length} plans
           </Typography>
         </Box>
       )}
@@ -825,24 +831,38 @@ export default function ReleasePlanner() {
         {/* Plans List/Grid - 100% Responsive */}
         {filteredAndSortedPlans.length === 0 ? (
           <Paper
+            elevation={0}
             sx={{
-              p: { xs: 3, sm: 4 },
+              p: 6,
               textAlign: "center",
               width: "100%",
-              bgcolor:
-                theme.palette.mode === "dark"
-                  ? alpha(theme.palette.background.paper, 0.5)
-                  : alpha(theme.palette.background.paper, 0.7),
+              border: `1px solid ${alpha(theme.palette.divider, 0.08)}`,
+              borderRadius: 2,
             }}
           >
-            <Typography 
-              variant="body1" 
-              color="text.secondary"
+            <Typography
+              variant="body1"
               sx={{
-                fontSize: { xs: "0.875rem", sm: "1rem" },
+                fontSize: "0.875rem",
+                fontWeight: 500,
+                color: theme.palette.text.secondary,
+                mb: 0.5,
               }}
             >
-              No se encontraron planes que coincidan con los filtros
+              {plans.length === 0 ? "No release plans configured" : "No release plans found"}
+            </Typography>
+            <Typography
+              variant="body2"
+              sx={{
+                fontSize: "0.75rem",
+                color: theme.palette.text.disabled,
+              }}
+            >
+              {plans.length === 0
+                ? "Start by adding your first release plan"
+                : searchQuery || statusFilter !== "all"
+                ? "Try adjusting your search criteria or filters."
+                : "No release plans match your filters."}
             </Typography>
           </Paper>
         ) : viewMode === "list" ? (

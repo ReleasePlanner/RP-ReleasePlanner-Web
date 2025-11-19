@@ -5,18 +5,13 @@
  */
 
 import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   TextField,
-  Button,
-  useTheme,
-  alpha,
   Stack,
   Box,
-  Typography,
+  useTheme,
+  alpha,
 } from "@mui/material";
+import { BaseEditDialog } from "@/components";
 import type { ComponentType } from "@/api/services/componentTypes.service";
 
 interface ComponentTypeEditDialogProps {
@@ -35,171 +30,191 @@ export function ComponentTypeEditDialog({
   onComponentTypeChange,
 }: ComponentTypeEditDialogProps) {
   const theme = useTheme();
-  const isEditing = componentType?.name && componentType.name.trim() !== "";
+  const isEditing = componentType?.id && !componentType.id.startsWith('type-');
 
   if (!componentType) return null;
 
   return (
-    <Dialog
+    <BaseEditDialog
       open={open}
       onClose={onClose}
+      editing={isEditing}
+      title={isEditing ? "Edit Component Type" : "New Component Type"}
+      subtitle="Manage component type information"
       maxWidth="sm"
-      fullWidth
-      PaperProps={{
-        sx: {
-          borderRadius: 3,
-        },
-      }}
+      onSave={onSave}
+      saveButtonText={isEditing ? "Save Changes" : "Create Component Type"}
+      isFormValid={!!componentType.name?.trim()}
     >
-      <DialogTitle
-        sx={{
-          px: 3,
-          pt: 3,
-          pb: 2,
-          borderBottom: `1px solid ${alpha(theme.palette.divider, 0.12)}`,
-          fontWeight: 600,
-          fontSize: "1.25rem",
-          color: theme.palette.text.primary,
-        }}
-      >
-        {isEditing ? "Edit Component Type" : "Create Component Type"}
-      </DialogTitle>
-
-      <DialogContent sx={{ px: 3, pt: 4, pb: 2 }}>
-        <Stack spacing={3}>
-          {/* Basic Information */}
-          <Box>
-            <Typography
-              variant="subtitle2"
-              sx={{
-                mb: 2,
-                fontWeight: 600,
-                fontSize: "0.875rem",
-                color: theme.palette.text.primary,
-                textTransform: "uppercase",
-                letterSpacing: "0.5px",
-              }}
-            >
-              Component Type Information
-            </Typography>
-            <Stack spacing={2.5}>
-              <TextField
-                label="Name"
-                fullWidth
-                required
-                value={componentType.name || ""}
-                onChange={(e) => {
-                  onComponentTypeChange({
-                    ...componentType,
-                    name: e.target.value,
-                  });
-                }}
-                placeholder="e.g., Web, Services, Mobile"
-                variant="outlined"
-                size="medium"
-                autoFocus
-                sx={{
-                  "& .MuiOutlinedInput-root": {
-                    borderRadius: 1.5,
-                  },
-                }}
-              />
-
-              <TextField
-                label="Code"
-                fullWidth
-                value={componentType.code || ""}
-                onChange={(e) => {
-                  onComponentTypeChange({
-                    ...componentType,
-                    code: e.target.value,
-                  });
-                }}
-                placeholder="e.g., web, services, mobile"
-                variant="outlined"
-                size="medium"
-                helperText="Unique code identifier (optional)"
-                sx={{
-                  "& .MuiOutlinedInput-root": {
-                    borderRadius: 1.5,
-                  },
-                }}
-              />
-
-              <TextField
-                label="Description"
-                fullWidth
-                multiline
-                rows={3}
-                value={componentType.description || ""}
-                onChange={(e) => {
-                  onComponentTypeChange({
-                    ...componentType,
-                    description: e.target.value,
-                  });
-                }}
-                placeholder="Brief description of the component type..."
-                variant="outlined"
-                size="medium"
-                sx={{
-                  "& .MuiOutlinedInput-root": {
-                    borderRadius: 1.5,
-                  },
-                }}
-              />
-            </Stack>
-          </Box>
-        </Stack>
-      </DialogContent>
-
-      <DialogActions
-        sx={{
-          px: 3,
-          pt: 2,
-          pb: 3,
-          borderTop: `1px solid ${alpha(theme.palette.divider, 0.12)}`,
-          gap: 1.5,
-        }}
-      >
-        <Button
-          onClick={onClose}
-          sx={{
-            textTransform: "none",
-            px: 3,
-            py: 1,
-            borderRadius: 1.5,
-            fontWeight: 500,
-            color: theme.palette.text.secondary,
-            "&:hover": {
-              bgcolor: alpha(theme.palette.action.hover, 0.5),
+      <Stack spacing={3} sx={{ width: "100%" }}>
+        {/* Spacer to ensure controls are below header divider */}
+        <Box sx={{ pt: 1 }} />
+        
+        {/* Name */}
+        <TextField
+          autoFocus
+          fullWidth
+          size="small"
+          label="Name"
+          placeholder="e.g., Web, Services, Mobile"
+          value={componentType.name || ""}
+          onChange={(e) => {
+            onComponentTypeChange({
+              ...componentType,
+              name: e.target.value,
+            });
+          }}
+          required
+          InputLabelProps={{
+            shrink: true,
+            sx: {
+              fontSize: "0.625rem",
+              fontWeight: 500,
+              "&.MuiInputLabel-shrink": {
+                backgroundColor: theme.palette.background.paper,
+                paddingLeft: "6px",
+                paddingRight: "6px",
+                zIndex: 1,
+              },
             },
           }}
-        >
-          Cancel
-        </Button>
-        <Button
-          onClick={onSave}
-          variant="contained"
-          disabled={!componentType.name?.trim()}
           sx={{
-            textTransform: "none",
-            fontWeight: 600,
-            px: 3,
-            py: 1,
-            borderRadius: 1.5,
-            boxShadow: `0 2px 8px ${alpha(theme.palette.primary.main, 0.24)}`,
-            "&:hover": {
-              boxShadow: `0 4px 12px ${alpha(theme.palette.primary.main, 0.32)}`,
+            "& .MuiOutlinedInput-root": {
+              fontSize: "0.6875rem",
+              "& input": {
+                py: 0.625,
+                fontSize: "0.6875rem",
+              },
+              "&:hover": {
+                "& .MuiOutlinedInput-notchedOutline": {
+                  borderColor: theme.palette.primary.main,
+                },
+              },
+              "&.Mui-focused": {
+                "& .MuiOutlinedInput-notchedOutline": {
+                  borderWidth: 2,
+                  borderColor: theme.palette.primary.main,
+                },
+              },
             },
-            "&:disabled": {
-              boxShadow: "none",
+            "& .MuiFormHelperText-root": {
+              marginTop: "4px",
+              marginLeft: "0px",
+              fontSize: "0.625rem",
             },
           }}
-        >
-          {isEditing ? "Update Component Type" : "Create Component Type"}
-        </Button>
-      </DialogActions>
-    </Dialog>
+        />
+
+        {/* Code */}
+        <TextField
+          fullWidth
+          size="small"
+          label="Code"
+          placeholder="e.g., web, services, mobile"
+          value={componentType.code || ""}
+          onChange={(e) => {
+            onComponentTypeChange({
+              ...componentType,
+              code: e.target.value,
+            });
+          }}
+          helperText="Unique code identifier (optional)"
+          InputLabelProps={{
+            shrink: true,
+            sx: {
+              fontSize: "0.625rem",
+              fontWeight: 500,
+              "&.MuiInputLabel-shrink": {
+                backgroundColor: theme.palette.background.paper,
+                paddingLeft: "6px",
+                paddingRight: "6px",
+                zIndex: 1,
+              },
+            },
+          }}
+          sx={{
+            "& .MuiOutlinedInput-root": {
+              fontSize: "0.6875rem",
+              "& input": {
+                py: 0.625,
+                fontSize: "0.6875rem",
+              },
+              "&:hover": {
+                "& .MuiOutlinedInput-notchedOutline": {
+                  borderColor: theme.palette.primary.main,
+                },
+              },
+              "&.Mui-focused": {
+                "& .MuiOutlinedInput-notchedOutline": {
+                  borderWidth: 2,
+                  borderColor: theme.palette.primary.main,
+                },
+              },
+            },
+            "& .MuiFormHelperText-root": {
+              marginTop: "4px",
+              marginLeft: "0px",
+              fontSize: "0.625rem",
+            },
+          }}
+        />
+
+        {/* Description */}
+        <TextField
+          fullWidth
+          multiline
+          rows={3}
+          size="small"
+          label="Description"
+          placeholder="Brief description of the component type..."
+          value={componentType.description || ""}
+          onChange={(e) => {
+            onComponentTypeChange({
+              ...componentType,
+              description: e.target.value,
+            });
+          }}
+          InputLabelProps={{
+            shrink: true,
+            sx: {
+              fontSize: "0.625rem",
+              fontWeight: 500,
+              "&.MuiInputLabel-shrink": {
+                backgroundColor: theme.palette.background.paper,
+                paddingLeft: "6px",
+                paddingRight: "6px",
+                zIndex: 1,
+              },
+            },
+          }}
+          sx={{
+            "& .MuiOutlinedInput-root": {
+              fontSize: "0.6875rem",
+              "& textarea": {
+                py: 0.625,
+                fontSize: "0.6875rem",
+              },
+              "&:hover": {
+                "& .MuiOutlinedInput-notchedOutline": {
+                  borderColor: theme.palette.primary.main,
+                },
+              },
+              "&.Mui-focused": {
+                "& .MuiOutlinedInput-notchedOutline": {
+                  borderWidth: 2,
+                  borderColor: theme.palette.primary.main,
+                },
+              },
+            },
+            "& .MuiFormHelperText-root": {
+              marginTop: "4px",
+              marginLeft: "0px",
+              fontSize: "0.625rem",
+            },
+          }}
+        />
+      </Stack>
+    </BaseEditDialog>
   );
 }
 

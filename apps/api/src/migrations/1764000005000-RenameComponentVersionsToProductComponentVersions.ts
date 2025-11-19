@@ -21,7 +21,7 @@ export class RenameComponentVersionsToProductComponentVersions1764000005000 impl
       FOREIGN KEY ("productId") REFERENCES products(id) ON DELETE CASCADE;
     `);
     
-    // Update the foreign key to product_components (previously component_types)
+    // Update the foreign key to product_component_types (previously product_components, originally component_types)
     await queryRunner.query(`
       ALTER TABLE product_component_versions 
       DROP CONSTRAINT IF EXISTS fk_component_versions_component_type;
@@ -29,8 +29,8 @@ export class RenameComponentVersionsToProductComponentVersions1764000005000 impl
     
     await queryRunner.query(`
       ALTER TABLE product_component_versions 
-      ADD CONSTRAINT fk_product_component_versions_product_component 
-      FOREIGN KEY ("componentTypeId") REFERENCES product_components(id) ON DELETE SET NULL;
+      ADD CONSTRAINT fk_product_component_versions_product_component_type 
+      FOREIGN KEY ("componentTypeId") REFERENCES product_component_types(id) ON DELETE SET NULL;
     `);
   }
 
@@ -52,7 +52,7 @@ export class RenameComponentVersionsToProductComponentVersions1764000005000 impl
     
     await queryRunner.query(`
       ALTER TABLE component_versions 
-      DROP CONSTRAINT IF EXISTS fk_product_component_versions_product_component;
+      DROP CONSTRAINT IF EXISTS fk_product_component_versions_product_component_type;
     `);
     
     await queryRunner.query(`

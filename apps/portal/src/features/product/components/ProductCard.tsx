@@ -66,11 +66,11 @@ export function ProductCard({
             <Typography
               variant="h6"
               sx={{
-                fontWeight: 700,
-                fontSize: "1.125rem",
+                fontWeight: 600,
+                fontSize: "0.9375rem",
                 color: theme.palette.text.primary,
                 lineHeight: 1.4,
-                mb: 1,
+                mb: 0.75,
                 letterSpacing: "-0.01em",
               }}
             >
@@ -81,8 +81,8 @@ export function ProductCard({
                 variant="body2"
                 sx={{
                   color: theme.palette.text.secondary,
-                  fontSize: "0.875rem",
-                  lineHeight: 1.6,
+                  fontSize: "0.8125rem",
+                  lineHeight: 1.5,
                   display: "-webkit-box",
                   WebkitLineClamp: 2,
                   WebkitBoxOrient: "vertical",
@@ -107,14 +107,14 @@ export function ProductCard({
               }`}
               size="small"
               sx={{
-                height: 24,
-                fontSize: "0.75rem",
+                height: 22,
+                fontSize: "0.6875rem",
                 fontWeight: 600,
                 bgcolor: alpha(theme.palette.primary.main, 0.1),
                 color: theme.palette.primary.main,
                 border: `1px solid ${alpha(theme.palette.primary.main, 0.2)}`,
                 "& .MuiChip-label": {
-                  px: 1.5,
+                  px: 1.25,
                 },
               }}
             />
@@ -123,7 +123,7 @@ export function ProductCard({
               sx={{
                 color: theme.palette.text.disabled,
                 fontFamily: "monospace",
-                fontSize: "0.6875rem",
+                fontSize: "0.625rem",
                 fontWeight: 400,
               }}
             >

@@ -56,8 +56,8 @@ export function ComponentTypeCard({ componentType, onEdit, onDelete }: Component
           <Typography
             variant="h6"
             sx={{
-              fontSize: "1.125rem",
-              fontWeight: 700,
+              fontSize: "0.9375rem",
+              fontWeight: 600,
               letterSpacing: "-0.01em",
               color: theme.palette.text.primary,
             }}
@@ -70,13 +70,13 @@ export function ComponentTypeCard({ componentType, onEdit, onDelete }: Component
               label={componentType.code}
               size="small"
               sx={{
-                height: 24,
-                fontSize: "0.75rem",
+                height: 22,
+                fontSize: "0.6875rem",
                 fontWeight: 600,
                 bgcolor: alpha(theme.palette.primary.main, 0.08),
                 color: theme.palette.primary.main,
                 border: `1px solid ${alpha(theme.palette.primary.main, 0.2)}`,
-                px: 1.5,
+                px: 1.25,
                 alignSelf: "flex-start",
               }}
             />
@@ -86,8 +86,8 @@ export function ComponentTypeCard({ componentType, onEdit, onDelete }: Component
             <Typography
               variant="body2"
               sx={{
-                fontSize: "0.875rem",
-                lineHeight: 1.6,
+                fontSize: "0.8125rem",
+                lineHeight: 1.5,
                 color: theme.palette.text.secondary,
               }}
             >

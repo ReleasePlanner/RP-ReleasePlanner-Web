@@ -16,8 +16,7 @@ import {
   useTheme,
   alpha,
   Typography,
-  Card,
-  CardContent,
+  Paper,
   Chip,
 } from "@mui/material";
 import {
@@ -334,8 +333,8 @@ export function CalendarMaintenancePage() {
       >
         <Box p={3}>
           <Alert severity="error">
-            Error al cargar los calendarios:{" "}
-            {error instanceof Error ? error.message : "Error desconocido"}
+            Error loading calendars:{" "}
+            {error instanceof Error ? error.message : "Unknown error"}
           </Alert>
         </Box>
       </PageLayout>
@@ -351,36 +350,56 @@ export function CalendarMaintenancePage() {
       <Box
         sx={{
           display: "grid",
-          gridTemplateColumns: { xs: "1fr", lg: "380px 1fr" },
+          gridTemplateColumns: { xs: "1fr", md: "280px 1fr" },
           gap: 3,
-          mt: 1,
         }}
       >
         {/* Sidebar: Country Selector */}
         <Box>
-          <Card
+          <Paper
             elevation={0}
             sx={{
-              border: `1px solid ${alpha(theme.palette.divider, 0.12)}`,
-              borderRadius: 3,
+              border: `1px solid ${alpha(theme.palette.divider, 0.08)}`,
+              borderRadius: 2,
               overflow: "hidden",
             }}
           >
-            <CardContent sx={{ p: 2.5 }}>
+            <Box sx={{ p: 2 }}>
               <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
                 {/* Header */}
                 <Box>
-                  <Typography variant="h6" sx={{ fontWeight: 600, mb: 0.5, fontSize: "1.125rem" }}>
+                  <Typography 
+                    variant="subtitle2" 
+                    sx={{ 
+                      fontWeight: 600, 
+                      mb: 0.5, 
+                      fontSize: "0.8125rem",
+                      color: theme.palette.text.primary,
+                    }}
+                  >
                     Select Country
                   </Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{ fontSize: "0.875rem" }}>
+                  <Typography 
+                    variant="caption" 
+                    sx={{ 
+                      fontSize: "0.6875rem",
+                      color: theme.palette.text.secondary,
+                      lineHeight: 1.5,
+                    }}
+                  >
                     Choose a country to manage its holidays and special days. The calendar will be created automatically when you add the first day.
                   </Typography>
                 </Box>
 
                 {/* Country Selector */}
-                <FormControl fullWidth>
-                  <InputLabel>Country</InputLabel>
+                <FormControl fullWidth size="small">
+                  <InputLabel 
+                    sx={{
+                      fontSize: "0.75rem",
+                    }}
+                  >
+                    Country
+                  </InputLabel>
                   <Select
                     value={selectedCountryId || ""}
                     label="Country"
@@ -394,6 +413,11 @@ export function CalendarMaintenancePage() {
                       return country ? `${country.name} (${country.code})` : "";
                     }}
                     sx={{
+                      fontSize: "0.75rem",
+                      "& .MuiSelect-select": {
+                        py: 0.75,
+                        fontSize: "0.75rem",
+                      },
                       borderRadius: 1.5,
                       "& .MuiOutlinedInput-notchedOutline": {
                         borderColor: alpha(theme.palette.divider, 0.3),
@@ -401,27 +425,40 @@ export function CalendarMaintenancePage() {
                     }}
                   >
                     {countries.map((country) => (
-                      <MenuItem key={country.id} value={country.id}>
+                      <MenuItem 
+                        key={country.id} 
+                        value={country.id}
+                        sx={{ fontSize: "0.75rem", py: 0.5, minHeight: 32 }}
+                      >
                         <Box sx={{ display: "flex", alignItems: "center", gap: 1, width: "100%" }}>
-                          <Typography variant="body2">{country.name}</Typography>
+                          <Typography 
+                            variant="body2"
+                            sx={{ fontSize: "0.75rem" }}
+                          >
+                            {country.name}
+                          </Typography>
                           <Chip
                             label={country.code}
                             size="small"
                             sx={{
-                              height: 20,
-                              fontSize: "0.6875rem",
-                              fontWeight: 600,
-                              bgcolor: alpha(theme.palette.primary.main, 0.08),
+                              height: 18,
+                              fontSize: "0.625rem",
+                              fontWeight: 500,
+                              bgcolor: alpha(theme.palette.primary.main, 0.1),
                               color: theme.palette.primary.main,
-                              border: `1px solid ${alpha(theme.palette.primary.main, 0.2)}`,
-                              px: 0.5,
+                              "& .MuiChip-label": {
+                                px: 0.75,
+                              },
                             }}
                           />
                           {country.region && (
                             <Typography
                               variant="caption"
-                              color="text.secondary"
-                              sx={{ ml: "auto", fontSize: "0.75rem" }}
+                              sx={{ 
+                                ml: "auto", 
+                                fontSize: "0.6875rem",
+                                color: theme.palette.text.secondary,
+                              }}
                             >
                               {country.region}
                             </Typography>
@@ -436,39 +473,59 @@ export function CalendarMaintenancePage() {
                 {selectedCountry && (
                   <Box
                     sx={{
-                      p: 2,
+                      p: 1.5,
                       backgroundColor: alpha(theme.palette.primary.main, 0.04),
-                      borderRadius: 2,
-                      border: `1px solid ${alpha(theme.palette.divider, 0.12)}`,
+                      borderRadius: 1.5,
+                      border: `1px solid ${alpha(theme.palette.divider, 0.08)}`,
                     }}
                   >
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 1 }}>
-                      <Typography variant="body1" sx={{ fontWeight: 600, fontSize: "0.9375rem" }}>
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.75 }}>
+                      <Typography 
+                        variant="body2" 
+                        sx={{ 
+                          fontWeight: 500, 
+                          fontSize: "0.8125rem",
+                          color: theme.palette.text.primary,
+                        }}
+                      >
                         {selectedCountry.name}
                       </Typography>
                       <Chip
                         label={selectedCountry.code}
                         size="small"
                         sx={{
-                          height: 24,
-                          fontSize: "0.75rem",
+                          height: 18,
+                          fontSize: "0.625rem",
                           fontWeight: 500,
-                          bgcolor: alpha(theme.palette.primary.main, 0.08),
+                          bgcolor: alpha(theme.palette.primary.main, 0.1),
                           color: theme.palette.primary.main,
+                          "& .MuiChip-label": {
+                            px: 0.75,
+                          },
                         }}
                       />
                     </Box>
                     {selectedCountry.region && (
-                      <Typography variant="caption" color="text.secondary" display="block">
+                      <Typography 
+                        variant="caption" 
+                        sx={{ 
+                          fontSize: "0.6875rem",
+                          color: theme.palette.text.secondary,
+                          display: "block",
+                          mb: 0.5,
+                        }}
+                      >
                         Region: {selectedCountry.region}
                       </Typography>
                     )}
                     {currentCalendar && (
                       <Typography
                         variant="caption"
-                        display="block"
-                        color="text.secondary"
-                        sx={{ mt: 1, fontSize: "0.75rem" }}
+                        sx={{ 
+                          fontSize: "0.6875rem",
+                          color: theme.palette.text.secondary,
+                          display: "block",
+                        }}
                       >
                         Total days: {currentCalendar.days?.length || 0}
                       </Typography>
@@ -476,37 +533,51 @@ export function CalendarMaintenancePage() {
                   </Box>
                 )}
               </Box>
-            </CardContent>
-          </Card>
+            </Box>
+          </Paper>
         </Box>
 
         {/* Main: Days List */}
         <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
           {!selectedCountryId ? (
-            <Card
+            <Paper
               elevation={0}
               sx={{
-                border: `1px solid ${alpha(theme.palette.divider, 0.12)}`,
-                borderRadius: 3,
+                border: `1px solid ${alpha(theme.palette.divider, 0.08)}`,
+                borderRadius: 2,
                 p: 6,
                 textAlign: "center",
               }}
             >
               <CalendarIcon
                 sx={{
-                  fontSize: 64,
-                  color: "text.secondary",
-                  mb: 2,
+                  fontSize: 40,
+                  color: theme.palette.text.secondary,
+                  mb: 1.5,
                   opacity: 0.5,
                 }}
               />
-              <Typography variant="h6" sx={{ mb: 1, fontWeight: 600 }}>
+              <Typography 
+                variant="body1" 
+                sx={{ 
+                  mb: 0.5, 
+                  fontWeight: 500,
+                  fontSize: "0.875rem",
+                  color: theme.palette.text.secondary,
+                }}
+              >
                 Select a Country
               </Typography>
-              <Typography variant="body2" color="text.secondary">
+              <Typography 
+                variant="body2" 
+                sx={{
+                  fontSize: "0.75rem",
+                  color: theme.palette.text.disabled,
+                }}
+              >
                 Choose a country from the sidebar to view and manage its holidays and special days
               </Typography>
-            </Card>
+            </Paper>
           ) : (
             <CalendarDaysList
               calendar={currentCalendar}

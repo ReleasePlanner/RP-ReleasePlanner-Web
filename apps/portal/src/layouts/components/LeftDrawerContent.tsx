@@ -43,6 +43,35 @@ import { toggleLeftSidebar } from "../../store/store";
 export const DRAWER_WIDTH = 280;
 
 /**
+ * Navigation text constants
+ */
+export const NAVIGATION_LABELS = {
+  TITLE: "Navigation",
+  CLOSE: "Close navigation",
+  RELEASE_PLANNER: "Release Planner",
+  PHASES: "Phases",
+  PRODUCTS: "Products",
+  FEATURES: "Features",
+  CALENDARS: "Calendars",
+  IT_OWNERS: "IT Owners",
+  COMPONENT_TYPES: "Component Types",
+  FEATURE_CATEGORIES: "Feature Categories",
+  COUNTRIES: "Countries",
+} as const;
+
+export const NAVIGATION_DESCRIPTIONS = {
+  RELEASE_PLANNER: "Manage releases and timelines",
+  PHASES: "Manage base phases",
+  PRODUCTS: "Manage products",
+  FEATURES: "Manage features by product",
+  CALENDARS: "Manage holidays and special days",
+  IT_OWNERS: "Manage IT Owners",
+  COMPONENT_TYPES: "Manage component types",
+  FEATURE_CATEGORIES: "Manage feature categories",
+  COUNTRIES: "Manage countries and regions",
+} as const;
+
+/**
  * Navigation item definition
  */
 interface NavItem {
@@ -68,58 +97,58 @@ interface LeftDrawerContentProps {
  */
 const NAV_ITEMS: NavItem[] = [
   {
-    label: "Release Planner",
+    label: NAVIGATION_LABELS.RELEASE_PLANNER,
     path: "/release-planner",
     icon: <DashboardIcon />,
-    description: "Gestionar releases y timelines",
+    description: NAVIGATION_DESCRIPTIONS.RELEASE_PLANNER,
   },
   {
-    label: "Fases",
+    label: NAVIGATION_LABELS.PHASES,
     path: "/phases-maintenance",
     icon: <PhasesIcon />,
-    description: "Gestionar fases base del sistema",
+    description: NAVIGATION_DESCRIPTIONS.PHASES,
   },
   {
-    label: "Products",
+    label: NAVIGATION_LABELS.PRODUCTS,
     path: "/product-maintenance",
     icon: <ProductsIcon />,
-    description: "Gestionar productos",
+    description: NAVIGATION_DESCRIPTIONS.PRODUCTS,
   },
   {
-    label: "Features",
+    label: NAVIGATION_LABELS.FEATURES,
     path: "/features",
     icon: <FeaturesIcon />,
-    description: "Gestionar features por producto",
+    description: NAVIGATION_DESCRIPTIONS.FEATURES,
   },
   {
-    label: "Calendars",
+    label: NAVIGATION_LABELS.CALENDARS,
     path: "/calendars",
     icon: <CalendarsIcon />,
-    description: "Gestionar días festivos y especiales",
+    description: NAVIGATION_DESCRIPTIONS.CALENDARS,
   },
   {
-    label: "IT Owners",
+    label: NAVIGATION_LABELS.IT_OWNERS,
     path: "/it-owners",
     icon: <PersonIcon />,
-    description: "Gestionar IT Owners",
+    description: NAVIGATION_DESCRIPTIONS.IT_OWNERS,
   },
   {
-    label: "Component Types",
+    label: NAVIGATION_LABELS.COMPONENT_TYPES,
     path: "/component-types",
     icon: <ComponentTypeIcon />,
-    description: "Gestionar tipos de componente",
+    description: NAVIGATION_DESCRIPTIONS.COMPONENT_TYPES,
   },
   {
-    label: "Feature Categories",
+    label: NAVIGATION_LABELS.FEATURE_CATEGORIES,
     path: "/feature-categories",
     icon: <FeatureCategoryIcon />,
-    description: "Gestionar categorías de features",
+    description: NAVIGATION_DESCRIPTIONS.FEATURE_CATEGORIES,
   },
   {
-    label: "Countries",
+    label: NAVIGATION_LABELS.COUNTRIES,
     path: "/countries",
     icon: <CountryIcon />,
-    description: "Gestionar países y regiones",
+    description: NAVIGATION_DESCRIPTIONS.COUNTRIES,
   },
 ];
 
@@ -189,13 +218,13 @@ export function LeftDrawerContent({ onClose }: LeftDrawerContentProps) {
             letterSpacing: "-0.01em",
           }}
         >
-          Navegación
+          {NAVIGATION_LABELS.TITLE}
         </Typography>
 
         {/* Close button - Only on mobile */}
         {isMobile && (
           <IconButton
-            aria-label="Cerrar navegación"
+            aria-label={NAVIGATION_LABELS.CLOSE}
             size="small"
             onClick={handleClose}
             sx={{

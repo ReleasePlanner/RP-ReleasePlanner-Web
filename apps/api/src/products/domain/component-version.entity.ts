@@ -13,14 +13,10 @@ export enum ComponentTypeEnum {
   MOBILE = 'mobile',
 }
 
-@Entity('product_component_versions')
+@Entity('product_components')
 export class ProductComponentVersion extends BaseEntity {
   @Column({ type: 'varchar', length: 255, nullable: true })
   name?: string;
-
-  // Keep enum column for backward compatibility
-  @Column({ type: 'enum', enum: ComponentTypeEnum, nullable: true })
-  type?: ComponentTypeEnum;
 
   @Column({ type: 'uuid', nullable: true })
   componentTypeId?: string;
@@ -43,7 +39,7 @@ export class ProductComponentVersion extends BaseEntity {
   product: any;
 
   constructor(
-    typeOrComponentType?: ComponentTypeEnum | ProductComponent | string,
+    componentType?: ProductComponent | string,
     currentVersion?: string,
     previousVersion?: string,
     name?: string
@@ -53,37 +49,15 @@ export class ProductComponentVersion extends BaseEntity {
       this.name = name;
     }
     
-    // Handle both enum and ProductComponent entity
-    if (typeOrComponentType !== undefined) {
-      if (typeof typeOrComponentType === 'string') {
-        // String value - normalize to lowercase and treat as enum
-        let normalizedType = typeOrComponentType.toLowerCase();
-        // Map 'service' to 'services' to match enum values
-        if (normalizedType === 'service') {
-          normalizedType = 'services';
-        }
-        this.type = normalizedType as ComponentTypeEnum;
-      } else if (typeOrComponentType instanceof ProductComponent) {
+    // Handle ProductComponent entity or componentTypeId string
+    if (componentType !== undefined) {
+      if (componentType instanceof ProductComponent) {
         // ProductComponent entity
-        this.componentType = typeOrComponentType;
-        this.componentTypeId = typeOrComponentType.id;
-        // Also set enum for backward compatibility - normalize code to lowercase
-        let normalizedCode = (typeOrComponentType.code || '').toLowerCase();
-        // Map 'service' to 'services' to match enum values
-        if (normalizedCode === 'service') {
-          normalizedCode = 'services';
-        }
-        this.type = normalizedCode as ComponentTypeEnum;
-      } else {
-        // Enum value - ensure it's lowercase
-        let normalizedEnum = typeof typeOrComponentType === 'string' 
-          ? typeOrComponentType.toLowerCase() 
-          : typeOrComponentType;
-        // Map 'service' to 'services' to match enum values
-        if (typeof normalizedEnum === 'string' && normalizedEnum === 'service') {
-          normalizedEnum = 'services';
-        }
-        this.type = normalizedEnum as ComponentTypeEnum;
+        this.componentType = componentType;
+        this.componentTypeId = componentType.id;
+      } else if (typeof componentType === 'string') {
+        // String value - treat as componentTypeId
+        this.componentTypeId = componentType;
       }
     }
     
@@ -99,9 +73,9 @@ export class ProductComponentVersion extends BaseEntity {
   }
 
   validate(): void {
-    // Validate componentTypeId or type (for backward compatibility)
-    if (!this.componentTypeId && !this.type) {
-      throw new Error('Component type is required');
+    // Validate componentTypeId is required
+    if (!this.componentTypeId) {
+      throw new Error('Component type is required (componentTypeId must be provided)');
     }
     
     if (!this.currentVersion || this.currentVersion.trim().length === 0) {
@@ -116,9 +90,6 @@ export class ProductComponentVersion extends BaseEntity {
   getTypeCode(): string {
     if (this.componentType?.code) {
       return this.componentType.code;
-    }
-    if (this.type) {
-      return this.type;
     }
     return '';
   }

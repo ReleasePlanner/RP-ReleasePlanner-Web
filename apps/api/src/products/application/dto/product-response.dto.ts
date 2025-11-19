@@ -53,8 +53,8 @@ export class ComponentVersionResponseDto {
   constructor(entity: ComponentVersion) {
     this.id = entity.id;
     this.name = entity.name;
-    // Use componentType.code if available, otherwise fallback to enum type
-    this.type = entity.componentType?.code || entity.getTypeCode() || entity.type || '';
+    // Use componentType.code if available
+    this.type = entity.componentType?.code || entity.getTypeCode() || '';
     this.currentVersion = entity.currentVersion;
     this.previousVersion = entity.previousVersion;
     this.createdAt = entity.createdAt;

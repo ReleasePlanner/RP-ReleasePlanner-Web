@@ -5,7 +5,7 @@
 import { Entity, Column, Index } from 'typeorm';
 import { BaseEntity } from '../../common/database/base.entity';
 
-@Entity('product_components')
+@Entity('product_component_types')
 @Index(['name'], { unique: true })
 export class ProductComponent extends BaseEntity {
   @Column({ type: 'varchar', length: 255 })

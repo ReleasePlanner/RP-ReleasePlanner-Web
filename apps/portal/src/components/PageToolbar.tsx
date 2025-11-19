@@ -165,13 +165,18 @@ export function PageToolbar({
 
       {/* Sort Dropdown */}
       {showSort && sortBy && sortOptions.length > 0 && onSortChange && (
-        <FormControl size="small" sx={{ minWidth: 160 }}>
+        <FormControl size="small" sx={{ minWidth: 140 }}>
           <Select
             value={sortBy}
             onChange={(e) => onSortChange(e.target.value)}
             displayEmpty
             aria-label="Sort by"
             sx={{
+              fontSize: "0.6875rem",
+              "& .MuiSelect-select": {
+                py: 0.75,
+                fontSize: "0.6875rem",
+              },
               "& .MuiOutlinedInput-notchedOutline": {
                 borderColor: theme.palette.divider,
               },
@@ -184,7 +189,7 @@ export function PageToolbar({
             }}
           >
             {sortOptions.map((option) => (
-              <MenuItem key={option.value} value={option.value}>
+              <MenuItem key={option.value} value={option.value} sx={{ fontSize: "0.6875rem" }}>
                 {option.label}
               </MenuItem>
             ))}
@@ -203,16 +208,21 @@ export function PageToolbar({
             input: {
               startAdornment: (
                 <InputAdornment position="start">
-                  <SearchIcon fontSize="small" color="action" />
+                  <SearchIcon fontSize="small" color="action" sx={{ fontSize: 16 }} />
                 </InputAdornment>
               ),
             },
           }}
           sx={{
-            flex: { xs: "1 1 100%", sm: "0 1 280px" },
-            minWidth: 200,
+            flex: { xs: "1 1 100%", sm: "0 1 240px" },
+            minWidth: 180,
             "& .MuiOutlinedInput-root": {
+              fontSize: "0.6875rem",
               backgroundColor: alpha(theme.palette.background.paper, 0.5),
+              "& input": {
+                py: 0.75,
+                fontSize: "0.6875rem",
+              },
               "&:hover": {
                 backgroundColor: theme.palette.background.paper,
                 "& .MuiOutlinedInput-notchedOutline": {

@@ -59,7 +59,7 @@ export class ComponentTypeService {
       }
     }
 
-    const componentType = new ComponentType(dto.name, dto.code, dto.description);
+    const componentType = new ProductComponent(dto.name, dto.code, dto.description);
     const created = await this.repository.create(componentType);
     
     // Defensive: Validate creation result

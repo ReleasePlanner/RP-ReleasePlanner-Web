@@ -1,9 +1,26 @@
 import { useMemo, useState } from "react";
-import { Box, Button, Typography, useTheme, alpha, CircularProgress, Alert } from "@mui/material";
-import { Add as AddIcon } from "@mui/icons-material";
+import { 
+  Box, 
+  Button, 
+  Typography, 
+  useTheme, 
+  alpha, 
+  CircularProgress, 
+  Alert,
+  Paper,
+  Stack,
+  IconButton,
+  Tooltip,
+  Divider,
+  Chip,
+} from "@mui/material";
+import { 
+  Add as AddIcon,
+  Edit as EditIcon,
+  Delete as DeleteIcon,
+} from "@mui/icons-material";
 import { PageLayout, PageToolbar, type ViewMode } from "@/components";
 import {
-  ProductCard,
   ComponentEditDialog,
 } from "@/features/product/components";
 import { ProductEditDialog } from "@/features/product/components/ProductEditDialog";
@@ -84,6 +101,25 @@ export function ProductMaintenancePage() {
     setOpenProductDialog(true);
   };
 
+  const handleEditProduct = (product: Product) => {
+    setEditingProduct({ product });
+    setSelectedProduct(null);
+    setOpenProductDialog(true);
+  };
+
+  const handleDeleteProduct = async (productId: string) => {
+    if (!window.confirm("Are you sure you want to delete this product?")) {
+      return;
+    }
+
+    try {
+      await deleteMutation.mutateAsync(productId);
+    } catch (error) {
+      console.error("Error deleting product:", error);
+      alert("Error deleting product. Please try again.");
+    }
+  };
+
   const handleEditComponent = (
     product: Product,
     component: ComponentVersion
@@ -126,13 +162,35 @@ export function ProductMaintenancePage() {
           data: {
             components: product.components
               .filter((c: ComponentVersion) => c.id !== componentId)
-              .map((c: ComponentVersion) => ({
-                // Only include id if it's a valid UUID (from database)
-                ...(c.id && isValidUUID(c.id) && { id: c.id }),
-                type: c.type,
-                currentVersion: c.currentVersion,
-                previousVersion: c.previousVersion,
-              })),
+              .map((c: ComponentVersion) => {
+                // Get componentTypeId - required field
+                let componentTypeId = (c as any).componentTypeId || (c as any).componentType?.id;
+                
+                // If no componentTypeId but we have a type code, try to find the ComponentType by code/name
+                if (!componentTypeId && c.type) {
+                  const foundType = componentTypes.find(
+                    (ct) => ct.code?.toLowerCase() === c.type?.toLowerCase() || 
+                            ct.name?.toLowerCase() === c.type?.toLowerCase()
+                  );
+                  if (foundType) {
+                    componentTypeId = foundType.id;
+                  }
+                }
+                
+                if (!componentTypeId) {
+                  console.error('handleDeleteComponent - Missing componentTypeId for component:', c);
+                  throw new Error(`Component type is required. Component "${(c as any).name || c.type || 'unknown'}" is missing componentTypeId.`);
+                }
+                
+                return {
+                  // Only include id if it's a valid UUID (from database)
+                  ...(c.id && isValidUUID(c.id) && { id: c.id }),
+                  componentTypeId: componentTypeId,
+                  name: (c as any).name || '',
+                  currentVersion: c.currentVersion,
+                  previousVersion: c.previousVersion,
+                };
+              }),
           },
         });
       } catch (error) {
@@ -343,10 +401,37 @@ export function ProductMaintenancePage() {
         // Get previousVersion - prefer previousVersion, fallback to currentVersion
         const compPreviousVersion = c.previousVersion || compCurrentVersion || '';
         
+        // Get componentTypeId - required field
+        let componentTypeId = (c as any).componentTypeId || (c as any).componentType?.id;
+        
+        // If no componentTypeId but we have a type code, try to find the ComponentType by code/name
+        if (!componentTypeId && c.type) {
+          const foundType = componentTypes.find(
+            (ct) => ct.code?.toLowerCase() === c.type?.toLowerCase() || 
+                    ct.name?.toLowerCase() === c.type?.toLowerCase()
+          );
+          if (foundType) {
+            componentTypeId = foundType.id;
+          }
+        }
+        
+        // Validate that componentTypeId is present
+        if (!componentTypeId || !isValidUUID(componentTypeId)) {
+          console.error('handleSaveComponent - Missing componentTypeId for component:', {
+            id: c.id,
+            name: (c as any).name,
+            type: c.type,
+            componentTypeId: (c as any).componentTypeId,
+            componentType: (c as any).componentType,
+          });
+          throw new Error(`Component type is required. Component "${(c as any).name || c.type || 'unknown'}" is missing componentTypeId.`);
+        }
+        
         console.log('handleSaveComponent - mapping component:', {
           id: c.id,
           name: (c as any).name,
           type: c.type,
+          componentTypeId,
           currentVersion: c.currentVersion,
           version: (c as any).version,
           compCurrentVersion,
@@ -356,41 +441,16 @@ export function ProductMaintenancePage() {
         
         const componentPayload: any = {
           name: (c as any).name || '', // Include name in payload
+          componentTypeId: componentTypeId, // Required field
           currentVersion: compCurrentVersion, // Use normalized currentVersion
           previousVersion: compPreviousVersion, // Use normalized previousVersion
         };
-        // Prefer componentTypeId if available, otherwise use type (normalized to lowercase)
-        if ((c as any).componentTypeId && isValidUUID((c as any).componentTypeId)) {
-          componentPayload.componentTypeId = (c as any).componentTypeId;
-          // Also include type for backward compatibility (get from componentType if available)
-          if ((c as any).componentType?.code) {
-            let normalizedType = (c as any).componentType.code.toLowerCase();
-            // Map 'service' to 'services' to match enum values
-            if (normalizedType === 'service') {
-              normalizedType = 'services';
-            }
-            componentPayload.type = normalizedType;
-          } else if (c.type) {
-            let normalizedType = c.type.toLowerCase();
-            // Map 'service' to 'services' to match enum values
-            if (normalizedType === 'service') {
-              normalizedType = 'services';
-            }
-            componentPayload.type = normalizedType;
-          }
-        } else if (c.type) {
-          // Normalize type to lowercase for backend compatibility
-          let normalizedType = c.type.toLowerCase();
-          // Map 'service' to 'services' to match enum values
-          if (normalizedType === 'service') {
-            normalizedType = 'services';
-          }
-          componentPayload.type = normalizedType; // Fallback to enum type for backward compatibility
-        }
+        
         // Only include id if it's a valid UUID (from database)
         if (c.id && isValidUUID(c.id)) {
           componentPayload.id = c.id;
         }
+        
         console.log('handleSaveComponent - componentPayload:', componentPayload);
         return componentPayload;
       });
@@ -410,7 +470,7 @@ export function ProductMaintenancePage() {
     } catch (error: any) {
       console.error('Error saving component:', error);
       // Show error to user
-      const errorMessage = error?.message || error?.response?.data?.message || 'Error al guardar el componente. Por favor, intente nuevamente.';
+      const errorMessage = error?.message || error?.response?.data?.message || 'Error saving component. Please try again.';
       alert(errorMessage); // TODO: Replace with proper notification system
       // Don't close dialog on error so user can fix and retry
     }
@@ -455,7 +515,7 @@ export function ProductMaintenancePage() {
       <PageLayout title="Product Maintenance" description="Manage products and their component versions">
         <Box p={3}>
           <Alert severity="error">
-            Error al cargar los productos: {error instanceof Error ? error.message : 'Error desconocido'}
+            Error loading products: {error instanceof Error ? error.message : 'Unknown error'}
           </Alert>
         </Box>
       </PageLayout>
@@ -481,13 +541,15 @@ export function ProductMaintenancePage() {
       actions={
         <Button
           variant="contained"
-          startIcon={<AddIcon />}
+          size="small"
+          startIcon={<AddIcon sx={{ fontSize: 18 }} />}
           onClick={handleAddProduct}
           sx={{
             textTransform: "none",
             fontWeight: 600,
-            px: 2.5,
-            py: 1,
+            fontSize: "0.8125rem",
+            px: 2,
+            py: 0.75,
             boxShadow: `0 2px 4px ${alpha(theme.palette.primary.main, 0.2)}`,
             "&:hover": {
               boxShadow: `0 4px 8px ${alpha(theme.palette.primary.main, 0.3)}`,
@@ -498,68 +560,165 @@ export function ProductMaintenancePage() {
         </Button>
       }
     >
-      {/* Products Grid/List */}
-      <Box
-        sx={{
-          display: "grid",
-          gridTemplateColumns:
-            viewMode === "grid"
-              ? {
-                  xs: "1fr",
-                  sm: "repeat(auto-fill, minmax(420px, 1fr))",
-                  md: "repeat(auto-fill, minmax(450px, 1fr))",
-                  lg: "repeat(2, 1fr)",
-                  xl: "repeat(3, 1fr)",
-                }
-              : "1fr",
-          gap: 3,
-          pb: 2,
-        }}
-      >
-        {filteredAndSortedProducts.length === 0 ? (
-          <Box
-            sx={{
-              gridColumn: "1 / -1",
-              py: 12,
-              px: 3,
-              textAlign: "center",
+      {/* Products List - Compact and Minimalist */}
+      {filteredAndSortedProducts.length === 0 ? (
+        <Paper
+          elevation={0}
+          sx={{
+            p: 6,
+            textAlign: "center",
+            border: `1px solid ${alpha(theme.palette.divider, 0.08)}`,
+            borderRadius: 2,
+          }}
+        >
+          <Typography 
+            variant="body1" 
+            sx={{ 
+              fontSize: "0.875rem",
+              fontWeight: 500,
+              color: theme.palette.text.secondary,
+              mb: 0.5,
             }}
           >
-            <Typography 
-              variant="h6" 
-              sx={{ 
-                fontSize: "1rem",
-                fontWeight: 600,
-                color: theme.palette.text.secondary,
-                mb: 1,
-              }}
-            >
-              No products found
-            </Typography>
-            <Typography 
-              variant="body2" 
-              sx={{ 
-                fontSize: "0.875rem",
-                color: theme.palette.text.disabled,
-              }}
-            >
-              {searchQuery 
-                ? "Try adjusting your search criteria."
-                : "Create your first product to get started."}
-            </Typography>
-          </Box>
-        ) : (
-          filteredAndSortedProducts.map((product) => (
-            <ProductCard
-              key={product.id}
-              product={product}
-              onEditComponent={handleEditComponent}
-              onDeleteComponent={handleDeleteComponent}
-              onAddComponent={handleAddComponent}
-            />
-          ))
-        )}
-      </Box>
+            {products.length === 0 ? "No products configured" : "No products found"}
+          </Typography>
+          <Typography 
+            variant="body2" 
+            sx={{ 
+              fontSize: "0.75rem",
+              color: theme.palette.text.disabled,
+            }}
+          >
+            {products.length === 0 
+              ? "Start by adding your first product"
+              : searchQuery 
+              ? "Try adjusting your search criteria."
+              : "No products match your filters."}
+          </Typography>
+        </Paper>
+      ) : (
+        <Paper
+          elevation={0}
+          sx={{
+            border: `1px solid ${alpha(theme.palette.divider, 0.08)}`,
+            borderRadius: 2,
+            overflow: "hidden",
+          }}
+        >
+          {filteredAndSortedProducts.map((product, index) => (
+            <Box key={product.id}>
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  px: 2,
+                  py: 1.5,
+                  transition: theme.transitions.create(["background-color"], {
+                    duration: theme.transitions.duration.shorter,
+                  }),
+                  "&:hover": {
+                    bgcolor: alpha(theme.palette.primary.main, 0.04),
+                  },
+                }}
+              >
+                {/* Product Info */}
+                <Box sx={{ flex: 1, minWidth: 0 }}>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      fontSize: "0.8125rem",
+                      fontWeight: 500,
+                      color: theme.palette.text.primary,
+                      mb: 0.25,
+                    }}
+                  >
+                    {product.name}
+                  </Typography>
+                  {product.description && (
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        fontSize: "0.6875rem",
+                        color: theme.palette.text.secondary,
+                        display: "block",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {product.description}
+                    </Typography>
+                  )}
+                  <Stack direction="row" spacing={1} sx={{ mt: 0.5 }}>
+                    <Chip
+                      label={`${product.components.length} component${
+                        product.components.length !== 1 ? "s" : ""
+                      }`}
+                      size="small"
+                      sx={{
+                        height: 18,
+                        fontSize: "0.625rem",
+                        fontWeight: 500,
+                        bgcolor: alpha(theme.palette.primary.main, 0.1),
+                        color: theme.palette.primary.main,
+                        "& .MuiChip-label": {
+                          px: 0.75,
+                        },
+                      }}
+                    />
+                  </Stack>
+                </Box>
+
+                {/* Actions */}
+                <Stack direction="row" spacing={0.25} sx={{ ml: 2 }}>
+                  <Tooltip title="Edit product">
+                    <IconButton
+                      size="small"
+                      onClick={() => handleEditProduct(product)}
+                      sx={{
+                        fontSize: 16,
+                        p: 0.75,
+                        color: theme.palette.text.secondary,
+                        "&:hover": {
+                          color: theme.palette.primary.main,
+                          bgcolor: alpha(theme.palette.primary.main, 0.08),
+                        },
+                      }}
+                    >
+                      <EditIcon fontSize="inherit" />
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title="Delete product">
+                    <IconButton
+                      size="small"
+                      onClick={() => handleDeleteProduct(product.id)}
+                      disabled={deleteMutation.isPending}
+                      sx={{
+                        fontSize: 16,
+                        p: 0.75,
+                        color: theme.palette.text.secondary,
+                        "&:hover": {
+                          color: theme.palette.error.main,
+                          bgcolor: alpha(theme.palette.error.main, 0.08),
+                        },
+                      }}
+                    >
+                      {deleteMutation.isPending ? (
+                        <CircularProgress size={14} />
+                      ) : (
+                        <DeleteIcon fontSize="inherit" />
+                      )}
+                    </IconButton>
+                  </Tooltip>
+                </Stack>
+              </Box>
+              {index < filteredAndSortedProducts.length - 1 && (
+                <Divider sx={{ borderColor: alpha(theme.palette.divider, 0.08) }} />
+              )}
+            </Box>
+          ))}
+        </Paper>
+      )}
 
       {/* Product Edit Dialog */}
       <ProductEditDialog

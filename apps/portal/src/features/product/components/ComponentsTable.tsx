@@ -44,7 +44,7 @@ export function ComponentsTable({
           color: theme.palette.text.disabled,
         }}
       >
-        <Typography variant="body2" sx={{ fontSize: "0.8125rem" }}>
+        <Typography variant="body2" sx={{ fontSize: "0.75rem" }}>
           No components yet
         </Typography>
       </Box>
@@ -141,14 +141,14 @@ export function ComponentsTable({
             >
               <TableCell
                 sx={{
-                  py: 2,
+                  py: 1.5,
                 }}
               >
                 <Typography
                   variant="body2"
                   sx={{
-                    fontWeight: 600,
-                    fontSize: "0.875rem",
+                    fontWeight: 500,
+                    fontSize: "0.75rem",
                     color: theme.palette.text.primary,
                   }}
                 >
@@ -157,7 +157,7 @@ export function ComponentsTable({
               </TableCell>
               <TableCell
                 sx={{
-                  py: 2,
+                  py: 1.5,
                 }}
               >
                 {component.version ? (
@@ -165,15 +165,15 @@ export function ComponentsTable({
                     label={component.version}
                     size="small"
                     sx={{
-                      fontWeight: 600,
-                      fontSize: "0.8125rem",
+                      fontWeight: 500,
+                      fontSize: "0.6875rem",
                       fontFamily: "monospace",
-                      height: 26,
+                      height: 24,
                       bgcolor: alpha(theme.palette.primary.main, 0.12),
                       color: theme.palette.primary.main,
                       border: `1px solid ${alpha(theme.palette.primary.main, 0.2)}`,
                       "& .MuiChip-label": {
-                        px: 1.5,
+                        px: 1.25,
                       },
                     }}
                   />
@@ -181,7 +181,7 @@ export function ComponentsTable({
                   <Typography
                     variant="body2"
                     sx={{
-                      fontSize: "0.8125rem",
+                      fontSize: "0.75rem",
                       color: theme.palette.text.disabled,
                       fontStyle: "italic",
                     }}
@@ -192,21 +192,21 @@ export function ComponentsTable({
               </TableCell>
               <TableCell
                 sx={{
-                  py: 2,
+                  py: 1.5,
                 }}
               >
                 <Chip
                   label={component.type}
                   size="small"
                   sx={{
-                    fontSize: "0.8125rem",
+                    fontSize: "0.6875rem",
                     fontWeight: 500,
                     textTransform: "capitalize",
-                    height: 24,
+                    height: 22,
                     bgcolor: alpha(theme.palette.text.secondary, 0.08),
                     color: theme.palette.text.secondary,
                     "& .MuiChip-label": {
-                      px: 1.5,
+                      px: 1.25,
                     },
                   }}
                 />

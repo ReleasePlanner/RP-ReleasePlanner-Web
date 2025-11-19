@@ -1,11 +1,12 @@
+/**
+ * Feature Edit Dialog Component
+ *
+ * Minimalist and elegant Material UI dialog for creating and editing features
+ */
+
 import { useEffect, useState, useMemo } from "react";
 import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   TextField,
-  Button,
   FormControl,
   InputLabel,
   Select,
@@ -13,13 +14,13 @@ import {
   Typography,
   Stack,
   Box,
-  Divider,
-  Chip,
   useTheme,
   alpha,
   CircularProgress,
   Alert,
+  Grid,
 } from "@mui/material";
+import { BaseEditDialog } from "@/components";
 import type {
   Feature,
   FeatureStatus,
@@ -51,19 +52,6 @@ interface FeatureEditDialogProps {
  *
  * Dialog for creating or editing features with full form validation.
  * Allows editing all feature properties including category and owner.
- *
- * @example
- * ```tsx
- * <FeatureEditDialog
- *   open={open}
- *   editing={isEditing}
- *   feature={feature}
- *   selectedProductName={productName}
- *   onClose={handleClose}
- *   onSave={handleSave}
- *   onFeatureChange={handleChange}
- * />
- * ```
  */
 export function FeatureEditDialog({
   open,
@@ -148,7 +136,7 @@ export function FeatureEditDialog({
 
   const handleChange = (
     field: keyof Feature,
-    value: string | FeatureStatus | FeatureCategory | ProductOwner
+    value: string | FeatureStatus | FeatureCategory | ProductOwner | undefined
   ) => {
     setFormData((prev) => {
       if (!prev) return null;
@@ -163,138 +151,155 @@ export function FeatureEditDialog({
     }
   };
 
+  const isFormValid = 
+    formData?.name?.trim() &&
+    formData?.description?.trim() &&
+    formData?.technicalDescription?.trim() &&
+    formData?.businessDescription?.trim();
+
   return (
-    <Dialog
+    <BaseEditDialog
       open={open}
       onClose={onClose}
-      maxWidth="sm"
-      fullWidth
-      PaperProps={{
-        sx: {
-          borderRadius: 3,
-        },
-      }}
+      editing={editing}
+      title={editing ? "Editar Feature" : "Nueva Feature"}
+      subtitle={
+        editing
+          ? "Modifica los detalles de la feature"
+          : "Crea una nueva feature para el producto"
+      }
+      subtitleChip={selectedProductName || undefined}
+      maxWidth="md"
+      onSave={handleSave}
+      saveButtonText={editing ? "Actualizar Feature" : "Crear Feature"}
+      isFormValid={isFormValid}
     >
-      <DialogTitle
-        sx={{
-          px: 3,
-          pt: 3,
-          pb: 2,
-          borderBottom: `1px solid ${alpha(theme.palette.divider, 0.12)}`,
-          fontWeight: 600,
-          fontSize: "1.25rem",
-          color: theme.palette.text.primary,
-        }}
-      >
-        {editing ? "Edit Feature" : "Create Feature"}
-        {selectedProductName && (
-          <Typography
-            variant="body2"
-            component="div"
-            sx={{
-              color: theme.palette.text.secondary,
-              fontSize: "0.8125rem",
-              mt: 1,
-              fontWeight: 400,
-              display: "flex",
-              alignItems: "center",
-              gap: 0.5,
-            }}
-          >
-            <Chip
-              label="Product"
-              size="small"
-              sx={{
-                height: 20,
-                fontSize: "0.6875rem",
-                fontWeight: 500,
-                bgcolor: alpha(theme.palette.primary.main, 0.08),
-                color: theme.palette.primary.main,
-              }}
-            />
-            {selectedProductName}
-          </Typography>
-        )}
-      </DialogTitle>
-
-      <DialogContent sx={{ px: 3, pt: 4, pb: 2 }}>
         <Stack spacing={3}>
-          {/* Basic Information */}
-          <Box>
-            <Typography
-              variant="subtitle2"
-              sx={{
-                mb: 2,
-                fontWeight: 600,
-                fontSize: "0.875rem",
-                color: theme.palette.text.primary,
-                textTransform: "uppercase",
-                letterSpacing: "0.5px",
-              }}
-            >
-              Basic Information
-            </Typography>
-            <Stack spacing={2.5}>
-              <TextField
-                label="Feature Name"
-                fullWidth
-                required
-                value={formData.name || ""}
-                onChange={(e) => handleChange("name", e.target.value)}
-                placeholder="e.g., User Authentication"
-                variant="outlined"
-                size="medium"
-                sx={{
-                  "& .MuiOutlinedInput-root": {
-                    borderRadius: 1.5,
+          {/* Feature Name */}
+          <Box sx={{ pt: 3 }}>
+            <TextField
+              autoFocus
+              fullWidth
+              size="small"
+              label="Nombre de la Feature"
+            placeholder="Ej: User Authentication, Payment Gateway..."
+            value={formData.name || ""}
+            onChange={(e) => handleChange("name", e.target.value)}
+            required
+            InputLabelProps={{
+              shrink: true,
+              sx: {
+                fontSize: "0.625rem",
+                fontWeight: 500,
+                "&.MuiInputLabel-shrink": {
+                  transform: "translate(14px, -9px) scale(0.875)",
+                  backgroundColor: theme.palette.background.paper,
+                  paddingLeft: "6px",
+                  paddingRight: "6px",
+                },
+              },
+            }}
+            sx={{
+              "& .MuiOutlinedInput-root": {
+                fontSize: "0.6875rem",
+                "& input": {
+                  py: 0.625,
+                  fontSize: "0.6875rem",
+                },
+                "&:hover": {
+                  "& .MuiOutlinedInput-notchedOutline": {
+                    borderColor: theme.palette.primary.main,
                   },
-                }}
-              />
-
-              <TextField
-                label="Description"
-                fullWidth
-                required
-                multiline
-                rows={2}
-                value={formData.description || ""}
-                onChange={(e) => handleChange("description", e.target.value)}
-                placeholder="Brief description of the feature..."
-                variant="outlined"
-                size="medium"
-                sx={{
-                  "& .MuiOutlinedInput-root": {
-                    borderRadius: 1.5,
+                },
+                "&.Mui-focused": {
+                  "& .MuiOutlinedInput-notchedOutline": {
+                    borderWidth: 2,
+                    borderColor: theme.palette.primary.main,
                   },
-                }}
-              />
-            </Stack>
+                },
+              },
+              "& .MuiFormHelperText-root": {
+                marginTop: "4px",
+                marginLeft: "0px",
+                fontSize: "0.625rem",
+              },
+            }}
+            />
           </Box>
 
-          <Divider sx={{ my: 0.5 }} />
+          {/* Description */}
+          <TextField
+            fullWidth
+            size="small"
+            label="Descripción"
+            multiline
+            rows={3}
+            value={formData.description || ""}
+            onChange={(e) => handleChange("description", e.target.value)}
+            placeholder="Breve descripción de la feature..."
+            required
+            InputLabelProps={{
+              shrink: true,
+              sx: {
+                fontSize: "0.6875rem",
+                fontWeight: 500,
+                "&.MuiInputLabel-shrink": {
+                  transform: "translate(14px, -9px) scale(0.875)",
+                  backgroundColor: theme.palette.background.paper,
+                  paddingLeft: "6px",
+                  paddingRight: "6px",
+                },
+              },
+            }}
+            sx={{
+              "& .MuiOutlinedInput-root": {
+                fontSize: "0.6875rem",
+                "& textarea": {
+                  py: 0.625,
+                  fontSize: "0.6875rem",
+                },
+                "&:hover": {
+                  "& .MuiOutlinedInput-notchedOutline": {
+                    borderColor: theme.palette.primary.main,
+                  },
+                },
+                "&.Mui-focused": {
+                  "& .MuiOutlinedInput-notchedOutline": {
+                    borderWidth: 2,
+                    borderColor: theme.palette.primary.main,
+                  },
+                },
+              },
+              "& .MuiFormHelperText-root": {
+                marginTop: "4px",
+                marginLeft: "0px",
+                fontSize: "0.625rem",
+              },
+            }}
+          />
 
-          {/* Classification */}
-          <Box>
-            <Typography
-              variant="subtitle2"
-              sx={{
-                mb: 2,
-                fontWeight: 600,
-                fontSize: "0.875rem",
-                color: theme.palette.text.primary,
-                textTransform: "uppercase",
-                letterSpacing: "0.5px",
-              }}
-            >
-              Classification
-            </Typography>
-            <Stack spacing={2.5}>
-              <FormControl fullWidth>
-                <InputLabel>Category</InputLabel>
+          {/* Classification Fields */}
+          <Grid container spacing={2}>
+              {/* Category */}
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <FormControl size="small" sx={{ minWidth: 120, width: "100%" }}>
+                <InputLabel
+                  sx={{
+                    fontSize: "0.625rem",
+                    fontWeight: 500,
+                    "&.MuiInputLabel-shrink": {
+                      transform: "translate(14px, -9px) scale(0.875)",
+                      backgroundColor: theme.palette.background.paper,
+                      paddingLeft: "6px",
+                      paddingRight: "6px",
+                    },
+                  }}
+                >
+                  Categoría
+                </InputLabel>
                 <Select
                   value={formData.category?.id || ""}
-                  label="Category"
-                  size="medium"
+                  label="Categoría"
                   disabled={categoriesLoading || categoriesError !== null}
                   onChange={(e) => {
                     const category = categories.find(
@@ -302,134 +307,266 @@ export function FeatureEditDialog({
                     );
                     if (category) handleChange("category", category);
                   }}
-                  sx={{
-                    borderRadius: 1.5,
-                  }}
                   renderValue={(value) => {
                     if (!value) return "";
                     const category = categories.find((c) => c.id === value);
-                    return category?.name || "";
+                    return (
+                      <Typography sx={{ fontSize: "0.6875rem", lineHeight: 1.5 }}>
+                        {category?.name || ""}
+                      </Typography>
+                    );
+                  }}
+                  sx={{
+                    fontSize: "0.6875rem",
+                    "& .MuiOutlinedInput-root": {
+                      fontSize: "0.6875rem",
+                      "& .MuiSelect-select": {
+                        py: 0.625,
+                        fontSize: "0.6875rem",
+                        lineHeight: 1.5,
+                      },
+                      "& .MuiSelect-nativeInput": {
+                        fontSize: "0.6875rem",
+                      },
+                      "&:hover": {
+                        "& .MuiOutlinedInput-notchedOutline": {
+                          borderColor: theme.palette.primary.main,
+                        },
+                      },
+                      "&.Mui-focused": {
+                        "& .MuiOutlinedInput-notchedOutline": {
+                          borderWidth: 2,
+                          borderColor: theme.palette.primary.main,
+                        },
+                      },
+                    },
                   }}
                 >
                   {categoriesLoading ? (
                     <MenuItem disabled>
                       <Box display="flex" alignItems="center" gap={1}>
                         <CircularProgress size={16} />
-                        <Typography variant="body2" color="text.secondary">
-                          Loading Categories...
+                        <Typography variant="body2" color="text.secondary" sx={{ fontSize: "0.6875rem" }}>
+                          Cargando categorías...
                         </Typography>
                       </Box>
                     </MenuItem>
                   ) : categoriesError ? (
                     <MenuItem disabled>
                       <Alert severity="error" sx={{ width: "100%" }}>
-                        Failed to load Categories
+                        Error al cargar categorías
                       </Alert>
                     </MenuItem>
                   ) : categories.length === 0 ? (
                     <MenuItem disabled>
-                      <Typography variant="body2" color="text.secondary">
-                        No Categories available
+                      <Typography variant="body2" color="text.secondary" sx={{ fontSize: "0.625rem" }}>
+                        No hay categorías disponibles
                       </Typography>
                     </MenuItem>
                   ) : (
                     categories.map((cat) => (
-                      <MenuItem key={cat.id} value={cat.id}>
-                        {cat.name}
-                      </MenuItem>
+                    <MenuItem key={cat.id} value={cat.id} sx={{ fontSize: "0.6875rem", py: 0.5, minHeight: 32 }}>
+                      {cat.name}
+                    </MenuItem>
                     ))
                   )}
                 </Select>
                 {categoriesError && (
-                  <Typography variant="caption" color="error" sx={{ mt: 0.5, ml: 1.75 }}>
-                    Error loading Categories. Please refresh the page.
+                  <Typography variant="caption" color="error" sx={{ mt: 0.5, ml: 1.75, fontSize: "0.625rem" }}>
+                    Error al cargar categorías. Por favor, actualiza la página.
                   </Typography>
                 )}
-              </FormControl>
+                </FormControl>
+              </Grid>
 
-              <FormControl fullWidth>
-                <InputLabel>Status</InputLabel>
+              {/* Status */}
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <FormControl size="small" sx={{ minWidth: 120, width: "100%" }}>
+                <InputLabel
+                  sx={{
+                    fontSize: "0.625rem",
+                    fontWeight: 500,
+                    "&.MuiInputLabel-shrink": {
+                      transform: "translate(14px, -9px) scale(0.875)",
+                      backgroundColor: theme.palette.background.paper,
+                      paddingLeft: "6px",
+                      paddingRight: "6px",
+                    },
+                  }}
+                >
+                  Estado
+                </InputLabel>
                 <Select
                   value={formData.status || ""}
-                  label="Status"
-                  size="medium"
+                  label="Estado"
                   onChange={(e) =>
                     handleChange("status", e.target.value as FeatureStatus)
                   }
+                  IconComponent={() => null}
                   sx={{
-                    borderRadius: 1.5,
+                    fontSize: "0.6875rem",
+                    "& .MuiOutlinedInput-root": {
+                      fontSize: "0.6875rem",
+                      "& .MuiSelect-select": {
+                        py: 0.625,
+                        fontSize: "0.6875rem",
+                        lineHeight: 1.5,
+                      },
+                      "& .MuiSelect-nativeInput": {
+                        fontSize: "0.6875rem",
+                      },
+                      "& .MuiSelect-icon": {
+                        display: "none",
+                      },
+                      "&:hover": {
+                        "& .MuiOutlinedInput-notchedOutline": {
+                          borderColor: theme.palette.primary.main,
+                        },
+                      },
+                      "&.Mui-focused": {
+                        "& .MuiOutlinedInput-notchedOutline": {
+                          borderWidth: 2,
+                          borderColor: theme.palette.primary.main,
+                        },
+                      },
+                    },
+                  }}
+                  renderValue={(value) => {
+                    if (!value) return "";
+                    const statusLabel = STATUS_LABELS[value as FeatureStatus];
+                    return (
+                      <Typography sx={{ fontSize: "0.6875rem", lineHeight: 1.5 }}>
+                        {statusLabel || ""}
+                      </Typography>
+                    );
                   }}
                 >
                   {(Object.keys(STATUS_LABELS) as FeatureStatus[]).map((status) => (
-                    <MenuItem key={status} value={status}>
+                    <MenuItem key={status} value={status} sx={{ fontSize: "0.6875rem", py: 0.5, minHeight: 32 }}>
                       {STATUS_LABELS[status]}
                     </MenuItem>
                   ))}
                 </Select>
               </FormControl>
+              </Grid>
 
-              <FormControl fullWidth>
-                <InputLabel>Created By (IT Owner)</InputLabel>
+              {/* Created By (IT Owner) */}
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <FormControl size="small" sx={{ minWidth: 120, width: "100%" }}>
+                <InputLabel
+                  sx={{
+                    fontSize: "0.625rem",
+                    fontWeight: 500,
+                    "&.MuiInputLabel-shrink": {
+                      transform: "translate(14px, -9px) scale(0.875)",
+                      backgroundColor: theme.palette.background.paper,
+                      paddingLeft: "6px",
+                      paddingRight: "6px",
+                    },
+                  }}
+                >
+                  Creado Por (IT Owner)
+                </InputLabel>
                 <Select
                   value={formData.createdBy?.id || ""}
-                  label="Created By (IT Owner)"
-                  size="medium"
+                  label="Creado Por (IT Owner)"
                   disabled={itOwnersLoading || itOwnersError !== null}
                   onChange={(e) => {
                     const owner = productOwners.find((o) => o.id === e.target.value);
                     if (owner) handleChange("createdBy", owner);
                   }}
-                  sx={{
-                    borderRadius: 1.5,
-                  }}
                   renderValue={(value) => {
                     if (!value) return "";
                     const owner = productOwners.find((o) => o.id === value);
-                    return owner?.name || "";
+                    return (
+                      <Typography sx={{ fontSize: "0.6875rem", lineHeight: 1.5 }}>
+                        {owner?.name || ""}
+                      </Typography>
+                    );
+                  }}
+                  sx={{
+                    fontSize: "0.6875rem",
+                    "& .MuiOutlinedInput-root": {
+                      fontSize: "0.6875rem",
+                      "& .MuiSelect-select": {
+                        py: 0.625,
+                        fontSize: "0.6875rem",
+                        lineHeight: 1.5,
+                      },
+                      "& .MuiSelect-nativeInput": {
+                        fontSize: "0.6875rem",
+                      },
+                      "&:hover": {
+                        "& .MuiOutlinedInput-notchedOutline": {
+                          borderColor: theme.palette.primary.main,
+                        },
+                      },
+                      "&.Mui-focused": {
+                        "& .MuiOutlinedInput-notchedOutline": {
+                          borderWidth: 2,
+                          borderColor: theme.palette.primary.main,
+                        },
+                      },
+                    },
                   }}
                 >
                   {itOwnersLoading ? (
                     <MenuItem disabled>
                       <Box display="flex" alignItems="center" gap={1}>
                         <CircularProgress size={16} />
-                        <Typography variant="body2" color="text.secondary">
-                          Loading IT Owners...
+                        <Typography variant="body2" color="text.secondary" sx={{ fontSize: "0.625rem" }}>
+                          Cargando IT Owners...
                         </Typography>
                       </Box>
                     </MenuItem>
                   ) : itOwnersError ? (
                     <MenuItem disabled>
                       <Alert severity="error" sx={{ width: "100%" }}>
-                        Failed to load IT Owners
+                        Error al cargar IT Owners
                       </Alert>
                     </MenuItem>
                   ) : productOwners.length === 0 ? (
                     <MenuItem disabled>
-                      <Typography variant="body2" color="text.secondary">
-                        No IT Owners available
+                      <Typography variant="body2" color="text.secondary" sx={{ fontSize: "0.625rem" }}>
+                        No hay IT Owners disponibles
                       </Typography>
                     </MenuItem>
                   ) : (
                     productOwners.map((owner) => (
-                      <MenuItem key={owner.id} value={owner.id}>
-                        {owner.name}
-                      </MenuItem>
+                    <MenuItem key={owner.id} value={owner.id} sx={{ fontSize: "0.6875rem", py: 0.5, minHeight: 32 }}>
+                      {owner.name}
+                    </MenuItem>
                     ))
                   )}
                 </Select>
                 {itOwnersError && (
-                  <Typography variant="caption" color="error" sx={{ mt: 0.5, ml: 1.75 }}>
-                    Error loading IT Owners. Please refresh the page.
+                  <Typography variant="caption" color="error" sx={{ mt: 0.5, ml: 1.75, fontSize: "0.625rem" }}>
+                    Error al cargar IT Owners. Por favor, actualiza la página.
                   </Typography>
                 )}
               </FormControl>
+              </Grid>
 
-              <FormControl fullWidth>
-                <InputLabel>Country</InputLabel>
+              {/* Country */}
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <FormControl size="small" sx={{ minWidth: 120, width: "100%" }}>
+                <InputLabel
+                  sx={{
+                    fontSize: "0.625rem",
+                    fontWeight: 500,
+                    "&.MuiInputLabel-shrink": {
+                      transform: "translate(14px, -9px) scale(0.875)",
+                      backgroundColor: theme.palette.background.paper,
+                      paddingLeft: "6px",
+                      paddingRight: "6px",
+                    },
+                  }}
+                >
+                  País
+                </InputLabel>
                 <Select
                   value={formData.country?.id || ""}
-                  label="Country"
-                  size="medium"
+                  label="País"
                   disabled={countriesLoading || countriesError !== null}
                   onChange={(e) => {
                     const country = countries.find((c) => c.id === e.target.value);
@@ -443,166 +580,191 @@ export function FeatureEditDialog({
                       handleChange("country", undefined);
                     }
                   }}
-                  sx={{
-                    borderRadius: 1.5,
-                  }}
                   renderValue={(value) => {
                     if (!value) return "";
                     const country = countries.find((c) => c.id === value);
-                    return country ? `${country.name} (${country.code})` : "";
+                    return (
+                      <Typography sx={{ fontSize: "0.6875rem", lineHeight: 1.5 }}>
+                        {country ? `${country.name} (${country.code})` : ""}
+                      </Typography>
+                    );
+                  }}
+                  sx={{
+                    fontSize: "0.6875rem",
+                    "& .MuiOutlinedInput-root": {
+                      fontSize: "0.6875rem",
+                      "& .MuiSelect-select": {
+                        py: 0.625,
+                        fontSize: "0.6875rem",
+                        lineHeight: 1.5,
+                      },
+                      "& .MuiSelect-nativeInput": {
+                        fontSize: "0.6875rem",
+                      },
+                      "&:hover": {
+                        "& .MuiOutlinedInput-notchedOutline": {
+                          borderColor: theme.palette.primary.main,
+                        },
+                      },
+                      "&.Mui-focused": {
+                        "& .MuiOutlinedInput-notchedOutline": {
+                          borderWidth: 2,
+                          borderColor: theme.palette.primary.main,
+                        },
+                      },
+                    },
                   }}
                 >
-                  <MenuItem value="">
-                    <em>None</em>
+                  <MenuItem value="" sx={{ fontSize: "0.6875rem" }}>
+                    <em>Ninguno</em>
                   </MenuItem>
                   {countriesLoading ? (
                     <MenuItem disabled>
                       <Box display="flex" alignItems="center" gap={1}>
                         <CircularProgress size={16} />
-                        <Typography variant="body2" color="text.secondary">
-                          Loading Countries...
+                        <Typography variant="body2" color="text.secondary" sx={{ fontSize: "0.625rem" }}>
+                          Cargando países...
                         </Typography>
                       </Box>
                     </MenuItem>
                   ) : countriesError ? (
                     <MenuItem disabled>
                       <Alert severity="error" sx={{ width: "100%" }}>
-                        Failed to load Countries
+                        Error al cargar países
                       </Alert>
                     </MenuItem>
                   ) : countries.length === 0 ? (
                     <MenuItem disabled>
-                      <Typography variant="body2" color="text.secondary">
-                        No Countries available
+                      <Typography variant="body2" color="text.secondary" sx={{ fontSize: "0.625rem" }}>
+                        No hay países disponibles
                       </Typography>
                     </MenuItem>
                   ) : (
                     countries.map((country) => (
-                      <MenuItem key={country.id} value={country.id}>
-                        {country.name} ({country.code})
-                      </MenuItem>
+                    <MenuItem key={country.id} value={country.id} sx={{ fontSize: "0.6875rem", py: 0.5, minHeight: 32 }}>
+                      {country.name} ({country.code})
+                    </MenuItem>
                     ))
                   )}
                 </Select>
                 {countriesError && (
-                  <Typography variant="caption" color="error" sx={{ mt: 0.5, ml: 1.75 }}>
-                    Error loading Countries. Please refresh the page.
+                  <Typography variant="caption" color="error" sx={{ mt: 0.5, ml: 1.75, fontSize: "0.625rem" }}>
+                    Error al cargar países. Por favor, actualiza la página.
                   </Typography>
                 )}
               </FormControl>
-            </Stack>
-          </Box>
+              </Grid>
+          </Grid>
 
-          <Divider sx={{ my: 0.5 }} />
-
-          {/* Detailed Descriptions */}
-          <Box>
-            <Typography
-              variant="subtitle2"
-              sx={{
-                mb: 2,
-                fontWeight: 600,
-                fontSize: "0.875rem",
-                color: theme.palette.text.primary,
-                textTransform: "uppercase",
-                letterSpacing: "0.5px",
-              }}
-            >
-              Detailed Descriptions
-            </Typography>
-            <Stack spacing={2.5}>
+          {/* Detailed Descriptions Fields */}
+          <Stack spacing={2}>
+              {/* Technical Description */}
               <TextField
-                label="Technical Description"
                 fullWidth
-                required
+                size="small"
+                label="Descripción Técnica"
                 multiline
-                rows={3}
+                rows={4}
                 value={formData.technicalDescription || ""}
                 onChange={(e) => handleChange("technicalDescription", e.target.value)}
-                placeholder="Technical details, implementation notes..."
-                variant="outlined"
-                size="medium"
+                placeholder="Detalles técnicos, notas de implementación..."
+                required
+                InputLabelProps={{
+                  shrink: true,
+                  sx: {
+                    fontSize: "0.6875rem",
+                    fontWeight: 500,
+                    transform: "translate(14px, -9px) scale(0.875)",
+                    "&.MuiInputLabel-shrink": {
+                      transform: "translate(14px, -9px) scale(0.875)",
+                      backgroundColor: theme.palette.background.paper,
+                      paddingLeft: "6px",
+                      paddingRight: "6px",
+                      zIndex: 1,
+                    },
+                  },
+                }}
                 sx={{
                   "& .MuiOutlinedInput-root": {
-                    borderRadius: 1.5,
+                    fontSize: "0.75rem",
+                    "& textarea": {
+                      py: 0.75,
+                      fontSize: "0.75rem",
+                    },
+                    "&:hover": {
+                      "& .MuiOutlinedInput-notchedOutline": {
+                        borderColor: theme.palette.primary.main,
+                      },
+                    },
+                    "&.Mui-focused": {
+                      "& .MuiOutlinedInput-notchedOutline": {
+                        borderWidth: 2,
+                        borderColor: theme.palette.primary.main,
+                      },
+                    },
+                  },
+                  "& .MuiFormHelperText-root": {
+                    marginTop: "6px",
+                    marginLeft: "0px",
+                    fontSize: "0.6875rem",
                   },
                 }}
               />
 
+              {/* Business Description */}
               <TextField
-                label="Business Description"
                 fullWidth
-                required
+                size="small"
+                label="Descripción de Negocio"
                 multiline
-                rows={3}
+                rows={4}
                 value={formData.businessDescription || ""}
                 onChange={(e) => handleChange("businessDescription", e.target.value)}
-                placeholder="Business value, user benefits..."
-                variant="outlined"
-                size="medium"
+                placeholder="Valor de negocio, beneficios para el usuario..."
+                required
+                InputLabelProps={{
+                  shrink: true,
+                  sx: {
+                    fontSize: "0.6875rem",
+                    fontWeight: 500,
+                    transform: "translate(14px, -9px) scale(0.875)",
+                    "&.MuiInputLabel-shrink": {
+                      transform: "translate(14px, -9px) scale(0.875)",
+                      backgroundColor: theme.palette.background.paper,
+                      paddingLeft: "6px",
+                      paddingRight: "6px",
+                      zIndex: 1,
+                    },
+                  },
+                }}
                 sx={{
                   "& .MuiOutlinedInput-root": {
-                    borderRadius: 1.5,
+                    fontSize: "0.75rem",
+                    "& textarea": {
+                      py: 0.75,
+                      fontSize: "0.75rem",
+                    },
+                    "&:hover": {
+                      "& .MuiOutlinedInput-notchedOutline": {
+                        borderColor: theme.palette.primary.main,
+                      },
+                    },
+                    "&.Mui-focused": {
+                      "& .MuiOutlinedInput-notchedOutline": {
+                        borderWidth: 2,
+                        borderColor: theme.palette.primary.main,
+                      },
+                    },
+                  },
+                  "& .MuiFormHelperText-root": {
+                    marginTop: "6px",
+                    marginLeft: "0px",
+                    fontSize: "0.6875rem",
                   },
                 }}
               />
-            </Stack>
-          </Box>
+          </Stack>
         </Stack>
-      </DialogContent>
-
-      <DialogActions
-        sx={{
-          px: 3,
-          pt: 2,
-          pb: 3,
-          borderTop: `1px solid ${alpha(theme.palette.divider, 0.12)}`,
-          gap: 1.5,
-        }}
-      >
-        <Button
-          onClick={onClose}
-          sx={{
-            textTransform: "none",
-            px: 3,
-            py: 1,
-            borderRadius: 1.5,
-            fontWeight: 500,
-            color: theme.palette.text.secondary,
-            "&:hover": {
-              bgcolor: alpha(theme.palette.action.hover, 0.5),
-            },
-          }}
-        >
-          Cancel
-        </Button>
-        <Button
-          onClick={handleSave}
-          variant="contained"
-          disabled={
-            !formData?.name?.trim() ||
-            !formData?.description?.trim() ||
-            !formData?.technicalDescription?.trim() ||
-            !formData?.businessDescription?.trim()
-          }
-          sx={{
-            textTransform: "none",
-            fontWeight: 600,
-            px: 3,
-            py: 1,
-            borderRadius: 1.5,
-            boxShadow: `0 2px 8px ${alpha(theme.palette.primary.main, 0.24)}`,
-            "&:hover": {
-              boxShadow: `0 4px 12px ${alpha(theme.palette.primary.main, 0.32)}`,
-            },
-            "&:disabled": {
-              boxShadow: "none",
-            },
-          }}
-        >
-          {editing ? "Update Feature" : "Create Feature"}
-        </Button>
-      </DialogActions>
-    </Dialog>
+    </BaseEditDialog>
   );
 }

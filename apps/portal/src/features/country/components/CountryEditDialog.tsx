@@ -5,18 +5,14 @@
  */
 
 import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   TextField,
-  Button,
-  useTheme,
-  alpha,
   Stack,
   Box,
-  Typography,
+  useTheme,
+  alpha,
+  Grid,
 } from "@mui/material";
+import { BaseEditDialog } from "@/components";
 import type { Country } from "@/api/services/countries.service";
 
 interface CountryEditDialogProps {
@@ -39,159 +35,234 @@ export function CountryEditDialog({
 
   if (!country) return null;
 
+  const isValid = !!country.name?.trim() && !!country.code?.trim();
+
   return (
-    <Dialog
+    <BaseEditDialog
       open={open}
       onClose={onClose}
+      editing={isEditing}
+      title={isEditing ? "Edit Country" : "New Country"}
+      subtitle="Manage country information"
       maxWidth="sm"
-      fullWidth
-      PaperProps={{
-        sx: {
-          borderRadius: 3,
-        },
-      }}
+      onSave={onSave}
+      saveButtonText={isEditing ? "Save Changes" : "Create Country"}
+      isFormValid={isValid}
     >
-      <DialogTitle
-        sx={{
-          px: 3,
-          pt: 3,
-          pb: 2,
-          borderBottom: `1px solid ${alpha(theme.palette.divider, 0.12)}`,
-          fontWeight: 600,
-          fontSize: "1.25rem",
-          color: theme.palette.text.primary,
-        }}
-      >
-        {isEditing ? "Edit Country" : "Create Country"}
-      </DialogTitle>
+      <Stack spacing={3} sx={{ width: "100%" }}>
+        {/* Spacer to ensure controls are below header divider */}
+        <Box sx={{ pt: 1 }} />
+        
+        {/* Country Name */}
+        <TextField
+          autoFocus
+          fullWidth
+          size="small"
+          label="Country Name"
+          placeholder="e.g., United States, Canada, Mexico"
+          value={country.name || ""}
+          onChange={(e) =>
+            onCountryChange({ ...country, name: e.target.value })
+          }
+          required
+          InputLabelProps={{
+            shrink: true,
+            sx: {
+              fontSize: "0.625rem",
+              fontWeight: 500,
+              "&.MuiInputLabel-shrink": {
+                backgroundColor: theme.palette.background.paper,
+                paddingLeft: "6px",
+                paddingRight: "6px",
+                zIndex: 1,
+              },
+            },
+          }}
+          sx={{
+            "& .MuiOutlinedInput-root": {
+              fontSize: "0.6875rem",
+              "& input": {
+                py: 0.625,
+                fontSize: "0.6875rem",
+              },
+              "&:hover": {
+                "& .MuiOutlinedInput-notchedOutline": {
+                  borderColor: theme.palette.primary.main,
+                },
+              },
+              "&.Mui-focused": {
+                "& .MuiOutlinedInput-notchedOutline": {
+                  borderWidth: 2,
+                  borderColor: theme.palette.primary.main,
+                },
+              },
+            },
+            "& .MuiFormHelperText-root": {
+              marginTop: "4px",
+              marginLeft: "0px",
+              fontSize: "0.625rem",
+            },
+          }}
+        />
 
-      <DialogContent sx={{ px: 3, pt: 4, pb: 2 }}>
-        <Stack spacing={3}>
-          {/* Basic Information */}
-          <Box>
-            <Typography
-              variant="subtitle2"
-              sx={{
-                mb: 2,
-                fontWeight: 600,
-                fontSize: "0.875rem",
-                color: theme.palette.text.primary,
-                textTransform: "uppercase",
-                letterSpacing: "0.5px",
+        {/* Code and ISO Code in two columns */}
+        <Grid container spacing={2}>
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <TextField
+              fullWidth
+              size="small"
+              label="Country Code"
+              placeholder="e.g., US, CA, MX"
+              value={country.code || ""}
+              onChange={(e) =>
+                onCountryChange({ ...country, code: e.target.value.toUpperCase() })
+              }
+              required
+              inputProps={{ maxLength: 10 }}
+              InputLabelProps={{
+                shrink: true,
+                sx: {
+                  fontSize: "0.625rem",
+                  fontWeight: 500,
+                  "&.MuiInputLabel-shrink": {
+                    backgroundColor: theme.palette.background.paper,
+                    paddingLeft: "6px",
+                    paddingRight: "6px",
+                    zIndex: 1,
+                  },
+                },
               }}
-            >
-              Basic Information
-            </Typography>
-            <Stack spacing={2.5}>
-              <TextField
-                fullWidth
-                label="Country Name"
-                value={country.name || ""}
-                onChange={(e) =>
-                  onCountryChange({ ...country, name: e.target.value })
-                }
-                required
-                autoFocus
-                size="medium"
-                sx={{
-                  "& .MuiOutlinedInput-root": {
-                    borderRadius: 1.5,
+              sx={{
+                "& .MuiOutlinedInput-root": {
+                  fontSize: "0.6875rem",
+                  "& input": {
+                    py: 0.625,
+                    fontSize: "0.6875rem",
                   },
-                }}
-              />
-
-              <TextField
-                fullWidth
-                label="Country Code"
-                value={country.code || ""}
-                onChange={(e) =>
-                  onCountryChange({ ...country, code: e.target.value.toUpperCase() })
-                }
-                required
-                placeholder="e.g., US, CA, MX"
-                size="medium"
-                inputProps={{ maxLength: 10 }}
-                sx={{
-                  "& .MuiOutlinedInput-root": {
-                    borderRadius: 1.5,
+                  "&:hover": {
+                    "& .MuiOutlinedInput-notchedOutline": {
+                      borderColor: theme.palette.primary.main,
+                    },
                   },
-                }}
-              />
-
-              <TextField
-                fullWidth
-                label="ISO Code (Optional)"
-                value={country.isoCode || ""}
-                onChange={(e) =>
-                  onCountryChange({ ...country, isoCode: e.target.value })
-                }
-                placeholder="e.g., USA, CAN, MEX"
-                size="medium"
-                inputProps={{ maxLength: 10 }}
-                sx={{
-                  "& .MuiOutlinedInput-root": {
-                    borderRadius: 1.5,
+                  "&.Mui-focused": {
+                    "& .MuiOutlinedInput-notchedOutline": {
+                      borderWidth: 2,
+                      borderColor: theme.palette.primary.main,
+                    },
                   },
-                }}
-              />
-
-              <TextField
-                fullWidth
-                label="Region (Optional)"
-                value={country.region || ""}
-                onChange={(e) =>
-                  onCountryChange({ ...country, region: e.target.value })
-                }
-                placeholder="e.g., North America, Europe"
-                size="medium"
-                sx={{
-                  "& .MuiOutlinedInput-root": {
-                    borderRadius: 1.5,
+                },
+                "& .MuiFormHelperText-root": {
+                  marginTop: "4px",
+                  marginLeft: "0px",
+                  fontSize: "0.625rem",
+                },
+              }}
+            />
+          </Grid>
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <TextField
+              fullWidth
+              size="small"
+              label="ISO Code"
+              placeholder="e.g., USA, CAN, MEX"
+              value={country.isoCode || ""}
+              onChange={(e) =>
+                onCountryChange({ ...country, isoCode: e.target.value })
+              }
+              inputProps={{ maxLength: 10 }}
+              InputLabelProps={{
+                shrink: true,
+                sx: {
+                  fontSize: "0.625rem",
+                  fontWeight: 500,
+                  "&.MuiInputLabel-shrink": {
+                    backgroundColor: theme.palette.background.paper,
+                    paddingLeft: "6px",
+                    paddingRight: "6px",
+                    zIndex: 1,
                   },
-                }}
-              />
-            </Stack>
-          </Box>
-        </Stack>
-      </DialogContent>
+                },
+              }}
+              sx={{
+                "& .MuiOutlinedInput-root": {
+                  fontSize: "0.6875rem",
+                  "& input": {
+                    py: 0.625,
+                    fontSize: "0.6875rem",
+                  },
+                  "&:hover": {
+                    "& .MuiOutlinedInput-notchedOutline": {
+                      borderColor: theme.palette.primary.main,
+                    },
+                  },
+                  "&.Mui-focused": {
+                    "& .MuiOutlinedInput-notchedOutline": {
+                      borderWidth: 2,
+                      borderColor: theme.palette.primary.main,
+                    },
+                  },
+                },
+                "& .MuiFormHelperText-root": {
+                  marginTop: "4px",
+                  marginLeft: "0px",
+                  fontSize: "0.625rem",
+                },
+              }}
+            />
+          </Grid>
+        </Grid>
 
-      <DialogActions sx={{ px: 3, pt: 2, pb: 3, gap: 1.5 }}>
-        <Button
-          onClick={onClose}
-          sx={{
-            textTransform: "none",
-            px: 3,
-            py: 1,
-            borderRadius: 1.5,
-            fontWeight: 500,
-            color: theme.palette.text.secondary,
-            "&:hover": {
-              bgcolor: alpha(theme.palette.text.secondary, 0.08),
+        {/* Region */}
+        <TextField
+          fullWidth
+          size="small"
+          label="Region"
+          placeholder="e.g., North America, Europe, Asia"
+          value={country.region || ""}
+          onChange={(e) =>
+            onCountryChange({ ...country, region: e.target.value })
+          }
+          InputLabelProps={{
+            shrink: true,
+            sx: {
+              fontSize: "0.625rem",
+              fontWeight: 500,
+              "&.MuiInputLabel-shrink": {
+                backgroundColor: theme.palette.background.paper,
+                paddingLeft: "6px",
+                paddingRight: "6px",
+                zIndex: 1,
+              },
             },
           }}
-        >
-          Cancel
-        </Button>
-        <Button
-          onClick={onSave}
-          variant="contained"
-          disabled={!country.name || !country.code || country.name.trim() === "" || country.code.trim() === ""}
           sx={{
-            textTransform: "none",
-            px: 3,
-            py: 1,
-            borderRadius: 1.5,
-            fontWeight: 600,
-            boxShadow: `0 2px 8px ${alpha(theme.palette.primary.main, 0.3)}`,
-            "&:hover": {
-              boxShadow: `0 4px 12px ${alpha(theme.palette.primary.main, 0.4)}`,
+            "& .MuiOutlinedInput-root": {
+              fontSize: "0.6875rem",
+              "& input": {
+                py: 0.625,
+                fontSize: "0.6875rem",
+              },
+              "&:hover": {
+                "& .MuiOutlinedInput-notchedOutline": {
+                  borderColor: theme.palette.primary.main,
+                },
+              },
+              "&.Mui-focused": {
+                "& .MuiOutlinedInput-notchedOutline": {
+                  borderWidth: 2,
+                  borderColor: theme.palette.primary.main,
+                },
+              },
+            },
+            "& .MuiFormHelperText-root": {
+              marginTop: "4px",
+              marginLeft: "0px",
+              fontSize: "0.625rem",
             },
           }}
-        >
-          {isEditing ? "Save" : "Create"}
-        </Button>
-      </DialogActions>
-    </Dialog>
+        />
+      </Stack>
+    </BaseEditDialog>
   );
 }
 

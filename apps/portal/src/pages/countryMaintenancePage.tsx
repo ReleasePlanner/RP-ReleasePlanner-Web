@@ -5,8 +5,26 @@
  */
 
 import { useMemo, useState } from "react";
-import { Box, Button, CircularProgress, Alert, useTheme, alpha, Typography } from "@mui/material";
-import { Add as AddIcon } from "@mui/icons-material";
+import { 
+  Box, 
+  Button, 
+  CircularProgress, 
+  Alert, 
+  useTheme, 
+  alpha, 
+  Typography,
+  Paper,
+  Stack,
+  IconButton,
+  Tooltip,
+  Divider,
+  Chip,
+} from "@mui/material";
+import { 
+  Add as AddIcon,
+  Edit as EditIcon,
+  Delete as DeleteIcon,
+} from "@mui/icons-material";
 import { PageLayout, PageToolbar, type ViewMode } from "@/components";
 import {
   useCountries,
@@ -15,7 +33,7 @@ import {
   useDeleteCountry,
 } from "../api/hooks/useCountries";
 import type { Country } from "../api/services/countries.service";
-import { CountryCard, CountryEditDialog } from "@/features/country/components";
+import { CountryEditDialog } from "@/features/country/components";
 
 export function CountryMaintenancePage() {
   const theme = useTheme();
@@ -81,10 +99,15 @@ export function CountryMaintenancePage() {
   };
 
   const handleDeleteCountry = async (countryId: string) => {
+    if (!window.confirm("Are you sure you want to delete this country?")) {
+      return;
+    }
+
     try {
       await deleteMutation.mutateAsync(countryId);
     } catch (error) {
       console.error('Error deleting country:', error);
+      alert("Error deleting country. Please try again.");
     }
   };
 
@@ -122,111 +145,248 @@ export function CountryMaintenancePage() {
     setEditingCountry(null);
   };
 
-  return (
-    <PageLayout>
-      <PageToolbar
-        title="Countries Maintenance"
-        subtitle="Manage countries and regions"
-        viewMode={viewMode}
-        onViewModeChange={setViewMode}
-        sortBy={sortBy}
-        onSortChange={setSortBy}
-        searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
-        sortOptions={[
-          { value: "name", label: "Name" },
-          { value: "code", label: "Code" },
-          { value: "region", label: "Region" },
-        ]}
-        actions={
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={handleAddCountry}
-            sx={{
-              textTransform: "none",
-              px: 2.5,
-              py: 1,
-              borderRadius: 1.5,
-              fontWeight: 600,
-              boxShadow: `0 2px 8px ${alpha(theme.palette.primary.main, 0.3)}`,
-              "&:hover": {
-                boxShadow: `0 4px 12px ${alpha(theme.palette.primary.main, 0.4)}`,
-              },
-            }}
-          >
-            Add Country
-          </Button>
-        }
-      />
+  const sortOptions = [
+    { value: "name", label: "Sort: Name" },
+    { value: "code", label: "Sort: Code" },
+    { value: "region", label: "Sort: Region" },
+  ];
 
-      {/* Main: Countries List */}
-      <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
-        {isLoading ? (
-          <Box display="flex" justifyContent="center" alignItems="center" minHeight={400}>
-            <CircularProgress />
-          </Box>
-        ) : error ? (
-          <Alert severity="error">Failed to load countries. Please try again.</Alert>
-        ) : filteredAndSortedCountries.length === 0 ? (
-          <Box
+  // Loading state
+  if (isLoading) {
+    return (
+      <PageLayout title="Country Maintenance" description="Manage countries and regions">
+        <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
+          <CircularProgress />
+        </Box>
+      </PageLayout>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <PageLayout title="Country Maintenance" description="Manage countries and regions">
+        <Box p={3}>
+          <Alert severity="error">
+            Error loading countries: {error instanceof Error ? error.message : 'Unknown error'}
+          </Alert>
+        </Box>
+      </PageLayout>
+    );
+  }
+
+  return (
+    <PageLayout
+      title="Country Maintenance"
+      description="Manage countries and regions"
+      toolbar={
+        <PageToolbar
+          viewMode={viewMode}
+          onViewModeChange={setViewMode}
+          sortBy={sortBy}
+          sortOptions={sortOptions}
+          onSortChange={setSortBy}
+          searchQuery={searchQuery}
+          searchPlaceholder="Search countries..."
+          onSearchChange={setSearchQuery}
+        />
+      }
+      actions={
+        <Button
+          variant="contained"
+          size="small"
+          startIcon={<AddIcon sx={{ fontSize: 18 }} />}
+          onClick={handleAddCountry}
+          sx={{
+            textTransform: "none",
+            fontWeight: 600,
+            fontSize: "0.8125rem",
+            px: 2,
+            py: 0.75,
+            boxShadow: `0 2px 4px ${alpha(theme.palette.primary.main, 0.2)}`,
+            "&:hover": {
+              boxShadow: `0 4px 8px ${alpha(theme.palette.primary.main, 0.3)}`,
+            },
+          }}
+        >
+          Add Country
+        </Button>
+      }
+    >
+      {/* Countries List - Compact and Minimalist */}
+      {filteredAndSortedCountries.length === 0 ? (
+        <Paper
+          elevation={0}
+          sx={{
+            p: 6,
+            textAlign: "center",
+            border: `1px solid ${alpha(theme.palette.divider, 0.08)}`,
+            borderRadius: 2,
+          }}
+        >
+          <Typography
+            variant="body1"
             sx={{
-              textAlign: "center",
-              py: 8,
-              px: 2,
+              fontSize: "0.875rem",
+              fontWeight: 500,
+              color: theme.palette.text.secondary,
+              mb: 0.5,
             }}
           >
-            <Typography variant="h6" sx={{ mb: 1, color: theme.palette.text.secondary }}>
-              {searchQuery ? "No countries found" : "No countries yet"}
-            </Typography>
-            <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 3 }}>
-              {searchQuery
-                ? "Try adjusting your search criteria"
-                : "Get started by adding your first country"}
-            </Typography>
-            {!searchQuery && (
-              <Button
-                variant="contained"
-                startIcon={<AddIcon />}
-                onClick={handleAddCountry}
+            {countries.length === 0 ? "No countries configured" : "No countries found"}
+          </Typography>
+          <Typography
+            variant="body2"
+            sx={{
+              fontSize: "0.75rem",
+              color: theme.palette.text.disabled,
+            }}
+          >
+            {countries.length === 0
+              ? "Start by adding your first country"
+              : searchQuery
+              ? "Try adjusting your search criteria."
+              : "No countries match your filters."}
+          </Typography>
+        </Paper>
+      ) : (
+        <Paper
+          elevation={0}
+          sx={{
+            border: `1px solid ${alpha(theme.palette.divider, 0.08)}`,
+            borderRadius: 2,
+            overflow: "hidden",
+          }}
+        >
+          {filteredAndSortedCountries.map((country, index) => (
+            <Box key={country.id}>
+              <Box
                 sx={{
-                  textTransform: "none",
-                  px: 3,
-                  py: 1.25,
-                  borderRadius: 1.5,
-                  fontWeight: 600,
+                  display: "flex",
+                  alignItems: "center",
+                  px: 2,
+                  py: 1.5,
+                  transition: theme.transitions.create(["background-color"], {
+                    duration: theme.transitions.duration.shorter,
+                  }),
+                  "&:hover": {
+                    bgcolor: alpha(theme.palette.primary.main, 0.04),
+                  },
                 }}
               >
-                Add Country
-              </Button>
-            )}
-          </Box>
-        ) : (
-          <Box
-            sx={{
-              display: "grid",
-              gridTemplateColumns: {
-                xs: "1fr",
-                sm: "repeat(auto-fill, minmax(280px, 1fr))",
-                md: "repeat(auto-fill, minmax(300px, 1fr))",
-                lg: "repeat(3, 1fr)",
-                xl: "repeat(4, 1fr)",
-              },
-              gap: 3,
-              pb: 2,
-            }}
-          >
-            {filteredAndSortedCountries.map((country) => (
-              <CountryCard
-                key={country.id}
-                country={country}
-                onEdit={() => handleEditCountry(country)}
-                onDelete={() => handleDeleteCountry(country.id)}
-              />
-            ))}
-          </Box>
-        )}
-      </Box>
+                {/* Country Info */}
+                <Box sx={{ flex: 1, minWidth: 0 }}>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      fontSize: "0.8125rem",
+                      fontWeight: 500,
+                      color: theme.palette.text.primary,
+                      mb: 0.25,
+                    }}
+                  >
+                    {country.name}
+                  </Typography>
+                  <Stack direction="row" spacing={0.5} flexWrap="wrap" gap={0.5}>
+                    <Chip
+                      label={country.code}
+                      size="small"
+                      sx={{
+                        height: 18,
+                        fontSize: "0.625rem",
+                        fontWeight: 500,
+                        bgcolor: alpha(theme.palette.primary.main, 0.1),
+                        color: theme.palette.primary.main,
+                        "& .MuiChip-label": {
+                          px: 0.75,
+                        },
+                      }}
+                    />
+                    {country.isoCode && (
+                      <Chip
+                        label={country.isoCode}
+                        size="small"
+                        sx={{
+                          height: 18,
+                          fontSize: "0.625rem",
+                          fontWeight: 500,
+                          bgcolor: alpha(theme.palette.text.secondary, 0.1),
+                          color: theme.palette.text.secondary,
+                          "& .MuiChip-label": {
+                            px: 0.75,
+                          },
+                        }}
+                      />
+                    )}
+                    {country.region && (
+                      <Chip
+                        label={country.region}
+                        size="small"
+                        sx={{
+                          height: 18,
+                          fontSize: "0.625rem",
+                          fontWeight: 500,
+                          bgcolor: alpha(theme.palette.success.main, 0.1),
+                          color: theme.palette.success.main,
+                          "& .MuiChip-label": {
+                            px: 0.75,
+                          },
+                        }}
+                      />
+                    )}
+                  </Stack>
+                </Box>
+
+                {/* Actions */}
+                <Stack direction="row" spacing={0.25} sx={{ ml: 2 }}>
+                  <Tooltip title="Edit Country">
+                    <IconButton
+                      size="small"
+                      onClick={() => handleEditCountry(country)}
+                      sx={{
+                        fontSize: 16,
+                        p: 0.75,
+                        color: theme.palette.text.secondary,
+                        "&:hover": {
+                          color: theme.palette.primary.main,
+                          bgcolor: alpha(theme.palette.primary.main, 0.08),
+                        },
+                      }}
+                    >
+                      <EditIcon fontSize="inherit" />
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title="Delete Country">
+                    <IconButton
+                      size="small"
+                      onClick={() => handleDeleteCountry(country.id)}
+                      disabled={deleteMutation.isPending}
+                      sx={{
+                        fontSize: 16,
+                        p: 0.75,
+                        color: theme.palette.text.secondary,
+                        "&:hover": {
+                          color: theme.palette.error.main,
+                          bgcolor: alpha(theme.palette.error.main, 0.08),
+                        },
+                      }}
+                    >
+                      {deleteMutation.isPending ? (
+                        <CircularProgress size={14} />
+                      ) : (
+                        <DeleteIcon fontSize="inherit" />
+                      )}
+                    </IconButton>
+                  </Tooltip>
+                </Stack>
+              </Box>
+              {index < filteredAndSortedCountries.length - 1 && (
+                <Divider sx={{ borderColor: alpha(theme.palette.divider, 0.08) }} />
+              )}
+            </Box>
+          ))}
+        </Paper>
+      )}
 
       {/* Edit Dialog */}
       <CountryEditDialog

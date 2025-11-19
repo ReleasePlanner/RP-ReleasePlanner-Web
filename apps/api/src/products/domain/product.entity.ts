@@ -3,14 +3,14 @@
  */
 import { Entity, Column, OneToMany, Index } from "typeorm";
 import { BaseEntity } from "../../common/database/base.entity";
-import type { ComponentTypeEnum } from "./component-version.entity";
+// ComponentTypeEnum is no longer used - components now use componentTypeId
 
 // Type for ProductComponentVersion to avoid circular dependency
 // This type matches the actual ProductComponentVersion entity structure
 type ProductComponentVersion = {
   id: string;
-  type?: ComponentTypeEnum;
   componentTypeId?: string;
+  componentType?: { id: string; code?: string; name?: string };
   currentVersion: string;
   previousVersion: string;
   productId: string;
@@ -21,7 +21,6 @@ type ProductComponentVersion = {
 };
 
 type ProductComponentVersionUpdates = Partial<{
-  type?: ComponentTypeEnum;
   componentTypeId?: string;
   currentVersion: string;
   previousVersion: string;
@@ -64,9 +63,9 @@ export class Product extends BaseEntity {
     }
     // Business rule: Each component type must be unique
     if (this.components && this.components.length > 0) {
-      const types = this.components.map((c) => c.type);
-      const uniqueTypes = new Set(types);
-      if (types.length !== uniqueTypes.size) {
+      const componentTypeIds = this.components.map((c) => c.componentTypeId).filter(Boolean);
+      const uniqueComponentTypeIds = new Set(componentTypeIds);
+      if (componentTypeIds.length !== uniqueComponentTypeIds.size) {
         throw new Error("Each component type can only appear once per product");
       }
     }
@@ -79,9 +78,9 @@ export class Product extends BaseEntity {
     if (!this.components) {
       this.components = [];
     }
-    const existing = this.components.find((c) => c.type === component.type);
+    const existing = this.components.find((c) => c.componentTypeId === component.componentTypeId);
     if (existing) {
-      throw new Error(`Component type ${component.type} already exists`);
+      throw new Error(`Component type with componentTypeId ${component.componentTypeId} already exists`);
     }
     component.productId = this.id;
     this.components.push(component);

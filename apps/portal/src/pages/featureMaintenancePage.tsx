@@ -1,20 +1,18 @@
 /**
  * Feature Maintenance Page
  *
- * Elegant, Material UI compliant page for managing features across products
+ * Minimalist and elegant Material UI page for managing features across products
  */
 
 import { useState, useMemo } from "react";
-import { Box, Button, CircularProgress, Alert, useTheme, alpha } from "@mui/material";
+import { Box, Button, CircularProgress, Alert, useTheme, alpha, Typography, Paper } from "@mui/material";
 import { Add as AddIcon } from "@mui/icons-material";
-import { PageLayout } from "@/components";
+import { PageLayout, PageToolbar, type ViewMode } from "@/components";
 import type { Feature, ProductWithFeatures } from "@/features/feature/types";
 import {
   ProductSelector,
   ProductFeaturesList,
   FeatureEditDialog,
-  type ViewMode,
-  type SortBy,
   generateFeatureId,
 } from "@/features/feature";
 import {
@@ -37,7 +35,6 @@ interface EditingState {
  * FeatureMaintenancePage Component
  *
  * Main page for managing features across products.
- * Features are stored in Redux store and loaded from there.
  */
 export function FeatureMaintenancePage() {
   const theme = useTheme();
@@ -95,10 +92,36 @@ export function FeatureMaintenancePage() {
   );
 
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
-  const [sortBy, setSortBy] = useState<SortBy>("name");
+  const [sortBy, setSortBy] = useState<string>("name");
   const [searchQuery, setSearchQuery] = useState("");
   const [editingState, setEditingState] = useState<EditingState | null>(null);
   const [openDialog, setOpenDialog] = useState(false);
+  const [isDeleting, setIsDeleting] = useState<string | null>(null);
+
+  // Filter and sort features
+  const filteredAndSortedFeatures = useMemo(() => {
+    if (!selectedProduct) return [];
+    
+    let result = [...selectedProduct.features];
+
+    // Filter by search query
+    if (searchQuery.trim()) {
+      result = result.filter((f) =>
+        f.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        f.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        f.category?.name?.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+
+    // Sort
+    if (sortBy === "name") {
+      result.sort((a, b) => a.name.localeCompare(b.name));
+    } else if (sortBy === "status") {
+      result.sort((a, b) => a.status.localeCompare(b.status));
+    }
+
+    return result;
+  }, [selectedProduct, searchQuery, sortBy]);
 
   // Handlers
   const handleAddFeature = () => {
@@ -143,10 +166,16 @@ export function FeatureMaintenancePage() {
 
   const handleDeleteFeature = async (featureId: string) => {
     if (!selectedProductId) return;
+    if (!confirm("Are you sure you want to delete this feature?")) return;
+    
+    setIsDeleting(featureId);
     try {
       await deleteMutation.mutateAsync(featureId);
     } catch (error) {
       console.error('Error deleting feature:', error);
+      alert("Error deleting feature. Please try again.");
+    } finally {
+      setIsDeleting(null);
     }
   };
 
@@ -162,28 +191,28 @@ export function FeatureMaintenancePage() {
     const businessDescription = feature.businessDescription?.trim();
 
     if (!name) {
-      console.error('Feature name is required');
+      alert('Feature name is required');
       return;
     }
 
     if (!description) {
-      console.error('Feature description is required');
+      alert('Feature description is required');
       return;
     }
 
     if (!technicalDescription) {
-      console.error('Technical description is required');
+      alert('Technical description is required');
       return;
     }
 
     if (!businessDescription) {
-      console.error('Business description is required');
+      alert('Business description is required');
       return;
     }
 
     // Ensure createdBy has a name (from IT Owner)
     if (!feature.createdBy?.name) {
-      console.error('IT Owner is required');
+      alert('IT Owner is required');
       return;
     }
 
@@ -228,6 +257,7 @@ export function FeatureMaintenancePage() {
       handleCloseDialog();
     } catch (error) {
       console.error('Error saving feature:', error);
+      alert("Error saving feature. Please try again.");
     }
   };
 
@@ -239,10 +269,15 @@ export function FeatureMaintenancePage() {
   const isLoading = productsLoading || featuresLoading;
   const error = productsError || featuresError;
 
+  const sortOptions = [
+    { value: "name", label: "Sort: Name" },
+    { value: "status", label: "Sort: Status" },
+  ];
+
   // Loading state
   if (isLoading) {
     return (
-      <PageLayout title="Features Management" description="Manage product features with full CRUD operations and filtering">
+      <PageLayout title="Feature Maintenance" description="Manage product features">
         <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
           <CircularProgress />
         </Box>
@@ -253,10 +288,10 @@ export function FeatureMaintenancePage() {
   // Error state
   if (error) {
     return (
-      <PageLayout title="Features Management" description="Manage product features with full CRUD operations and filtering">
+      <PageLayout title="Feature Maintenance" description="Manage product features">
         <Box p={3}>
           <Alert severity="error">
-            Error al cargar los datos: {error instanceof Error ? error.message : 'Error desconocido'}
+            Error loading data: {error instanceof Error ? error.message : 'Unknown error'}
           </Alert>
         </Box>
       </PageLayout>
@@ -265,22 +300,37 @@ export function FeatureMaintenancePage() {
 
   return (
     <PageLayout
-      title="Features Management"
-      description="Manage product features with full CRUD operations and filtering"
+      title="Feature Maintenance"
+      description="Manage product features with complete CRUD operations"
+      toolbar={
+        <PageToolbar
+          viewMode={viewMode}
+          onViewModeChange={setViewMode}
+          sortBy={sortBy}
+          sortOptions={sortOptions}
+          onSortChange={setSortBy}
+          searchQuery={searchQuery}
+          searchPlaceholder="Search features..."
+          onSearchChange={setSearchQuery}
+        />
+      }
       actions={
         <Button
           variant="contained"
-          startIcon={<AddIcon />}
+          size="small"
+          startIcon={<AddIcon sx={{ fontSize: 18 }} />}
           onClick={handleAddFeature}
           disabled={!selectedProductId}
           sx={{
             textTransform: "none",
             fontWeight: 600,
-            px: 2.5,
-            py: 1,
-            boxShadow: `0 2px 4px ${alpha(theme.palette.primary.main, 0.2)}`,
+            fontSize: "0.8125rem",
+            px: 2,
+            py: 0.75,
+            borderRadius: 2,
+            boxShadow: `0 2px 8px ${alpha(theme.palette.primary.main, 0.24)}`,
             "&:hover": {
-              boxShadow: `0 4px 8px ${alpha(theme.palette.primary.main, 0.3)}`,
+              boxShadow: `0 4px 12px ${alpha(theme.palette.primary.main, 0.32)}`,
             },
             "&:disabled": {
               boxShadow: "none",
@@ -321,17 +371,53 @@ export function FeatureMaintenancePage() {
           </Box>
 
           {/* Features List */}
-          <ProductFeaturesList
-            product={selectedProduct}
-            viewMode={viewMode}
-            onViewModeChange={setViewMode}
-            sortBy={sortBy}
-            onSortChange={setSortBy}
-            searchQuery={searchQuery}
-            onSearchChange={setSearchQuery}
-            onEditFeature={handleEditFeature}
-            onDeleteFeature={handleDeleteFeature}
-          />
+          {filteredAndSortedFeatures.length === 0 ? (
+            <Box
+              component={Paper}
+              elevation={0}
+              sx={{
+                p: 6,
+                textAlign: "center",
+                border: `1px solid ${alpha(theme.palette.divider, 0.08)}`,
+                borderRadius: 2,
+              }}
+            >
+              <Typography
+                variant="body1"
+                sx={{
+                  fontSize: "0.875rem",
+                  fontWeight: 500,
+                  color: theme.palette.text.secondary,
+                  mb: 0.5,
+                }}
+              >
+                {selectedProduct?.features.length === 0
+                  ? "No features configured"
+                  : "No features found"}
+              </Typography>
+              <Typography
+                variant="body2"
+                sx={{
+                  fontSize: "0.75rem",
+                  color: theme.palette.text.disabled,
+                }}
+              >
+                {selectedProduct?.features.length === 0
+                  ? "Start by adding your first feature"
+                  : searchQuery
+                  ? "Try adjusting your search criteria."
+                  : "No features match your filters."}
+              </Typography>
+            </Box>
+          ) : (
+            <ProductFeaturesList
+              product={selectedProduct}
+              features={filteredAndSortedFeatures}
+              onEditFeature={handleEditFeature}
+              onDeleteFeature={handleDeleteFeature}
+              isDeleting={isDeleting}
+            />
+          )}
         </Box>
       </Box>
 
@@ -355,4 +441,5 @@ export function FeatureMaintenancePage() {
     </PageLayout>
   );
 }
+
 export default FeatureMaintenancePage;

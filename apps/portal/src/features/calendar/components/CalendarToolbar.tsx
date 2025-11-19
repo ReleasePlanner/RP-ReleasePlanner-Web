@@ -51,11 +51,8 @@ export function CalendarToolbar({
       sx={{
         display: "flex",
         alignItems: "center",
-        gap: { xs: 1, sm: 2, md: 3 },
+        gap: { xs: 1, sm: 2 },
         flexWrap: "wrap",
-        py: 2,
-        px: 0,
-        borderBottom: `1px solid ${theme.palette.divider}`,
       }}
     >
       {/* View Mode Toggle */}
@@ -85,16 +82,29 @@ export function CalendarToolbar({
       </Box>
 
       {/* Filter by Type */}
-      <FormControl size="small" sx={{ minWidth: 150 }}>
+      <FormControl size="small" sx={{ minWidth: 140 }}>
         <Select
           value={filterType}
           onChange={(e) => onFilterChange(e.target.value as FilterType)}
           displayEmpty
           aria-label="Filter by type"
+          sx={{
+            fontSize: "0.6875rem",
+            "& .MuiSelect-select": {
+              py: 0.75,
+              fontSize: "0.6875rem",
+            },
+          }}
         >
-          <MenuItem value="all">All Days</MenuItem>
-          <MenuItem value="holiday">Holidays Only</MenuItem>
-          <MenuItem value="special">Special Days Only</MenuItem>
+          <MenuItem value="all" sx={{ fontSize: "0.6875rem" }}>
+            All Days
+          </MenuItem>
+          <MenuItem value="holiday" sx={{ fontSize: "0.6875rem" }}>
+            Holidays Only
+          </MenuItem>
+          <MenuItem value="special" sx={{ fontSize: "0.6875rem" }}>
+            Special Days Only
+          </MenuItem>
         </Select>
       </FormControl>
 
@@ -105,10 +115,23 @@ export function CalendarToolbar({
           onChange={(e) => onSortChange(e.target.value as SortBy)}
           displayEmpty
           aria-label="Sort by"
+          sx={{
+            fontSize: "0.6875rem",
+            "& .MuiSelect-select": {
+              py: 0.75,
+              fontSize: "0.6875rem",
+            },
+          }}
         >
-          <MenuItem value="date">Sort: Date</MenuItem>
-          <MenuItem value="name">Sort: Name</MenuItem>
-          <MenuItem value="type">Sort: Type</MenuItem>
+          <MenuItem value="date" sx={{ fontSize: "0.6875rem" }}>
+            Sort: Date
+          </MenuItem>
+          <MenuItem value="name" sx={{ fontSize: "0.6875rem" }}>
+            Sort: Name
+          </MenuItem>
+          <MenuItem value="type" sx={{ fontSize: "0.6875rem" }}>
+            Sort: Type
+          </MenuItem>
         </Select>
       </FormControl>
 
@@ -122,14 +145,19 @@ export function CalendarToolbar({
           input: {
             startAdornment: (
               <InputAdornment position="start">
-                <SearchIcon fontSize="small" />
+                <SearchIcon sx={{ fontSize: 16 }} />
               </InputAdornment>
             ),
           },
         }}
         sx={{
-          flex: { xs: "1 1 100%", sm: "0 1 200px" },
-          minWidth: 150,
+          flex: { xs: "1 1 100%", sm: "0 1 240px" },
+          minWidth: 180,
+          fontSize: "0.6875rem",
+          "& input": {
+            py: 0.75,
+            fontSize: "0.6875rem",
+          },
         }}
       />
     </Box>

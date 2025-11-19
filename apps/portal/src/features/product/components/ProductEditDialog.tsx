@@ -5,18 +5,13 @@
  */
 
 import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   TextField,
-  Button,
-  useTheme,
-  alpha,
   Stack,
   Box,
-  Typography,
+  useTheme,
+  alpha,
 } from "@mui/material";
+import { BaseEditDialog } from "@/components";
 import type { Product } from "@/features/releasePlans/components/Plan/CommonDataCard";
 
 interface ProductEditDialogProps {
@@ -40,144 +35,135 @@ export function ProductEditDialog({
   if (!product) return null;
 
   return (
-    <Dialog
+    <BaseEditDialog
       open={open}
       onClose={onClose}
+      editing={isEditing}
+      title={isEditing ? "Edit Product" : "New Product"}
+      subtitle={
+        isEditing
+          ? "Modify the product details"
+          : "Create a new product to manage components"
+      }
       maxWidth="sm"
-      fullWidth
-      PaperProps={{
-        sx: {
-          borderRadius: 3,
-        },
-      }}
+      onSave={() => onSave(product)}
+      saveButtonText={isEditing ? "Save Changes" : "Create Product"}
+      isFormValid={!!product.name?.trim()}
     >
-      <DialogTitle
-        sx={{
-          px: 3,
-          pt: 3,
-          pb: 2,
-          borderBottom: `1px solid ${alpha(theme.palette.divider, 0.12)}`,
-          fontWeight: 600,
-          fontSize: "1.25rem",
-          color: theme.palette.text.primary,
-        }}
-      >
-        {isEditing ? "Edit Product" : "Create Product"}
-      </DialogTitle>
-
-      <DialogContent sx={{ px: 3, pt: 4, pb: 2 }}>
-        <Stack spacing={3}>
-          {/* Basic Information */}
-          <Box>
-            <Typography
-              variant="subtitle2"
-              sx={{
-                mb: 2,
-                fontWeight: 600,
-                fontSize: "0.875rem",
-                color: theme.palette.text.primary,
-                textTransform: "uppercase",
-                letterSpacing: "0.5px",
-              }}
-            >
-              Product Information
-            </Typography>
-            <Stack spacing={2.5}>
-              <TextField
-                label="Product Name"
-                fullWidth
-                required
-                value={product.name || ""}
-                onChange={(e) => {
-                  onProductChange({
-                    ...product,
-                    name: e.target.value,
-                  });
-                }}
-                placeholder="e.g., Release Planner Suite"
-                variant="outlined"
-                size="medium"
-                autoFocus
-                sx={{
-                  "& .MuiOutlinedInput-root": {
-                    borderRadius: 1.5,
-                  },
-                }}
-              />
-
-              <TextField
-                label="Description"
-                fullWidth
-                multiline
-                rows={4}
-                value={product.description || ""}
-                onChange={(e) => {
-                  onProductChange({
-                    ...product,
-                    description: e.target.value,
-                  });
-                }}
-                placeholder="Brief description of the product and its purpose..."
-                variant="outlined"
-                size="medium"
-                sx={{
-                  "& .MuiOutlinedInput-root": {
-                    borderRadius: 1.5,
-                  },
-                }}
-              />
-            </Stack>
-          </Box>
-        </Stack>
-      </DialogContent>
-
-      <DialogActions
-        sx={{
-          px: 3,
-          pt: 2,
-          pb: 3,
-          borderTop: `1px solid ${alpha(theme.palette.divider, 0.12)}`,
-          gap: 1.5,
-        }}
-      >
-        <Button
-          onClick={onClose}
-          sx={{
-            textTransform: "none",
-            px: 3,
-            py: 1,
-            borderRadius: 1.5,
-            fontWeight: 500,
-            color: theme.palette.text.secondary,
-            "&:hover": {
-              bgcolor: alpha(theme.palette.action.hover, 0.5),
+      <Stack spacing={3} sx={{ width: "100%" }}>
+        {/* Spacer to ensure controls are below header divider */}
+        <Box sx={{ pt: 1 }} />
+        
+        {/* Product Name */}
+        <TextField
+          autoFocus
+          fullWidth
+          size="small"
+          label="Product Name"
+          placeholder="e.g., Release Planner Suite"
+          value={product.name || ""}
+          onChange={(e) => {
+            onProductChange({
+              ...product,
+              name: e.target.value,
+            });
+          }}
+          required
+          InputLabelProps={{
+            shrink: true,
+            sx: {
+              fontSize: "0.625rem",
+              fontWeight: 500,
+              "&.MuiInputLabel-shrink": {
+                backgroundColor: theme.palette.background.paper,
+                paddingLeft: "6px",
+                paddingRight: "6px",
+                zIndex: 1,
+              },
             },
           }}
-        >
-          Cancel
-        </Button>
-        <Button
-          onClick={() => onSave(product)}
-          variant="contained"
-          disabled={!product.name?.trim()}
           sx={{
-            textTransform: "none",
-            fontWeight: 600,
-            px: 3,
-            py: 1,
-            borderRadius: 1.5,
-            boxShadow: `0 2px 8px ${alpha(theme.palette.primary.main, 0.24)}`,
-            "&:hover": {
-              boxShadow: `0 4px 12px ${alpha(theme.palette.primary.main, 0.32)}`,
+            "& .MuiOutlinedInput-root": {
+              fontSize: "0.6875rem",
+              "& input": {
+                py: 0.625,
+                fontSize: "0.6875rem",
+              },
+              "&:hover": {
+                "& .MuiOutlinedInput-notchedOutline": {
+                  borderColor: theme.palette.primary.main,
+                },
+              },
+              "&.Mui-focused": {
+                "& .MuiOutlinedInput-notchedOutline": {
+                  borderWidth: 2,
+                  borderColor: theme.palette.primary.main,
+                },
+              },
             },
-            "&:disabled": {
-              boxShadow: "none",
+            "& .MuiFormHelperText-root": {
+              marginTop: "4px",
+              marginLeft: "0px",
+              fontSize: "0.625rem",
             },
           }}
-        >
-          {isEditing ? "Update Product" : "Create Product"}
-        </Button>
-      </DialogActions>
-    </Dialog>
+        />
+
+        {/* Description */}
+        <TextField
+          fullWidth
+          size="small"
+          label="Description"
+          multiline
+          rows={4}
+          value={product.description || ""}
+          onChange={(e) => {
+            onProductChange({
+              ...product,
+              description: e.target.value,
+            });
+          }}
+          placeholder="Brief description of the product and its purpose..."
+          InputLabelProps={{
+            shrink: true,
+            sx: {
+              fontSize: "0.625rem",
+              fontWeight: 500,
+              "&.MuiInputLabel-shrink": {
+                backgroundColor: theme.palette.background.paper,
+                paddingLeft: "6px",
+                paddingRight: "6px",
+                zIndex: 1,
+              },
+            },
+          }}
+          sx={{
+            "& .MuiOutlinedInput-root": {
+              fontSize: "0.6875rem",
+              "& textarea": {
+                py: 0.625,
+                fontSize: "0.6875rem",
+              },
+              "&:hover": {
+                "& .MuiOutlinedInput-notchedOutline": {
+                  borderColor: theme.palette.primary.main,
+                },
+              },
+              "&.Mui-focused": {
+                "& .MuiOutlinedInput-notchedOutline": {
+                  borderWidth: 2,
+                  borderColor: theme.palette.primary.main,
+                },
+              },
+            },
+            "& .MuiFormHelperText-root": {
+              marginTop: "4px",
+              marginLeft: "0px",
+              fontSize: "0.625rem",
+            },
+          }}
+        />
+      </Stack>
+    </BaseEditDialog>
   );
 }

@@ -239,7 +239,7 @@ export function PhasesMaintenancePage() {
       {/* Phases Grid */}
       <Grid container spacing={2}>
         {filteredPhases.map((phase) => (
-          <Grid item xs={12} sm={6} md={4} key={phase.id}>
+          <Grid size={{ xs: 12, sm: 6, md: 4 }} key={phase.id}>
             <Card>
               <CardContent>
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>

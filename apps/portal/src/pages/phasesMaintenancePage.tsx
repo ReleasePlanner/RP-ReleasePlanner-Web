@@ -16,15 +16,16 @@ import {
   MenuItem,
   Chip,
   Stack,
+  Grid,
   useTheme,
   alpha,
-  Card,
-  CardContent,
-  CardActions,
+  Paper,
   Alert,
   CircularProgress,
+  InputAdornment,
+  Divider,
 } from "@mui/material";
-import { PageLayout, PageToolbar, type ViewMode } from "@/components";
+import { PageLayout, PageToolbar, BaseEditDialog, type ViewMode } from "@/components";
 import {
   Add as AddIcon,
   Edit as EditIcon,
@@ -33,6 +34,9 @@ import {
   Search as SearchIcon,
   FilterList as FilterListIcon,
   ContentCopy as DuplicateIcon,
+  Palette as PaletteIcon,
+  Timeline as TimelineIcon,
+  Tune as TuneIcon,
 } from "@mui/icons-material";
 import {
   useBasePhases,
@@ -54,7 +58,7 @@ export function PhasesMaintenancePage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [phaseToDelete, setPhaseToDelete] = useState<BasePhase | null>(null);
   const [editingPhase, setEditingPhase] = useState<BasePhase | null>(null);
-  const [viewMode, setViewMode] = useState<ViewMode>("grid");
+  const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [sortBy, setSortBy] = useState("name");
   const [searchQuery, setSearchQuery] = useState("");
   const [formData, setFormData] = useState<Partial<BasePhase>>({
@@ -162,10 +166,6 @@ export function PhasesMaintenancePage() {
     "#D32F2F", // Red
     "#7B1FA2", // Purple
     "#455A64", // Gray
-    "#E64A19", // Orange
-    "#0097A7", // Cyan
-    "#5D4037", // Brown
-    "#C2185B", // Pink
   ];
 
 
@@ -183,7 +183,7 @@ export function PhasesMaintenancePage() {
     return (
       <Box sx={{ p: { xs: 2, sm: 3 }, maxWidth: 1400, mx: "auto" }}>
         <Alert severity="error">
-          Error al cargar las fases: {error instanceof Error ? error.message : 'Error desconocido'}
+          Error loading phases: {error instanceof Error ? error.message : 'Unknown error'}
         </Alert>
       </Box>
     );
@@ -210,13 +210,15 @@ export function PhasesMaintenancePage() {
       actions={
         <Button
           variant="contained"
-          startIcon={<AddIcon />}
+          size="small"
+          startIcon={<AddIcon sx={{ fontSize: 18 }} />}
           onClick={() => handleOpenDialog()}
           sx={{
             textTransform: "none",
             fontWeight: 600,
-            px: 2.5,
-            py: 1,
+            fontSize: "0.8125rem",
+            px: 2,
+            py: 0.75,
             boxShadow: `0 2px 4px ${alpha(theme.palette.primary.main, 0.2)}`,
             "&:hover": {
               boxShadow: `0 4px 8px ${alpha(theme.palette.primary.main, 0.3)}`,
@@ -228,303 +230,344 @@ export function PhasesMaintenancePage() {
       }
     >
 
-      {/* Phases Grid */}
-      <Box
-        sx={{
-          display: "grid",
-          gridTemplateColumns:
-            viewMode === "grid"
-              ? {
-                  xs: "1fr",
-                  sm: "repeat(auto-fill, minmax(320px, 1fr))",
-                  md: "repeat(auto-fill, minmax(350px, 1fr))",
-                  lg: "repeat(2, 1fr)",
-                  xl: "repeat(3, 1fr)",
-                }
-              : "1fr",
-          gap: 3,
-          pb: 2,
-        }}
-      >
-        {filteredPhases.length === 0 ? (
-          <Box
-            sx={{
-              gridColumn: "1 / -1",
-              py: 12,
-              px: 3,
-              textAlign: "center",
+      {/* Phases List - Compact and Minimalist */}
+      {filteredPhases.length === 0 ? (
+        <Paper
+          elevation={0}
+          sx={{
+            p: 6,
+            textAlign: "center",
+            border: `1px solid ${alpha(theme.palette.divider, 0.08)}`,
+            borderRadius: 2,
+          }}
+        >
+          <Typography 
+            variant="body1" 
+            sx={{ 
+              fontSize: "0.875rem",
+              fontWeight: 500,
+              color: theme.palette.text.secondary,
+              mb: 0.5,
             }}
           >
-            <Typography 
-              variant="h6" 
-              sx={{ 
-                fontSize: "1rem",
-                fontWeight: 600,
-                color: theme.palette.text.secondary,
-                mb: 1,
-              }}
-            >
-              {phases.length === 0 ? "No phases configured" : "No phases found"}
-            </Typography>
-            <Typography 
-              variant="body2" 
-              sx={{ 
-                fontSize: "0.875rem",
-                color: theme.palette.text.disabled,
-              }}
-            >
-              {phases.length === 0 
-                ? "Start by adding your first base phase"
-                : searchQuery 
-                ? "Try adjusting your search criteria."
-                : "No phases match your filters."}
-            </Typography>
-          </Box>
-        ) : (
-          filteredPhases.map((phase) => (
-            <Card
-              key={phase.id}
-              elevation={0}
-              sx={{
-                height: "100%",
-                display: "flex",
-                flexDirection: "column",
-                border: `1px solid ${alpha(theme.palette.divider, 0.12)}`,
-                borderRadius: 3,
-                overflow: "hidden",
-                transition: theme.transitions.create(
-                  ["box-shadow", "border-color", "transform"],
-                  {
+            {phases.length === 0 ? "No phases configured" : "No phases found"}
+          </Typography>
+          <Typography 
+            variant="body2" 
+            sx={{ 
+              fontSize: "0.75rem",
+              color: theme.palette.text.disabled,
+            }}
+          >
+            {phases.length === 0 
+              ? "Start by adding your first base phase"
+              : searchQuery 
+              ? "Try adjusting your search criteria."
+              : "No phases match your filters."}
+          </Typography>
+        </Paper>
+      ) : (
+        <Paper
+          elevation={0}
+          sx={{
+            border: `1px solid ${alpha(theme.palette.divider, 0.08)}`,
+            borderRadius: 2,
+            overflow: "hidden",
+          }}
+        >
+          {filteredPhases.map((phase, index) => (
+            <Box key={phase.id}>
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  px: 2,
+                  py: 1.5,
+                  transition: theme.transitions.create(["background-color"], {
                     duration: theme.transitions.duration.shorter,
-                    easing: theme.transitions.easing.easeInOut,
-                  }
-                ),
-                "&:hover": {
-                  borderColor: alpha(theme.palette.primary.main, 0.4),
-                  boxShadow: `0 4px 20px ${alpha(theme.palette.common.black, 0.1)}, 0 0 0 1px ${alpha(theme.palette.primary.main, 0.08)}`,
-                  transform: "translateY(-2px)",
-                },
-              }}
-            >
-              <CardContent sx={{ flex: 1, p: 3 }}>
-                <Stack spacing={2.5}>
-                  {/* Color Indicator and Name */}
-                  <Stack direction="row" spacing={2} alignItems="center">
-                    <Box
-                      sx={{
-                        width: 48,
-                        height: 48,
-                        borderRadius: 2,
-                        bgcolor: phase.color,
-                        flexShrink: 0,
-                        boxShadow: `0 2px 12px ${alpha(phase.color, 0.4)}`,
-                      }}
-                    />
-                    <Box sx={{ flex: 1, minWidth: 0 }}>
-                      <Typography
-                        variant="h6"
-                        sx={{
-                          fontSize: "1.125rem",
-                          fontWeight: 700,
-                          color: theme.palette.text.primary,
-                          lineHeight: 1.4,
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          whiteSpace: "nowrap",
-                        }}
-                      >
-                        {phase.name}
-                      </Typography>
-                    </Box>
-                  </Stack>
+                  }),
+                  "&:hover": {
+                    bgcolor: alpha(theme.palette.primary.main, 0.04),
+                  },
+                }}
+              >
+                {/* Color Indicator */}
+                <Box
+                  sx={{
+                    width: 20,
+                    height: 20,
+                    borderRadius: 1,
+                    bgcolor: phase.color,
+                    flexShrink: 0,
+                    mr: 2,
+                    border: `1px solid ${alpha(theme.palette.divider, 0.12)}`,
+                  }}
+                />
 
-                  {/* Color Display */}
-                  <Box>
-                    <Typography
-                      variant="caption"
-                      sx={{
-                        mb: 1,
-                        display: "block",
-                        fontSize: "0.75rem",
-                        fontWeight: 500,
-                        textTransform: "uppercase",
-                        letterSpacing: "0.5px",
-                        color: theme.palette.text.secondary,
-                      }}
-                    >
-                      Color
-                    </Typography>
-                    <Box
-                      sx={{
-                        width: "100%",
-                        height: 40,
-                        borderRadius: 2,
-                        bgcolor: phase.color,
-                        border: `1px solid ${alpha(theme.palette.divider, 0.12)}`,
-                        boxShadow: `inset 0 1px 2px ${alpha(theme.palette.common.black, 0.1)}`,
-                      }}
-                    />
-                  </Box>
-                </Stack>
-              </CardContent>
-              <CardActions sx={{ px: 3, pb: 3, pt: 0 }}>
-                <Stack direction="row" spacing={0.5} sx={{ ml: "auto" }}>
-                  <Tooltip title="Duplicate" arrow placement="top">
+                {/* Phase Name */}
+                <Box sx={{ flex: 1, minWidth: 0 }}>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      fontSize: "0.8125rem",
+                      fontWeight: 500,
+                      color: theme.palette.text.primary,
+                      lineHeight: 1.5,
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {phase.name}
+                  </Typography>
+                </Box>
+
+                {/* Actions */}
+                <Stack direction="row" spacing={0.25}>
+                  <Tooltip title="Duplicate" arrow>
                     <IconButton
                       size="small"
                       onClick={() => handleDuplicate(phase)}
                       sx={{
                         color: theme.palette.text.secondary,
-                        transition: theme.transitions.create(["color", "background-color", "transform"], {
-                          duration: theme.transitions.duration.shorter,
-                        }),
+                        p: 0.75,
                         "&:hover": {
-                          bgcolor: alpha(theme.palette.info.main, 0.12),
+                          bgcolor: alpha(theme.palette.info.main, 0.1),
                           color: theme.palette.info.main,
-                          transform: "scale(1.1)",
                         },
                       }}
                     >
-                      <DuplicateIcon fontSize="small" />
+                      <DuplicateIcon sx={{ fontSize: 16 }} />
                     </IconButton>
                   </Tooltip>
-                  <Tooltip title="Edit" arrow placement="top">
+                  <Tooltip title="Edit" arrow>
                     <IconButton
                       size="small"
                       onClick={() => handleOpenDialog(phase)}
                       sx={{
                         color: theme.palette.text.secondary,
-                        transition: theme.transitions.create(["color", "background-color", "transform"], {
-                          duration: theme.transitions.duration.shorter,
-                        }),
+                        p: 0.75,
                         "&:hover": {
-                          bgcolor: alpha(theme.palette.primary.main, 0.12),
+                          bgcolor: alpha(theme.palette.primary.main, 0.1),
                           color: theme.palette.primary.main,
-                          transform: "scale(1.1)",
                         },
                       }}
                     >
-                      <EditIcon fontSize="small" />
+                      <EditIcon sx={{ fontSize: 16 }} />
                     </IconButton>
                   </Tooltip>
-                  <Tooltip title="Delete" arrow placement="top">
+                  <Tooltip title="Delete" arrow>
                     <IconButton
                       size="small"
                       onClick={() => handleDeleteClick(phase)}
                       sx={{
                         color: theme.palette.text.secondary,
-                        transition: theme.transitions.create(["color", "background-color", "transform"], {
-                          duration: theme.transitions.duration.shorter,
-                        }),
+                        p: 0.75,
                         "&:hover": {
-                          bgcolor: alpha(theme.palette.error.main, 0.12),
+                          bgcolor: alpha(theme.palette.error.main, 0.1),
                           color: theme.palette.error.main,
-                          transform: "scale(1.1)",
                         },
                       }}
                     >
-                      <DeleteIcon fontSize="small" />
+                      <DeleteIcon sx={{ fontSize: 16 }} />
                     </IconButton>
                   </Tooltip>
                 </Stack>
-              </CardActions>
-            </Card>
-          ))
-        )}
-      </Box>
+              </Box>
+              {index < filteredPhases.length - 1 && (
+                <Divider sx={{ borderColor: alpha(theme.palette.divider, 0.08) }} />
+              )}
+            </Box>
+          ))}
+        </Paper>
+      )}
 
       {/* Edit/Create Dialog */}
-      <Dialog
+      <BaseEditDialog
         open={dialogOpen}
         onClose={handleCloseDialog}
+        editing={!!editingPhase}
+        title={editingPhase ? "Edit Phase" : "New Phase"}
+        subtitle={
+          editingPhase
+            ? "Modify the base phase details"
+            : "Create a new base phase to use in plans"
+        }
         maxWidth="sm"
-        fullWidth
-        PaperProps={{
-          sx: {
-            borderRadius: 2,
-          },
-        }}
+        onSave={handleSave}
+        saveButtonText={editingPhase ? "Save Changes" : "Create Phase"}
+        isFormValid={!!formData.name?.trim() && !createMutation.isPending && !updateMutation.isPending}
+        saveButtonDisabled={createMutation.isPending || updateMutation.isPending}
       >
-        <DialogTitle sx={{ pb: 1 }}>
-          {editingPhase ? "Editar Fase" : "Nueva Fase"}
-        </DialogTitle>
-        <DialogContent sx={{ px: 3, pt: 4, pb: 2 }}>
-          <Stack spacing={3}>
-            <TextField
-              fullWidth
-              label="Nombre de la Fase"
-              value={formData.name || ""}
-              onChange={(e) =>
-                setFormData({ ...formData, name: e.target.value })
-              }
-              variant="outlined"
-              size="small"
-              required
-              autoFocus
-            />
+        <Stack spacing={3} sx={{ width: "100%" }}>
+          {/* Spacer to ensure controls are below header divider */}
+          <Box sx={{ pt: 1 }} />
+          
+          {/* Phase Name Input */}
+          <TextField
+            autoFocus
+            fullWidth
+            size="small"
+            label="Phase Name"
+            placeholder="e.g., Planning, Development, Testing..."
+            value={formData.name || ""}
+            onChange={(e) =>
+              setFormData({ ...formData, name: e.target.value })
+            }
+            required
+            InputLabelProps={{
+              shrink: true,
+              sx: {
+                fontSize: "0.625rem",
+                fontWeight: 500,
+                "&.MuiInputLabel-shrink": {
+                  backgroundColor: theme.palette.background.paper,
+                  paddingLeft: "6px",
+                  paddingRight: "6px",
+                  zIndex: 1,
+                },
+              },
+            }}
+            sx={{
+              "& .MuiOutlinedInput-root": {
+                fontSize: "0.6875rem",
+                "& input": {
+                  py: 0.625,
+                  fontSize: "0.6875rem",
+                },
+                "&:hover": {
+                  "& .MuiOutlinedInput-notchedOutline": {
+                    borderColor: theme.palette.primary.main,
+                  },
+                },
+                "&.Mui-focused": {
+                  "& .MuiOutlinedInput-notchedOutline": {
+                    borderWidth: 2,
+                    borderColor: theme.palette.primary.main,
+                  },
+                },
+              },
+              "& .MuiFormHelperText-root": {
+                marginTop: "4px",
+                marginLeft: "0px",
+                fontSize: "0.625rem",
+              },
+            }}
+          />
 
-            <Box>
-              <Typography variant="body2" sx={{ mb: 1.5 }}>
-                Seleccionar Color
-              </Typography>
-              <Stack direction="row" spacing={1} flexWrap="wrap">
-                {predefinedColors.map((color) => (
-                  <Tooltip key={color} title={color} arrow>
-                    <Box
-                      onClick={() => setFormData({ ...formData, color })}
+          {/* Color Picker */}
+          <Box sx={{ width: "100%" }}>
+            {/* Colors Row */}
+            <Grid container spacing={2} alignItems="center">
+              {/* Predefined Colors */}
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <Stack 
+                  direction="row" 
+                  spacing={1} 
+                  flexWrap="nowrap" 
+                  sx={{ 
+                    gap: 1,
+                    "& > *": {
+                      flexShrink: 0,
+                    },
+                  }}
+                >
+                  {predefinedColors.map((color) => (
+                    <Tooltip key={color} title={color} arrow>
+                      <Box
+                        onClick={() => setFormData({ ...formData, color })}
+                        sx={{
+                          width: { xs: 36, sm: 40 },
+                          height: { xs: 36, sm: 40 },
+                          borderRadius: 1.5,
+                          bgcolor: color,
+                          cursor: "pointer",
+                          border:
+                            formData.color === color
+                              ? `3px solid ${theme.palette.common.white}`
+                              : `2px solid ${alpha(theme.palette.divider, 0.2)}`,
+                          boxShadow:
+                            formData.color === color
+                              ? `0 0 0 2px ${color}, 0 2px 8px ${alpha(
+                                  theme.palette.common.black,
+                                  0.2
+                                )}`
+                              : "none",
+                          transition: "all 0.2s ease",
+                          "&:hover": {
+                            transform: "scale(1.1)",
+                            boxShadow: `0 2px 8px ${alpha(color, 0.4)}`,
+                          },
+                        }}
+                      />
+                    </Tooltip>
+                  ))}
+                </Stack>
+              </Grid>
+
+              {/* Custom Color Box */}
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <Tooltip title="Click to select a custom color" arrow>
+                  <Box
+                    component="label"
+                    htmlFor="custom-color-input"
+                    sx={{
+                      position: "relative",
+                      width: { xs: 36, sm: 40 },
+                      height: { xs: 36, sm: 40 },
+                      borderRadius: 1.5,
+                      bgcolor: formData.color || "#1976D2",
+                      cursor: "pointer",
+                      border:
+                        !predefinedColors.includes(formData.color || "")
+                          ? `3px solid ${theme.palette.common.white}`
+                          : `2px solid ${alpha(theme.palette.divider, 0.2)}`,
+                      boxShadow:
+                        !predefinedColors.includes(formData.color || "")
+                          ? `0 0 0 2px ${formData.color || "#1976D2"}, 0 2px 8px ${alpha(
+                              theme.palette.common.black,
+                              0.2
+                            )}`
+                          : "none",
+                      transition: "all 0.2s ease",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      "&:hover": {
+                        transform: "scale(1.1)",
+                        boxShadow: `0 2px 8px ${alpha(formData.color || "#1976D2", 0.4)}`,
+                      },
+                    }}
+                  >
+                    <TuneIcon
                       sx={{
-                        width: 40,
-                        height: 40,
-                        borderRadius: 1.5,
-                        bgcolor: color,
-                        cursor: "pointer",
-                        border:
-                          formData.color === color
-                            ? `3px solid ${theme.palette.primary.main}`
-                            : `2px solid ${alpha(theme.palette.divider, 0.2)}`,
-                        transition: theme.transitions.create(["transform"], {
-                          duration: theme.transitions.duration.shortest,
-                        }),
-                        "&:hover": {
-                          transform: "scale(1.1)",
-                        },
+                        fontSize: { xs: 16, sm: 18 },
+                        color: theme.palette.common.white,
+                        filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.3))",
                       }}
                     />
-                  </Tooltip>
-                ))}
-              </Stack>
-              <TextField
-                fullWidth
-                type="color"
-                label="Color Personalizado"
-                value={formData.color || "#1976D2"}
-                onChange={(e) =>
-                  setFormData({ ...formData, color: e.target.value })
-                }
-                size="small"
-                sx={{ mt: 2 }}
-                InputLabelProps={{ shrink: true }}
-              />
-            </Box>
-          </Stack>
-        </DialogContent>
-        <DialogActions sx={{ p: 2.5, pt: 1.5 }}>
-          <Button onClick={handleCloseDialog} sx={{ textTransform: "none" }}>
-            Cancelar
-          </Button>
-          <Button
-            onClick={handleSave}
-            variant="contained"
-            disabled={!formData.name?.trim() || createMutation.isPending || updateMutation.isPending}
-            sx={{ textTransform: "none" }}
-          >
-            {createMutation.isPending || updateMutation.isPending ? (
-              <CircularProgress size={20} sx={{ mr: 1 }} />
-            ) : null}
-            {editingPhase ? "Guardar Cambios" : "Crear Fase"}
-          </Button>
-        </DialogActions>
-      </Dialog>
+                    <input
+                      id="custom-color-input"
+                      type="color"
+                      value={formData.color || "#1976D2"}
+                      onChange={(e) =>
+                        setFormData({ ...formData, color: e.target.value })
+                      }
+                      style={{
+                        position: "absolute",
+                        width: "100%",
+                        height: "100%",
+                        opacity: 0,
+                        cursor: "pointer",
+                      }}
+                    />
+                  </Box>
+                </Tooltip>
+              </Grid>
+            </Grid>
+          </Box>
+        </Stack>
+      </BaseEditDialog>
 
       {/* Delete Confirmation Dialog */}
       <Dialog
@@ -541,13 +584,13 @@ export function PhasesMaintenancePage() {
           },
         }}
       >
-        <DialogTitle sx={{ pb: 1 }}>Confirmar Eliminación</DialogTitle>
+        <DialogTitle sx={{ pb: 1 }}>Confirm Deletion</DialogTitle>
         <DialogContent>
           <Alert severity="warning" sx={{ mb: 2 }}>
-            Esta acción no se puede deshacer.
+            This action cannot be undone.
           </Alert>
           <Typography>
-            ¿Está seguro de que desea eliminar la fase{" "}
+            Are you sure you want to delete the phase{" "}
             <strong>{phaseToDelete?.name}</strong>?
           </Typography>
           {phaseToDelete && (
@@ -586,7 +629,7 @@ export function PhasesMaintenancePage() {
             }}
             sx={{ textTransform: "none" }}
           >
-            Cancelar
+            Cancel
           </Button>
           <Button
             onClick={handleDeleteConfirm}
@@ -598,7 +641,7 @@ export function PhasesMaintenancePage() {
             {deleteMutation.isPending ? (
               <CircularProgress size={20} sx={{ mr: 1 }} color="inherit" />
             ) : null}
-            Eliminar
+            Delete
           </Button>
         </DialogActions>
       </Dialog>

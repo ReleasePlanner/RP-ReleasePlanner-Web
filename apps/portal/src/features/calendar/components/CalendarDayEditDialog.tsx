@@ -6,13 +6,8 @@
 
 import { useState, useEffect } from "react";
 import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   TextField,
   Box,
-  Button,
   FormControlLabel,
   Checkbox,
   FormControl,
@@ -21,11 +16,10 @@ import {
   MenuItem,
   Typography,
   Stack,
-  Divider,
-  Chip,
   useTheme,
   alpha,
 } from "@mui/material";
+import { BaseEditDialog } from "@/components";
 import type { CalendarDay } from "../types";
 
 interface CalendarDayEditDialogProps {
@@ -77,291 +71,286 @@ export function CalendarDayEditDialog({
   };
 
   return (
-    <Dialog
+    <BaseEditDialog
       open={open}
       onClose={onClose}
+      editing={editing}
+      title={editing ? "Edit Day" : "New Day"}
+      subtitle={calendarName || undefined}
+      subtitleChip={calendarName ? "Calendar" : undefined}
       maxWidth="sm"
-      fullWidth
-      PaperProps={{
-        sx: {
-          borderRadius: 3,
-        },
-      }}
+      onSave={handleSave}
+      saveButtonText={editing ? "Update Day" : "Add Day"}
+      isFormValid={!!day.name.trim() && !!day.date}
     >
-      <DialogTitle
-        sx={{
-          px: 3,
-          pt: 3,
-          pb: 2,
-          borderBottom: `1px solid ${alpha(theme.palette.divider, 0.12)}`,
-          fontWeight: 600,
-          fontSize: "1.25rem",
-          color: theme.palette.text.primary,
-        }}
-      >
-        {editing ? "Edit Day" : "Add New Day"}
-        {calendarName && (
-          <Typography
-            variant="body2"
-            component="div"
+      <Stack spacing={3} sx={{ width: "100%" }}>
+        {/* Spacer to ensure controls are below header divider */}
+        <Box sx={{ pt: 1 }} />
+        
+        {/* Day Name */}
+        <TextField
+          autoFocus
+          fullWidth
+          size="small"
+          label="Day Name"
+          placeholder="e.g., New Year's Day, Company Anniversary"
+          value={day.name}
+          onChange={(e) =>
+            onDayChange({
+              ...day,
+              name: e.target.value,
+            })
+          }
+          error={!!errors.name}
+          helperText={errors.name}
+          required
+          InputLabelProps={{
+            shrink: true,
+            sx: {
+              fontSize: "0.625rem",
+              fontWeight: 500,
+              "&.MuiInputLabel-shrink": {
+                backgroundColor: theme.palette.background.paper,
+                paddingLeft: "6px",
+                paddingRight: "6px",
+                zIndex: 1,
+              },
+            },
+          }}
+          sx={{
+            "& .MuiOutlinedInput-root": {
+              fontSize: "0.6875rem",
+              "& input": {
+                py: 0.625,
+                fontSize: "0.6875rem",
+              },
+              "&:hover": {
+                "& .MuiOutlinedInput-notchedOutline": {
+                  borderColor: theme.palette.primary.main,
+                },
+              },
+              "&.Mui-focused": {
+                "& .MuiOutlinedInput-notchedOutline": {
+                  borderWidth: 2,
+                  borderColor: theme.palette.primary.main,
+                },
+              },
+            },
+            "& .MuiFormHelperText-root": {
+              marginTop: "4px",
+              marginLeft: "0px",
+              fontSize: "0.625rem",
+            },
+          }}
+        />
+
+        {/* Date */}
+        <TextField
+          label="Date"
+          type="date"
+          fullWidth
+          required
+          InputLabelProps={{
+            shrink: true,
+            sx: {
+              fontSize: "0.625rem",
+              fontWeight: 500,
+              "&.MuiInputLabel-shrink": {
+                backgroundColor: theme.palette.background.paper,
+                paddingLeft: "6px",
+                paddingRight: "6px",
+                zIndex: 1,
+              },
+            },
+          }}
+          value={day.date}
+          onChange={(e) =>
+            onDayChange({
+              ...day,
+              date: e.target.value,
+            })
+          }
+          error={!!errors.date}
+          helperText={errors.date}
+          sx={{
+            "& .MuiOutlinedInput-root": {
+              fontSize: "0.6875rem",
+              "& input": {
+                py: 0.625,
+                fontSize: "0.6875rem",
+              },
+              "&:hover": {
+                "& .MuiOutlinedInput-notchedOutline": {
+                  borderColor: theme.palette.primary.main,
+                },
+              },
+              "&.Mui-focused": {
+                "& .MuiOutlinedInput-notchedOutline": {
+                  borderWidth: 2,
+                  borderColor: theme.palette.primary.main,
+                },
+              },
+            },
+            "& .MuiFormHelperText-root": {
+              marginTop: "4px",
+              marginLeft: "0px",
+              fontSize: "0.625rem",
+            },
+          }}
+        />
+
+        {/* Type */}
+        <FormControl fullWidth required size="small">
+          <InputLabel
             sx={{
-              color: theme.palette.text.secondary,
-              fontSize: "0.8125rem",
-              mt: 1,
-              fontWeight: 400,
-              display: "flex",
-              alignItems: "center",
-              gap: 0.5,
+              fontSize: "0.625rem",
+              fontWeight: 500,
+              "&.MuiInputLabel-shrink": {
+                backgroundColor: theme.palette.background.paper,
+                paddingLeft: "6px",
+                paddingRight: "6px",
+                zIndex: 1,
+              },
             }}
           >
-            <Chip
-              label="Calendar"
-              size="small"
-              sx={{
-                height: 20,
+            Type
+          </InputLabel>
+          <Select
+            value={day.type}
+            label="Type"
+            onChange={(e) =>
+              onDayChange({
+                ...day,
+                type: e.target.value as "holiday" | "special",
+              })
+            }
+            sx={{
+              fontSize: "0.6875rem",
+              "& .MuiSelect-select": {
+                py: 0.625,
                 fontSize: "0.6875rem",
-                fontWeight: 500,
-                bgcolor: alpha(theme.palette.primary.main, 0.08),
-                color: theme.palette.primary.main,
-              }}
-            />
-            {calendarName}
-          </Typography>
-        )}
-      </DialogTitle>
+              },
+            }}
+          >
+            <MenuItem value="holiday" sx={{ fontSize: "0.6875rem", py: 0.5, minHeight: 32 }}>
+              Holiday
+            </MenuItem>
+            <MenuItem value="special" sx={{ fontSize: "0.6875rem", py: 0.5, minHeight: 32 }}>
+              Special Day
+            </MenuItem>
+          </Select>
+        </FormControl>
 
-      <DialogContent sx={{ px: 3, pt: 4, pb: 2 }}>
-        <Stack spacing={3}>
-          {/* Basic Information */}
-          <Box>
-            <Typography
-              variant="subtitle2"
-              sx={{
-                mb: 2,
-                fontWeight: 600,
-                fontSize: "0.875rem",
-                color: theme.palette.text.primary,
-                textTransform: "uppercase",
-                letterSpacing: "0.5px",
-              }}
-            >
-              Basic Information
-            </Typography>
-            <Stack spacing={2.5}>
-              <TextField
-                label="Day Name"
-                fullWidth
-                required
-                value={day.name}
+        {/* Description */}
+        <TextField
+          label="Description"
+          fullWidth
+          multiline
+          rows={4}
+          size="small"
+          value={day.description || ""}
+          onChange={(e) =>
+            onDayChange({
+              ...day,
+              description: e.target.value,
+            })
+          }
+          placeholder="Add optional description about this day"
+          InputLabelProps={{
+            shrink: true,
+            sx: {
+              fontSize: "0.625rem",
+              fontWeight: 500,
+              "&.MuiInputLabel-shrink": {
+                backgroundColor: theme.palette.background.paper,
+                paddingLeft: "6px",
+                paddingRight: "6px",
+                zIndex: 1,
+              },
+            },
+          }}
+          sx={{
+            "& .MuiOutlinedInput-root": {
+              fontSize: "0.6875rem",
+              "& textarea": {
+                py: 0.625,
+                fontSize: "0.6875rem",
+              },
+              "&:hover": {
+                "& .MuiOutlinedInput-notchedOutline": {
+                  borderColor: theme.palette.primary.main,
+                },
+              },
+              "&.Mui-focused": {
+                "& .MuiOutlinedInput-notchedOutline": {
+                  borderWidth: 2,
+                  borderColor: theme.palette.primary.main,
+                },
+              },
+            },
+            "& .MuiFormHelperText-root": {
+              marginTop: "4px",
+              marginLeft: "0px",
+              fontSize: "0.625rem",
+            },
+          }}
+        />
+
+        {/* Recurring Checkbox */}
+        <Box
+          sx={{
+            p: 1.5,
+            borderRadius: 1.5,
+            bgcolor: alpha(theme.palette.primary.main, 0.04),
+            border: `1px solid ${alpha(theme.palette.divider, 0.12)}`,
+          }}
+        >
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={day.recurring}
                 onChange={(e) =>
                   onDayChange({
                     ...day,
-                    name: e.target.value,
+                    recurring: e.target.checked,
                   })
                 }
-                error={!!errors.name}
-                helperText={errors.name}
-                placeholder="e.g., New Year's Day, Company Anniversary"
-                variant="outlined"
-                size="medium"
-                autoFocus
+                size="small"
                 sx={{
-                  "& .MuiOutlinedInput-root": {
-                    borderRadius: 1.5,
+                  color: theme.palette.primary.main,
+                  "&.Mui-checked": {
+                    color: theme.palette.primary.main,
                   },
                 }}
               />
-
-              <TextField
-                label="Date"
-                type="date"
-                fullWidth
-                required
-                InputLabelProps={{ shrink: true }}
-                value={day.date}
-                onChange={(e) =>
-                  onDayChange({
-                    ...day,
-                    date: e.target.value,
-                  })
-                }
-                error={!!errors.date}
-                helperText={errors.date}
-                variant="outlined"
-                size="medium"
+            }
+            label={
+              <Typography
+                variant="body2"
                 sx={{
-                  "& .MuiOutlinedInput-root": {
-                    borderRadius: 1.5,
-                  },
-                }}
-              />
-
-              <FormControl fullWidth required>
-                <InputLabel>Type</InputLabel>
-                <Select
-                  value={day.type}
-                  label="Type"
-                  onChange={(e) =>
-                    onDayChange({
-                      ...day,
-                      type: e.target.value as "holiday" | "special",
-                    })
-                  }
-                  sx={{
-                    borderRadius: 1.5,
-                    "& .MuiOutlinedInput-notchedOutline": {
-                      borderColor: alpha(theme.palette.divider, 0.3),
-                    },
-                  }}
-                >
-                  <MenuItem value="holiday">Holiday</MenuItem>
-                  <MenuItem value="special">Special Day</MenuItem>
-                </Select>
-              </FormControl>
-            </Stack>
-          </Box>
-
-          <Divider sx={{ borderColor: alpha(theme.palette.divider, 0.12) }} />
-
-          {/* Additional Information */}
-          <Box>
-            <Typography
-              variant="subtitle2"
-              sx={{
-                mb: 2,
-                fontWeight: 600,
-                fontSize: "0.875rem",
-                color: theme.palette.text.primary,
-                textTransform: "uppercase",
-                letterSpacing: "0.5px",
-              }}
-            >
-              Additional Information
-            </Typography>
-            <Stack spacing={2.5}>
-              <TextField
-                label="Description"
-                fullWidth
-                multiline
-                rows={4}
-                value={day.description || ""}
-                onChange={(e) =>
-                  onDayChange({
-                    ...day,
-                    description: e.target.value,
-                  })
-                }
-                placeholder="Add optional description about this day"
-                variant="outlined"
-                size="medium"
-                sx={{
-                  "& .MuiOutlinedInput-root": {
-                    borderRadius: 1.5,
-                  },
-                }}
-              />
-
-              <Box
-                sx={{
-                  p: 2,
-                  borderRadius: 1.5,
-                  bgcolor: alpha(theme.palette.primary.main, 0.04),
-                  border: `1px solid ${alpha(theme.palette.divider, 0.12)}`,
+                  fontWeight: 500,
+                  fontSize: "0.6875rem",
                 }}
               >
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={day.recurring}
-                      onChange={(e) =>
-                        onDayChange({
-                          ...day,
-                          recurring: e.target.checked,
-                        })
-                      }
-                      sx={{
-                        color: theme.palette.primary.main,
-                        "&.Mui-checked": {
-                          color: theme.palette.primary.main,
-                        },
-                      }}
-                    />
-                  }
-                  label={
-                    <Typography
-                      variant="body2"
-                      sx={{
-                        fontWeight: 500,
-                        fontSize: "0.875rem",
-                      }}
-                    >
-                      Recurring annually
-                    </Typography>
-                  }
-                />
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  sx={{
-                    display: "block",
-                    mt: 0.5,
-                    ml: 4,
-                    fontSize: "0.75rem",
-                    lineHeight: 1.5,
-                  }}
-                >
-                  Check if this day repeats every year
-                </Typography>
-              </Box>
-            </Stack>
-          </Box>
-        </Stack>
-      </DialogContent>
-
-      <DialogActions
-        sx={{
-          px: 3,
-          pt: 2,
-          pb: 3,
-          gap: 1.5,
-        }}
-      >
-        <Button
-          onClick={onClose}
-          sx={{
-            textTransform: "none",
-            px: 3,
-            py: 1,
-            borderRadius: 1.5,
-            fontWeight: 500,
-            color: theme.palette.text.secondary,
-            "&:hover": {
-              bgcolor: alpha(theme.palette.action.hover, 0.08),
-            },
-          }}
-        >
-          Cancel
-        </Button>
-        <Button
-          variant="contained"
-          onClick={handleSave}
-          sx={{
-            textTransform: "none",
-            px: 3,
-            py: 1,
-            borderRadius: 1.5,
-            fontWeight: 600,
-            boxShadow: `0 2px 8px ${alpha(theme.palette.primary.main, 0.3)}`,
-            "&:hover": {
-              boxShadow: `0 4px 12px ${alpha(theme.palette.primary.main, 0.4)}`,
-              transform: "translateY(-1px)",
-            },
-            transition: "all 0.2s ease-in-out",
-          }}
-        >
-          {editing ? "Update" : "Add"} Day
-        </Button>
-      </DialogActions>
-    </Dialog>
+                Recurring annually
+              </Typography>
+            }
+          />
+          <Typography
+            variant="caption"
+            sx={{
+              display: "block",
+              mt: 0.5,
+              ml: 4,
+              fontSize: "0.625rem",
+              color: theme.palette.text.secondary,
+              lineHeight: 1.5,
+            }}
+          >
+            Check if this day repeats every year
+          </Typography>
+        </Box>
+      </Stack>
+    </BaseEditDialog>
   );
 }

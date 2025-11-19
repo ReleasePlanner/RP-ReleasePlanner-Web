@@ -105,7 +105,7 @@ export class ProductRepository
           
           console.log('ProductRepository.update - updates.components:', JSON.stringify(updates.components, null, 2));
           console.log('ProductRepository.update - isPartialUpdate:', isPartialUpdate);
-          console.log('ProductRepository.update - entity.components before:', JSON.stringify(entity.components?.map((c: any) => ({ id: c.id, type: c.type, currentVersion: c.currentVersion, previousVersion: c.previousVersion, productId: (c as any).productId })), null, 2));
+          console.log('ProductRepository.update - entity.components before:', JSON.stringify(entity.components?.map((c: any) => ({ id: c.id, componentTypeId: c.componentTypeId, currentVersion: c.currentVersion, previousVersion: c.previousVersion, productId: (c as any).productId })), null, 2));
           
           // Ensure entity.components is initialized
           if (!entity.components) {
@@ -133,9 +133,9 @@ export class ProductRepository
             if (!c) {
               throw new Error(`Component is null or undefined`);
             }
-            // Validate that either type or componentTypeId is provided
-            if (!c.type && !c.componentTypeId) {
-              throw new Error(`Component type is missing: either 'type' or 'componentTypeId' must be provided`);
+            // Validate that componentTypeId is provided
+            if (!c.componentTypeId) {
+              throw new Error(`Component type is missing: 'componentTypeId' must be provided`);
             }
             // Validate currentVersion
             if (!c.currentVersion || (typeof c.currentVersion === 'string' && c.currentVersion.trim() === '')) {
@@ -150,45 +150,20 @@ export class ProductRepository
               ? c.previousVersion 
               : c.currentVersion;
             
-            // Handle componentTypeId if provided (preferred method)
+            // Handle componentTypeId (required)
             let componentType: ProductComponent | undefined;
-            if (c.componentTypeId) {
-              try {
-                componentType = await this.componentTypeRepository.findOne({
-                  where: { id: c.componentTypeId } as any,
-                });
-                if (!componentType) {
-                  console.error(`ProductRepository.update - Component Type with id "${c.componentTypeId}" not found`);
-                  throw new Error(`Component Type with id "${c.componentTypeId}" not found`);
-                }
-                console.log(`ProductRepository.update - Found ProductComponent by ID: ${componentType.id}, code: ${componentType.code}, name: ${componentType.name}`);
-              } catch (error) {
-                console.error(`ProductRepository.update - Error finding ProductComponent by ID "${c.componentTypeId}":`, error);
-                throw error;
+            try {
+              componentType = await this.componentTypeRepository.findOne({
+                where: { id: c.componentTypeId } as any,
+              });
+              if (!componentType) {
+                console.error(`ProductRepository.update - Component Type with id "${c.componentTypeId}" not found`);
+                throw new Error(`Component Type with id "${c.componentTypeId}" not found`);
               }
-            } else if (c.type) {
-              // Fallback: try to find ProductComponent by code (for backward compatibility)
-              // Normalize type to lowercase for case-insensitive matching
-              const normalizedType = c.type.toLowerCase().trim();
-              try {
-                componentType = await this.componentTypeRepository.findOne({
-                  where: { code: normalizedType } as any,
-                });
-                // If not found by code, try by name
-                if (!componentType) {
-                  componentType = await this.componentTypeRepository.findOne({
-                    where: { name: normalizedType } as any,
-                  });
-                }
-                if (componentType) {
-                  console.log(`ProductRepository.update - Found ProductComponent by code/name "${normalizedType}": ${componentType.id}, code: ${componentType.code}, name: ${componentType.name}`);
-                  } else {
-                  console.warn(`ProductRepository.update - ProductComponent not found for code/name "${normalizedType}", will use enum type fallback`);
-                }
-              } catch (error) {
-                console.error(`ProductRepository.update - Error finding ProductComponent by code/name "${normalizedType}":`, error);
-                // Don't throw, allow fallback to enum type
-              }
+              console.log(`ProductRepository.update - Found ProductComponent by ID: ${componentType.id}, code: ${componentType.code}, name: ${componentType.name}`);
+            } catch (error) {
+              console.error(`ProductRepository.update - Error finding ProductComponent by ID "${c.componentTypeId}":`, error);
+              throw error;
             }
             
             // If component has an id and exists in the entity, update it
@@ -204,54 +179,16 @@ export class ProductRepository
                 if (c.name !== undefined) {
                   existingComponent.name = c.name;
                 }
-                // Update type - prefer componentTypeId, fallback to enum type
-                if (componentType) {
-                  // Only update componentType if it's different to avoid unnecessary updates
-                  if (!existingComponent.componentTypeId || existingComponent.componentTypeId !== componentType.id) {
-                    // For ManyToOne relations, TypeORM prefers updating the foreign key directly
-                    // Clear the relation object first to avoid conflicts with eager loading
-                    delete (existingComponent as any).componentType;
-                    // Update the foreign key - TypeORM will handle the relation on save
-                    existingComponent.componentTypeId = componentType.id;
-                    // Normalize code to lowercase to match enum values (web, services, mobile)
-                    let normalizedType = (componentType.code || '').toLowerCase();
-                    // Map 'service' to 'services' to match enum values
-                    if (normalizedType === 'service') {
-                      normalizedType = 'services';
-                    }
-                    existingComponent.type = normalizedType as any;
-                  } else {
-                    // ProductComponent is the same, but ensure type is normalized (componentType.code might have changed case)
-                    let normalizedType = (componentType.code || '').toLowerCase();
-                    // Map 'service' to 'services' to match enum values
-                    if (normalizedType === 'service') {
-                      normalizedType = 'services';
-                    }
-                    existingComponent.type = normalizedType as any;
-                  }
-                } else if (c.type) {
-                  // If no componentType found but we have a type, use enum type only
-                  // Normalize to lowercase to match enum values (web, services, mobile)
-                  let normalizedType = c.type.toLowerCase();
-                  // Map 'service' to 'services' to match enum values
-                  if (normalizedType === 'service') {
-                    normalizedType = 'services';
-                  }
-                  existingComponent.type = normalizedType as any;
-                  // Only clear componentType if we explicitly want to remove it
-                  // For now, preserve existing componentType relation
+                // Update componentType if it's different to avoid unnecessary updates
+                if (!existingComponent.componentTypeId || existingComponent.componentTypeId !== componentType.id) {
+                  // For ManyToOne relations, TypeORM prefers updating the foreign key directly
+                  // Clear the relation object first to avoid conflicts with eager loading
+                  delete (existingComponent as any).componentType;
+                  // Update the foreign key - TypeORM will handle the relation on save
+                  existingComponent.componentTypeId = componentType.id;
                 }
                 existingComponent.currentVersion = c.currentVersion;
                 existingComponent.previousVersion = previousVersion;
-                // Ensure type is normalized to lowercase before saving (defensive check)
-                if (existingComponent.type) {
-                  let normalizedType = (existingComponent.type as string).toLowerCase();
-                  // Map 'service' to 'services' to match enum values
-                  if (normalizedType === 'service') {
-                    normalizedType = 'services';
-                  }
-                  existingComponent.type = normalizedType as any;
-                }
                 components.push(existingComponent);
                 continue;
               }
@@ -260,28 +197,13 @@ export class ProductRepository
             // Otherwise, create a new component
             // Note: If c.id exists but component doesn't exist in entity, we ignore the id
             // and create a new component (the id might be invalid or from another product)
-            let newComponent: ProductComponentVersion;
-            if (componentType) {
-              // Use ProductComponent entity
-              newComponent = new ProductComponentVersion(componentType, c.currentVersion, previousVersion, c.name);
-            } else if (c.type) {
-              // Fallback to enum type - normalize to lowercase to match enum values (web, services, mobile)
-              let normalizedType = c.type.toLowerCase();
-              // Map 'service' to 'services' to match enum values
-              if (normalizedType === 'service') {
-                normalizedType = 'services';
-              }
-              newComponent = new ProductComponentVersion(normalizedType, c.currentVersion, previousVersion, c.name);
-            } else {
-              throw new Error('Component type is required (either componentTypeId or type must be provided)');
+            if (!componentType) {
+              throw new Error('Component type is required (componentTypeId must be provided)');
             }
+            const newComponent = new ProductComponentVersion(componentType, c.currentVersion, previousVersion, c.name);
             (newComponent as any).productId = id;
             // Explicitly set the product relation to ensure TypeORM cascade works correctly
             (newComponent as any).product = entity;
-            // Ensure type is normalized to lowercase before saving (defensive check)
-            if (newComponent.type) {
-              newComponent.type = (newComponent.type as string).toLowerCase() as any;
-            }
             components.push(newComponent);
           }
           
@@ -295,14 +217,9 @@ export class ProductRepository
             if (!(comp as any).product) {
               (comp as any).product = entity;
             }
-            // Final defensive check: ensure type is normalized to lowercase before saving
-            if (comp.type) {
-              let normalizedType = (comp.type as string).toLowerCase();
-              // Map 'service' to 'services' to match enum values
-              if (normalizedType === 'service') {
-                normalizedType = 'services';
-              }
-              comp.type = normalizedType as any;
+            // Ensure componentTypeId is set
+            if (!comp.componentTypeId) {
+              throw new Error('Component componentTypeId is missing');
             }
           }
           
@@ -347,7 +264,7 @@ export class ProductRepository
           // Assign the new components array
           // TypeORM will handle updates and new components via cascade: true
           entity.components = components;
-          console.log('ProductRepository.update - components after processing:', JSON.stringify(components.map((c: any) => ({ id: c.id, type: c.type, currentVersion: c.currentVersion, previousVersion: c.previousVersion, productId: (c as any).productId })), null, 2));
+          console.log('ProductRepository.update - components after processing:', JSON.stringify(components.map((c: any) => ({ id: c.id, componentTypeId: c.componentTypeId, currentVersion: c.currentVersion, previousVersion: c.previousVersion, productId: (c as any).productId })), null, 2));
         }
 
         console.log('ProductRepository.update - about to save entity');
