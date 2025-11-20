@@ -57,7 +57,7 @@ export function BaseEditDialog({
   actions,
   onSave,
   saveButtonText,
-  cancelButtonText = "Cancelar",
+  cancelButtonText = "Cancel",
   isFormValid = true,
   saveButtonDisabled,
   showDefaultActions = true,
@@ -65,8 +65,8 @@ export function BaseEditDialog({
   const theme = useTheme();
 
   const defaultSaveText = editing
-    ? `Actualizar ${title.split(" ").pop()}`
-    : `Crear ${title.split(" ").pop()}`;
+    ? `Update ${title.split(" ").pop()}`
+    : `Create ${title.split(" ").pop()}`;
 
   return (
     <Dialog
@@ -133,8 +133,7 @@ export function BaseEditDialog({
               {title}
             </Typography>
             {subtitle && (
-              <Typography
-                variant="body2"
+              <Box
                 sx={{
                   fontSize: "0.625rem",
                   color: theme.palette.text.secondary,
@@ -158,14 +157,25 @@ export function BaseEditDialog({
                     }}
                   />
                 )}
-                {subtitle}
-              </Typography>
+                <Typography
+                  variant="body2"
+                  component="span"
+                  sx={{
+                    fontSize: "0.625rem",
+                    color: theme.palette.text.secondary,
+                    fontWeight: 400,
+                    lineHeight: 1.3,
+                  }}
+                >
+                  {subtitle}
+                </Typography>
+              </Box>
             )}
           </Box>
         </Stack>
       </DialogTitle>
 
-      <DialogContent sx={{ pt: 5.5, pb: 2, px: 3 }}>
+      <DialogContent sx={{ pt: 3, pb: 2, px: 3, display: "flex", flexDirection: "column", minHeight: 0 }}>
         {children}
       </DialogContent>
 

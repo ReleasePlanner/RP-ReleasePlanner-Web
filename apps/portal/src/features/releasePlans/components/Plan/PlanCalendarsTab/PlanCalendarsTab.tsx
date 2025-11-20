@@ -11,6 +11,7 @@ import {
   Chip,
   CircularProgress,
   Alert,
+  Paper,
 } from "@mui/material";
 import { Add as AddIcon, Delete as DeleteIcon } from "@mui/icons-material";
 import type { Calendar } from "@/features/calendar/types";
@@ -103,58 +104,72 @@ export function PlanCalendarsTab({
         height: "100%",
         display: "flex",
         flexDirection: "column",
+        overflow: "hidden",
       }}
     >
-      <Stack spacing={1.5} sx={{ flex: 1, minHeight: 0 }}>
+      <Stack spacing={1} sx={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
         {/* Header */}
         <Box
           sx={{
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
+            gap: 1,
             pb: 1,
             borderBottom: `1px solid ${alpha(theme.palette.divider, 0.08)}`,
+            flexShrink: 0,
+            flexWrap: { xs: "wrap", sm: "nowrap" },
           }}
         >
           <Typography 
             variant="subtitle2" 
             sx={{ 
               fontWeight: 600,
-              fontSize: "0.8125rem",
+              fontSize: { xs: "0.625rem", sm: "0.6875rem" },
               color: theme.palette.text.primary,
+              flex: { xs: "1 1 100%", sm: "0 1 auto" },
             }}
           >
-            Calendarios ({planCalendars.length})
+            Calendars ({planCalendars.length})
           </Typography>
-          <Tooltip title="Agregar calendarios del mantenimiento" arrow placement="top">
+          <Tooltip title="Add calendars from maintenance" arrow placement="top">
             <Button
               variant="outlined"
               size="small"
-              startIcon={<AddIcon sx={{ fontSize: 16 }} />}
+              startIcon={<AddIcon sx={{ fontSize: 14 }} />}
               onClick={() => setSelectDialogOpen(true)}
               sx={{
                 textTransform: "none",
-                fontSize: "0.75rem",
+                fontSize: { xs: "0.625rem", sm: "0.6875rem" },
                 fontWeight: 500,
-                px: 1.5,
+                px: { xs: 1, sm: 1.25 },
                 py: 0.5,
                 borderRadius: 1,
-                minHeight: 28,
+                minHeight: 26,
                 borderColor: alpha(theme.palette.primary.main, 0.5),
                 color: theme.palette.primary.main,
+                flexShrink: 0,
                 "&:hover": {
                   borderColor: theme.palette.primary.main,
                   bgcolor: alpha(theme.palette.primary.main, 0.08),
                 },
               }}
             >
-              Agregar
+              Add
             </Button>
           </Tooltip>
         </Box>
 
         {/* Calendars List */}
-        <Box sx={{ flex: 1, overflow: "auto", minHeight: 0 }}>
+        <Box 
+          sx={{ 
+            flex: 1, 
+            overflow: "hidden", 
+            minHeight: 0,
+            display: "flex",
+            flexDirection: "column",
+          }}
+        >
           {isLoading ? (
             <Box
               sx={{
@@ -163,18 +178,33 @@ export function PlanCalendarsTab({
                 justifyContent: "center",
                 alignItems: "center",
                 flexDirection: "column",
-                gap: 2,
+                gap: 1,
+                height: "100%",
               }}
             >
-              <CircularProgress size={40} />
-              <Typography variant="body2" color="text.secondary">
-                Cargando calendarios...
+              <CircularProgress size={24} />
+              <Typography 
+                variant="body2" 
+                color="text.secondary" 
+                sx={{ fontSize: "0.6875rem" }}
+              >
+                Loading calendars...
               </Typography>
             </Box>
           ) : hasError ? (
-            <Box sx={{ p: 2 }}>
-              <Alert severity="error">
-                Error al cargar algunos calendarios. Por favor intente nuevamente.
+            <Box sx={{ p: 1.5 }}>
+              <Alert 
+                severity="error"
+                sx={{
+                  "& .MuiAlert-message": {
+                    fontSize: "0.6875rem",
+                  },
+                  "& .MuiAlert-icon": {
+                    fontSize: "1rem",
+                  },
+                }}
+              >
+                Error loading some calendars. Please try again.
               </Alert>
             </Box>
           ) : planCalendars.length === 0 ? (
@@ -183,146 +213,150 @@ export function PlanCalendarsTab({
                 p: 3,
                 textAlign: "center",
                 color: "text.secondary",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                height: "100%",
               }}
             >
               <Typography 
                 variant="body2"
-                sx={{ fontSize: "0.8125rem" }}
+                sx={{ fontSize: "0.6875rem" }}
               >
-                No hay calendarios agregados a este plan. Haz clic en "Agregar" para
-                seleccionar calendarios del mantenimiento.
+                No calendars added to this plan. Click "Add" to
+                select calendars from maintenance.
               </Typography>
             </Box>
           ) : (
-            <Stack spacing={1}>
-              {planCalendars.map((calendar: Calendar) => (
-                <Box
-                  key={calendar.id}
-                  sx={{
-                    p: { xs: 1.25, sm: 1.5 },
-                    borderRadius: 1,
-                    border: `1px solid ${alpha(theme.palette.divider, 0.2)}`,
-                    bgcolor: theme.palette.background.paper,
-                    transition: theme.transitions.create(
-                      ["border-color", "box-shadow"],
-                      {
-                        duration: theme.transitions.duration.shorter,
-                      }
-                    ),
-                    "&:hover": {
-                      borderColor: alpha(theme.palette.primary.main, 0.3),
-                      boxShadow: `0 1px 3px ${alpha(
-                        theme.palette.common.black,
-                        0.06
-                      )}`,
-                    },
-                  }}
-                >
-                  <Box
-                    sx={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "flex-start",
-                    }}
-                  >
-                    <Box sx={{ flex: 1 }}>
-                      <Typography
-                        variant="body1"
-                        sx={{
-                          fontWeight: 600,
-                          mb: 0.5,
-                          color: theme.palette.text.primary,
-                        }}
-                      >
-                        {calendar.name}
-                      </Typography>
-                      {calendar.description && (
+            <Box sx={{ flex: 1, overflow: "auto", minHeight: 0 }}>
+              <Paper
+                elevation={0}
+                sx={{
+                  border: `1px solid ${alpha(theme.palette.divider, 0.08)}`,
+                  borderRadius: 2,
+                  overflow: "hidden",
+                }}
+              >
+                {planCalendars.map((calendar: Calendar, index) => (
+                  <Box key={calendar.id}>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: { xs: 0.75, sm: 1 },
+                        px: { xs: 1, sm: 1.25 },
+                        py: { xs: 0.75, sm: 1 },
+                        transition: theme.transitions.create(["background-color", "border-color"], {
+                          duration: theme.transitions.duration.shorter,
+                        }),
+                        "&:hover": {
+                          bgcolor: alpha(theme.palette.primary.main, 0.04),
+                        },
+                      }}
+                    >
+                      {/* Actions */}
+                      <Stack direction="row" spacing={0.25} sx={{ flexShrink: 0 }}>
+                        <Tooltip title="Delete calendar" arrow placement="top">
+                          <IconButton
+                            size="small"
+                            onClick={() => handleDeleteCalendar(calendar.id)}
+                            sx={{
+                              fontSize: { xs: 14, sm: 16 },
+                              p: { xs: 0.375, sm: 0.5 },
+                              color: theme.palette.text.secondary,
+                              transition: theme.transitions.create(["color", "background-color"], {
+                                duration: theme.transitions.duration.shorter,
+                              }),
+                              "&:hover": {
+                                color: theme.palette.error.main,
+                                bgcolor: alpha(theme.palette.error.main, 0.08),
+                              },
+                            }}
+                          >
+                            <DeleteIcon fontSize="inherit" />
+                          </IconButton>
+                        </Tooltip>
+                      </Stack>
+
+                      {/* Calendar Info */}
+                      <Box sx={{ flex: 1, minWidth: 0 }}>
                         <Typography
                           variant="body2"
                           sx={{
-                            color: theme.palette.text.secondary,
-                            fontSize: "0.8125rem",
-                            mb: 1,
+                            fontSize: { xs: "0.6875rem", sm: "0.75rem" },
+                            fontWeight: 500,
+                            color: theme.palette.text.primary,
+                            mb: 0.125,
+                            lineHeight: 1.4,
                           }}
                         >
-                          {calendar.description}
+                          {calendar.name}
                         </Typography>
-                      )}
-                      <Box
-                        sx={{
-                          display: "flex",
-                          gap: 1,
-                          flexWrap: "wrap",
-                          alignItems: "center",
-                        }}
-                      >
-                        {calendar.country && (
+                        {calendar.description && (
+                          <Typography
+                            variant="caption"
+                            sx={{
+                              fontSize: { xs: "0.625rem", sm: "0.6875rem" },
+                              color: theme.palette.text.secondary,
+                              display: "block",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            {calendar.description}
+                          </Typography>
+                        )}
+                        <Stack 
+                          direction="row" 
+                          spacing={{ xs: 0.5, sm: 0.75 }} 
+                          sx={{ mt: 0.25 }}
+                          flexWrap="wrap"
+                        >
+                          {calendar.country && (
+                            <Chip
+                              label={calendar.country.name}
+                              size="small"
+                              sx={{
+                                height: { xs: 16, sm: 18 },
+                                fontSize: { xs: "0.5625rem", sm: "0.625rem" },
+                                fontWeight: 500,
+                                bgcolor: alpha(theme.palette.primary.main, 0.1),
+                                color: theme.palette.primary.main,
+                                "& .MuiChip-label": {
+                                  px: { xs: 0.5, sm: 0.625 },
+                                },
+                              }}
+                            />
+                          )}
                           <Chip
-                            label={calendar.country.name}
+                            label={`${calendar.days.length} ${calendar.days.length !== 1 ? "days" : "day"}`}
                             size="small"
                             sx={{
-                              height: 20,
-                              fontSize: "0.6875rem",
+                              height: { xs: 16, sm: 18 },
+                              fontSize: { xs: "0.5625rem", sm: "0.625rem" },
                               fontWeight: 500,
-                              bgcolor: alpha(theme.palette.info.main, 0.08),
+                              bgcolor: alpha(theme.palette.info.main, 0.1),
                               color: theme.palette.info.main,
                               "& .MuiChip-label": {
-                                px: 1,
+                                px: { xs: 0.5, sm: 0.625 },
                               },
                             }}
                           />
-                        )}
-                        <Chip
-                          label={`${calendar.days.length} día${
-                            calendar.days.length !== 1 ? "s" : ""
-                          }`}
-                          size="small"
-                          sx={{
-                            height: 20,
-                            fontSize: "0.6875rem",
-                            fontWeight: 500,
-                            bgcolor: alpha(theme.palette.primary.main, 0.08),
-                            color: theme.palette.primary.main,
-                            "& .MuiChip-label": {
-                              px: 1,
-                            },
-                          }}
-                        />
-                        <Typography
-                          variant="caption"
-                          sx={{
-                            color: theme.palette.text.disabled,
-                            fontFamily: "monospace",
-                            fontSize: "0.6875rem",
-                          }}
-                        >
-                          {calendar.id}
-                        </Typography>
+                        </Stack>
                       </Box>
                     </Box>
-                    <Tooltip title="Eliminar calendario" arrow>
-                      <IconButton
-                        size="small"
-                        onClick={() => handleDeleteCalendar(calendar.id)}
+                    {index < planCalendars.length - 1 && (
+                      <Box
                         sx={{
-                          color: alpha(theme.palette.error.main, 0.7),
-                          "&:hover": {
-                            color: theme.palette.error.main,
-                            bgcolor: alpha(theme.palette.error.main, 0.08),
-                          },
-                          "&:focus-visible": {
-                            outline: `2px solid ${alpha(theme.palette.error.main, 0.5)}`,
-                            outlineOffset: 2,
-                          },
+                          borderBottom: `1px solid ${alpha(theme.palette.divider, 0.08)}`,
                         }}
-                      >
-                        <DeleteIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
+                      />
+                    )}
                   </Box>
-                </Box>
-              ))}
-            </Stack>
+                ))}
+              </Paper>
+            </Box>
           )}
         </Box>
       </Stack>

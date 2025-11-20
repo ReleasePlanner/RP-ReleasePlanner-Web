@@ -39,6 +39,8 @@ type AddPhaseDialogProps = {
   onClose: () => void;
   onSubmit: (phases: PlanPhase[]) => void;
   existingPhases?: PlanPhase[]; // Existing phases in the plan
+  planStartDate?: string; // Plan start date for assigning default phase dates
+  planEndDate?: string; // Plan end date for assigning default phase dates
 };
 
 interface TabPanelProps {
@@ -68,6 +70,8 @@ export default function AddPhaseDialog({
   onClose,
   onSubmit,
   existingPhases = [],
+  planStartDate,
+  planEndDate,
 }: AddPhaseDialogProps) {
   const theme = useTheme();
   const { data: basePhases = [], isLoading: isLoadingBasePhases } = useBasePhases();
@@ -195,24 +199,77 @@ export default function AddPhaseDialog({
     const phasesToAdd: PlanPhase[] = [];
 
     if (tabValue === 0) {
-      // Add selected base phases
-      selectedBasePhaseIds.forEach((phaseId) => {
-        const basePhase = basePhases.find((bp) => bp.id === phaseId);
-        if (basePhase) {
-          phasesToAdd.push({
-            id: `phase-${Date.now()}-${phaseId}`,
-            name: basePhase.name,
-            color: basePhase.color,
-          });
+      // Add selected base phases with default one-week duration
+      // All phases start on the same day (plan startDate), each with one week duration
+      const selectedBasePhases = Array.from(selectedBasePhaseIds)
+        .map((phaseId) => basePhases.find((bp) => bp.id === phaseId))
+        .filter((bp): bp is BasePhase => bp !== undefined);
+      
+      selectedBasePhases.forEach((basePhase, index) => {
+        // Calculate default dates: all phases start the same day, each with one week duration
+        let startDate = "";
+        let endDate = "";
+        
+        if (planStartDate) {
+          // All phases start on the same day (plan start date)
+          const phaseStart = new Date(planStartDate);
+          
+          // End date: one week (7 days) after start date
+          const phaseEnd = new Date(phaseStart);
+          phaseEnd.setDate(phaseEnd.getDate() + 7);
+          
+          startDate = phaseStart.toISOString().slice(0, 10);
+          endDate = phaseEnd.toISOString().slice(0, 10);
+        } else {
+          // Fallback: use current date + one week if plan dates are not available
+          const today = new Date();
+          const weekLater = new Date(today);
+          weekLater.setDate(weekLater.getDate() + 7);
+          startDate = today.toISOString().slice(0, 10);
+          endDate = weekLater.toISOString().slice(0, 10);
         }
+        
+        phasesToAdd.push({
+          id: `phase-${Date.now()}-${index}-${basePhase.id}`,
+          name: basePhase.name,
+          color: basePhase.color,
+          startDate,
+          endDate,
+        });
       });
     } else {
-      // Add new custom phase
+      // Add new custom phase with default one-week duration
+      // Starts on the same day as plan startDate (or existing phases if any)
       if (!validatePhaseName(newPhaseName)) return;
+      
+      let startDate = "";
+      let endDate = "";
+      
+      if (planStartDate) {
+        // Start on plan start date (same as base phases)
+        const phaseStart = new Date(planStartDate);
+        
+        // End date: one week (7 days) after start date
+        const phaseEnd = new Date(phaseStart);
+        phaseEnd.setDate(phaseEnd.getDate() + 7);
+        
+        startDate = phaseStart.toISOString().slice(0, 10);
+        endDate = phaseEnd.toISOString().slice(0, 10);
+      } else {
+        // Fallback: use current date + one week
+        const today = new Date();
+        const weekLater = new Date(today);
+        weekLater.setDate(weekLater.getDate() + 7);
+        startDate = today.toISOString().slice(0, 10);
+        endDate = weekLater.toISOString().slice(0, 10);
+      }
+      
       phasesToAdd.push({
         id: `phase-${Date.now()}-custom`,
         name: newPhaseName.trim(),
         color: newPhaseColor,
+        startDate,
+        endDate,
       });
     }
 
@@ -220,7 +277,7 @@ export default function AddPhaseDialog({
       onSubmit(phasesToAdd);
       onClose();
     }
-  }, [tabValue, selectedBasePhaseIds, basePhases, newPhaseName, newPhaseColor, validatePhaseName, onSubmit, onClose]);
+  }, [tabValue, selectedBasePhaseIds, basePhases, newPhaseName, newPhaseColor, validatePhaseName, onSubmit, onClose, existingPhases, planStartDate, planEndDate]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Escape") {
@@ -290,7 +347,7 @@ export default function AddPhaseDialog({
                 mb: 0.25,
               }}
             >
-              Agregar Fases
+              Add Phases
             </Typography>
             <Typography
               variant="body2"
@@ -300,7 +357,7 @@ export default function AddPhaseDialog({
                 fontWeight: 400,
               }}
             >
-              Selecciona fases del mantenimiento o crea una nueva fase solo para este plan
+              Select phases from maintenance or create a new phase only for this plan
             </Typography>
           </Box>
         </Stack>
@@ -324,14 +381,14 @@ export default function AddPhaseDialog({
           <Tab
             icon={<LibraryBooksIcon sx={{ fontSize: 18 }} />}
             iconPosition="start"
-            label="Del Mantenimiento"
+            label="From Maintenance"
             id="add-phase-tab-0"
             aria-controls="add-phase-tabpanel-0"
           />
           <Tab
             icon={<CreateIcon sx={{ fontSize: 18 }} />}
             iconPosition="start"
-            label="Nueva Fase"
+            label="New Phase"
             id="add-phase-tab-1"
             aria-controls="add-phase-tabpanel-1"
           />
@@ -361,10 +418,10 @@ export default function AddPhaseDialog({
               }}
             >
               <Typography variant="body2" sx={{ fontWeight: 500, mb: 0.5 }}>
-                Todas las fases del mantenimiento ya están en el plan
+                All maintenance phases are already in the plan
               </Typography>
               <Typography variant="body2">
-                Puedes crear una nueva fase solo para este plan usando la pestaña "Nueva Fase"
+                You can create a new phase only for this plan using the "New Phase" tab
               </Typography>
             </Alert>
           ) : (
@@ -398,8 +455,8 @@ export default function AddPhaseDialog({
                   }}
                 >
                   {selectedBasePhaseIds.size === availableBasePhases.length
-                    ? "Deseleccionar todas"
-                    : "Seleccionar todas"}
+                    ? "Deselect all"
+                    : "Select all"}
                 </Button>
               </Box>
 
@@ -707,8 +764,8 @@ export default function AddPhaseDialog({
                     },
                   }}
                 >
-                  Esta fase solo existirá en este plan y no se guardará en el
-                  mantenimiento de fases
+                  This phase will only exist in this plan and will not be saved to
+                  phase maintenance
                 </Alert>
               </Fade>
             )}
@@ -740,7 +797,7 @@ export default function AddPhaseDialog({
             },
           }}
         >
-          Cancelar
+          Cancel
         </Button>
         <Button
           onClick={handleSubmit}
@@ -772,8 +829,8 @@ export default function AddPhaseDialog({
           }}
         >
           {tabValue === 0
-            ? `Agregar ${selectedBasePhaseIds.size} Fase${selectedBasePhaseIds.size !== 1 ? "s" : ""}`
-            : "Crear Fase"}
+            ? `Add ${selectedBasePhaseIds.size} Phase${selectedBasePhaseIds.size !== 1 ? "s" : ""}`
+            : "Create Phase"}
         </Button>
       </DialogActions>
     </Dialog>

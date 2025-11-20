@@ -76,7 +76,7 @@ export default function PhasesList({
             px: 1,
           }}
         >
-          <Tooltip title="Agregar fase" arrow placement="left">
+          <Tooltip title="Add phase" arrow placement="left">
             <IconButton
               size="small"
               onClick={onAdd}

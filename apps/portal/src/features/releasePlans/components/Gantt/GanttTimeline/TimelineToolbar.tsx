@@ -125,10 +125,10 @@ export function TimelineToolbar({
           <Tooltip
             title={
               isSaving
-                ? "Guardando..."
+                ? "Saving..."
                 : hasChanges
-                  ? "Guardar cambios del timeline"
-                  : "No hay cambios pendientes"
+                  ? "Save timeline changes"
+                  : "No pending changes"
             }
             arrow
             placement="bottom"

@@ -159,19 +159,19 @@ export function PlanFeaturesTab({
           } else {
             // Max retries reached - throw a user-friendly error
             setIsRemoving(null);
-            throw new Error(errorContext.userMessage || 'Error al remover la feature. Por favor, intente nuevamente.');
+            throw new Error(errorContext.userMessage || 'Error removing feature. Please try again.');
           }
         } else {
           // Not a retryable error, throw immediately with user-friendly message
           setIsRemoving(null);
-          throw new Error(errorContext.userMessage || error?.message || 'Error al remover la feature.');
+          throw new Error(errorContext.userMessage || error?.message || 'Error removing feature.');
         }
       }
     }
 
     // If we exhausted retries, throw the last error
     setIsRemoving(null);
-    throw lastError || new Error('Error al remover la feature.');
+    throw lastError || new Error('Error removing feature.');
   }, [planId, plan, planUpdatedAt, featureIds, allProductFeatures, updatePlanMutation, updateFeatureMutation, queryClient, onFeatureIdsChange]);
 
   // Handle add features - transactional, atomic, with optimistic locking
@@ -287,19 +287,19 @@ export function PlanFeaturesTab({
           } else {
             // Max retries reached - throw a user-friendly error
             setIsAdding(false);
-            throw new Error(errorContext.userMessage || 'Error al agregar las features. Por favor, intente nuevamente.');
+            throw new Error(errorContext.userMessage || 'Error adding features. Please try again.');
           }
         } else {
           // Not a retryable error, throw immediately with user-friendly message
           setIsAdding(false);
-          throw new Error(errorContext.userMessage || error?.message || 'Error al agregar las features.');
+          throw new Error(errorContext.userMessage || error?.message || 'Error adding features.');
         }
       }
     }
 
     // If we exhausted retries, throw the last error
     setIsAdding(false);
-    throw lastError || new Error('Error al agregar las features.');
+    throw lastError || new Error('Error adding features.');
   }, [planId, plan, planUpdatedAt, featureIds, allProductFeatures, updatePlanMutation, updateFeatureMutation, queryClient, onFeatureIdsChange]);
 
   if (!productId) {
@@ -321,76 +321,95 @@ export function PlanFeaturesTab({
   return (
     <Box
       sx={{
-        p: { xs: 1.5, sm: 2 },
+        p: { xs: 1, sm: 1.5 },
         height: "100%",
         display: "flex",
         flexDirection: "column",
+        overflow: "hidden",
       }}
     >
-      <Stack spacing={1.5} sx={{ flex: 1, minHeight: 0 }}>
+      <Stack spacing={1} sx={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", height: "100%" }}>
         {/* Header */}
         <Box
           sx={{
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
+            gap: 1,
             pb: 1,
             borderBottom: `1px solid ${alpha(theme.palette.divider, 0.08)}`,
+            flexShrink: 0,
+            flexWrap: { xs: "wrap", sm: "nowrap" },
           }}
         >
           <Typography 
             variant="subtitle2" 
             sx={{ 
               fontWeight: 600,
-              fontSize: "0.8125rem",
+              fontSize: { xs: "0.625rem", sm: "0.6875rem" },
               color: theme.palette.text.primary,
+              flex: { xs: "1 1 100%", sm: "0 1 auto" },
             }}
           >
             Features ({planFeatures.length})
           </Typography>
-          <Tooltip title="Agregar features del producto" arrow placement="top">
+          <Tooltip title="Add product features" arrow placement="top">
             <Button
               variant="outlined"
               size="small"
-              startIcon={isAdding ? <CircularProgress size={16} /> : <AddIcon sx={{ fontSize: 16 }} />}
+              startIcon={isAdding ? <CircularProgress size={14} /> : <AddIcon sx={{ fontSize: 14 }} />}
               onClick={() => setSelectDialogOpen(true)}
               disabled={isAdding || !productId}
               sx={{
                 textTransform: "none",
-                fontSize: "0.75rem",
+                fontSize: { xs: "0.625rem", sm: "0.6875rem" },
                 fontWeight: 500,
-                px: 1.5,
+                px: { xs: 1, sm: 1.25 },
                 py: 0.5,
                 borderRadius: 1,
-                minHeight: 28,
+                minHeight: 26,
                 borderColor: alpha(theme.palette.primary.main, 0.5),
                 color: theme.palette.primary.main,
+                flexShrink: 0,
                 "&:hover": {
                   borderColor: theme.palette.primary.main,
                   bgcolor: alpha(theme.palette.primary.main, 0.08),
                 },
               }}
             >
-              {isAdding ? "Agregando..." : "Agregar"}
+              {isAdding ? "Adding..." : "Add"}
             </Button>
           </Tooltip>
         </Box>
 
         {/* Features Table */}
-        <Box sx={{ flex: 1, overflow: "auto", minHeight: 0 }}>
+        <Box 
+          sx={{ 
+            flex: 1, 
+            overflow: "hidden", 
+            minHeight: 0,
+            display: "flex",
+            flexDirection: "column",
+            width: "100%",
+          }}
+        >
           {!productId ? (
             <Box
               sx={{
                 p: 3,
                 textAlign: "center",
                 color: "text.secondary",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                height: "100%",
               }}
             >
               <Typography 
                 variant="body2"
-                sx={{ fontSize: "0.8125rem" }}
+                sx={{ fontSize: "0.6875rem" }}
               >
-                Por favor seleccione un producto en la pestaña de Datos Comunes para gestionar features.
+                Please select a product in the Common Data tab to manage features.
               </Typography>
             </Box>
           ) : isLoadingFeatures && allProductFeatures.length === 0 ? (
@@ -400,6 +419,12 @@ export function PlanFeaturesTab({
                 p: 3,
                 textAlign: "center",
                 color: "text.secondary",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                height: "100%",
+                gap: 1,
               }}
             >
               <CircularProgress size={24} />
@@ -410,22 +435,28 @@ export function PlanFeaturesTab({
                 p: 3,
                 textAlign: "center",
                 color: "text.secondary",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                height: "100%",
               }}
             >
               <Typography 
                 variant="body2"
-                sx={{ fontSize: "0.8125rem" }}
+                sx={{ fontSize: "0.6875rem" }}
               >
-                No hay features agregadas a este plan. Haz clic en "Agregar" para
-                seleccionar features del producto.
+                No features added to this plan. Click "Add" to
+                select features from the product.
               </Typography>
             </Box>
           ) : (
-            <FeaturesTable
-              features={planFeatures}
-              onDeleteFeature={handleDeleteFeature}
-              isRemoving={isRemoving}
-            />
+            <Box sx={{ flex: 1, overflow: "hidden", minHeight: 0, display: "flex", flexDirection: "column", width: "100%" }}>
+              <FeaturesTable
+                features={planFeatures}
+                onDeleteFeature={handleDeleteFeature}
+                isRemoving={isRemoving}
+              />
+            </Box>
           )}
         </Box>
       </Stack>

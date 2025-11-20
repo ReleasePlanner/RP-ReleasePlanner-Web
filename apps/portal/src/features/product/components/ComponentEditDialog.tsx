@@ -434,17 +434,17 @@ export function ComponentEditDialog({
       open={open}
       onClose={onClose}
       editing={editing}
-      title={editing ? "Editar Componente" : "Nuevo Componente"}
+      title={editing ? "Edit Component" : "New Component"}
       subtitle={
         selectedProductName
-          ? `Producto: ${selectedProductName}`
+          ? `Product: ${selectedProductName}`
           : editing
-          ? "Modifica los detalles del componente"
-          : "Agrega un nuevo componente al producto"
+          ? "Modify component details"
+          : "Add a new component to the product"
       }
       maxWidth="sm"
       onSave={handleSave}
-      saveButtonText={editing ? "Guardar Cambios" : "Crear Componente"}
+      saveButtonText={editing ? "Save Changes" : "Create Component"}
       isFormValid={isFormValid}
     >
       <Stack spacing={3}>
@@ -601,13 +601,13 @@ export function ComponentEditDialog({
               ) : componentTypesError ? (
                 <MenuItem disabled>
                   <Alert severity="error" sx={{ width: "100%" }}>
-                    Error al cargar los tipos de componente
+                    Error loading component types
                   </Alert>
                 </MenuItem>
               ) : componentTypes.length === 0 ? (
                 <MenuItem disabled>
                   <Typography variant="body2" color="text.secondary" sx={{ fontSize: "0.6875rem" }}>
-                    No hay tipos de componente disponibles
+                    No component types available
                   </Typography>
                 </MenuItem>
               ) : (
@@ -620,7 +620,7 @@ export function ComponentEditDialog({
             </Select>
             {componentTypesError && (
               <Typography variant="caption" color="error" sx={{ mt: 0.5, ml: 1.75 }}>
-                Error al cargar los tipos de componente. Por favor, actualiza la página.
+                Error loading component types. Please refresh the page.
               </Typography>
             )}
           </FormControl>
@@ -725,7 +725,7 @@ export function ComponentEditDialog({
                 </Stack>
 
                 <TextField
-                  label="Nueva Versión"
+                  label="New Version"
                   fullWidth
                   size="small"
                   value={newVersion}
@@ -736,8 +736,8 @@ export function ComponentEditDialog({
                     versionError
                       ? versionError
                       : currentVersion
-                      ? `Ingresa una nueva versión (actual: ${currentVersion}). Deja vacío para mantener la versión actual. Formato: MAJOR.SUBVERSION.MINOR.PATCH (ej: 1.0.0.0). Versiones parciales como '1' o '1.2' se completarán automáticamente.`
-                      : "Ingresa una nueva versión. Formato: MAJOR.SUBVERSION.MINOR.PATCH (ej: 1.0.0.0). Versiones parciales como '1' o '1.2' se completarán automáticamente."
+                      ? `Enter a new version (current: ${currentVersion}). Leave empty to keep the current version. Format: MAJOR.SUBVERSION.MINOR.PATCH (e.g., 1.0.0.0). Partial versions like '1' or '1.2' will be automatically completed.`
+                      : "Enter a new version. Format: MAJOR.SUBVERSION.MINOR.PATCH (e.g., 1.0.0.0). Partial versions like '1' or '1.2' will be automatically completed."
                   }
                   error={!!versionError}
                   InputLabelProps={{
@@ -853,7 +853,7 @@ export function ComponentEditDialog({
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6 }}>
                   <TextField
-                    label="Nueva Versión"
+                    label="New Version"
                     fullWidth
                     size="small"
                     value={newVersion}

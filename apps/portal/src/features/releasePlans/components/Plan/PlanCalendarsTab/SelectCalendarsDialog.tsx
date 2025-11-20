@@ -4,10 +4,6 @@
  */
 import { useState, useMemo } from "react";
 import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   Button,
   Checkbox,
   Table,
@@ -30,6 +26,7 @@ import {
   MenuItem,
   CircularProgress,
   Alert,
+  Stack,
 } from "@mui/material";
 import {
   Search as SearchIcon,
@@ -40,6 +37,7 @@ import type { Calendar } from "@/features/calendar/types";
 import { useCountries } from "@/api/hooks/useCountries";
 import { useCalendars } from "@/api/hooks/useCalendars";
 import type { Calendar as APICalendar, CalendarDay as APICalendarDay } from "@/api/services/calendars.service";
+import { BaseEditDialog } from "@/components/BaseEditDialog";
 
 export type SelectCalendarsDialogProps = {
   open: boolean;
@@ -135,14 +133,6 @@ export function SelectCalendarsDialog({
     }
   };
 
-  const handleAdd = () => {
-    if (selectedIds.length > 0) {
-      onAddCalendars(selectedIds);
-      setSelectedIds([]);
-      setSearchQuery("");
-    }
-  };
-
   const handleClose = () => {
     setSelectedIds([]);
     setSearchQuery("");
@@ -162,129 +152,167 @@ export function SelectCalendarsDialog({
   const isSomeSelected =
     selectedIds.length > 0 && selectedIds.length < filteredCalendars.length;
 
+  const handleAdd = () => {
+    if (selectedIds.length > 0) {
+      onAddCalendars(selectedIds);
+      setSelectedIds([]);
+      setSearchQuery("");
+    }
+  };
+
   return (
-    <Dialog
+    <BaseEditDialog
       open={open}
       onClose={handleClose}
-      maxWidth="md"
-      fullWidth
-      PaperProps={{
-        sx: {
-          height: "80vh",
-          maxHeight: 800,
-        },
-      }}
+      editing={false}
+      title="Select Calendars"
+      subtitle={selectedCountryId ? undefined : "Select a country to view calendars"}
+      subtitleChip={selectedIds.length > 0 ? `${selectedIds.length} selected` : undefined}
+      maxWidth="lg"
+      fullWidth={true}
+      onSave={handleAdd}
+      saveButtonText={`Add ${selectedIds.length > 0 ? `(${selectedIds.length})` : ""}`}
+      saveButtonDisabled={selectedIds.length === 0}
+      isFormValid={selectedIds.length > 0}
+      showDefaultActions={true}
+      cancelButtonText="Cancel"
     >
-      <DialogTitle>
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-          }}
-        >
-          <Typography variant="h6" component="div">
-            Seleccionar Calendarios para Agregar
-          </Typography>
-          {selectedIds.length > 0 && (
-            <Typography variant="body2" color="primary">
-              {selectedIds.length} selected
-            </Typography>
-          )}
-        </Box>
-      </DialogTitle>
-
-      <DialogContent
-        dividers
-        sx={{ p: 0, display: "flex", flexDirection: "column" }}
-      >
+      {/* Main Content */}
+      <Box sx={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", overflow: "hidden", width: "100%" }}>
         {/* Toolbar */}
-        <Box
+        <Stack
+          spacing={1}
           sx={{
-            p: 2,
+            pb: 1.5,
+            mb: 1,
             borderBottom: `1px solid ${alpha(theme.palette.divider, 0.08)}`,
-            display: "flex",
-            gap: 2,
-            alignItems: "center",
-            flexWrap: "wrap",
+            flexShrink: 0,
           }}
         >
-          {/* Country Filter */}
-          <FormControl
-            size="small"
+          {/* Country Filter and Search Row */}
+          <Box
             sx={{
-              minWidth: 200,
-              flex: { xs: "1 1 100%", sm: "0 1 200px" },
+              display: "flex",
+              gap: 1,
+              alignItems: "center",
+              flexWrap: "wrap",
             }}
           >
-            <InputLabel id="country-filter-label">País</InputLabel>
-            <Select
-              labelId="country-filter-label"
-              id="country-filter-select"
-              value={selectedCountryId}
-              label="País"
-              onChange={(e) => handleCountryChange(e.target.value)}
-              disabled={countriesLoading}
-              required
-            >
-              {countries.map((country) => (
-                <MenuItem key={country.id} value={country.id}>
-                  {country.name} ({country.code})
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-
-          {/* Search */}
-          <TextField
-            id="select-calendars-search-input"
-            name="calendarsSearch"
-            size="small"
-            placeholder="Buscar calendarios..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            slotProps={{
-              input: {
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <SearchIcon fontSize="small" />
-                  </InputAdornment>
-                ),
-              },
-            }}
-            sx={{
-              flex: { xs: "1 1 100%", sm: "0 1 250px" },
-              minWidth: 200,
-            }}
-          />
-
-          {/* Select All */}
-          {filteredCalendars.length > 0 && (
-            <Button
+            {/* Country Filter */}
+            <FormControl
               size="small"
-              onClick={handleSelectAll}
-              startIcon={
-                isAllSelected ? <CheckBox /> : <CheckBoxOutlineBlank />
-              }
-              sx={{ textTransform: "none" }}
+              sx={{
+                minWidth: 160,
+                flex: { xs: "1 1 100%", sm: "0 1 200px" },
+              }}
             >
-              {isAllSelected ? "Deseleccionar todo" : "Seleccionar todo"}
-            </Button>
-          )}
-        </Box>
+              <InputLabel 
+                id="country-filter-label"
+                sx={{ fontSize: "0.625rem" }}
+              >
+                Country
+              </InputLabel>
+              <Select
+                labelId="country-filter-label"
+                id="country-filter-select"
+                value={selectedCountryId}
+                label="Country"
+                onChange={(e) => handleCountryChange(e.target.value)}
+                disabled={countriesLoading}
+                required
+                sx={{
+                  fontSize: "0.6875rem",
+                  "& .MuiSelect-select": {
+                    py: 0.75,
+                    fontSize: "0.6875rem",
+                  },
+                }}
+              >
+                {countries.map((country) => (
+                  <MenuItem 
+                    key={country.id} 
+                    value={country.id}
+                    sx={{ fontSize: "0.6875rem", py: 0.5, minHeight: 32 }}
+                  >
+                    {country.name} ({country.code})
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
+            {/* Search */}
+            <TextField
+              id="select-calendars-search-input"
+              name="calendarsSearch"
+              size="small"
+              placeholder="Search calendars..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              slotProps={{
+                input: {
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon fontSize="small" sx={{ fontSize: 16, color: theme.palette.text.secondary }} />
+                    </InputAdornment>
+                  ),
+                },
+              }}
+              sx={{
+                flex: { xs: "1 1 100%", sm: "0 1 240px" },
+                minWidth: 180,
+                fontSize: "0.6875rem",
+                "& .MuiOutlinedInput-root": {
+                  borderRadius: 1.5,
+                  fontSize: "0.6875rem",
+                },
+                "& input": {
+                  py: 0.75,
+                  fontSize: "0.6875rem",
+                },
+              }}
+            />
+
+            {/* Select All */}
+            {filteredCalendars.length > 0 && (
+              <Button
+                size="small"
+                onClick={handleSelectAll}
+                startIcon={
+                  isAllSelected ? <CheckBox sx={{ fontSize: 16 }} /> : <CheckBoxOutlineBlank sx={{ fontSize: 16 }} />
+                }
+                sx={{ 
+                  textTransform: "none",
+                  fontSize: "0.6875rem",
+                  px: 1.25,
+                  py: 0.5,
+                  ml: "auto",
+                }}
+              >
+                {isAllSelected ? "Deselect all" : "Select all"}
+              </Button>
+            )}
+          </Box>
+        </Stack>
 
         {/* Calendars Table */}
-        <Box sx={{ flex: 1, overflow: "auto", minHeight: 0 }}>
+        <Box sx={{ flex: 1, overflow: "auto", minHeight: 0, width: "100%" }}>
           {!selectedCountryId ? (
             <Box
               sx={{
                 p: 4,
                 textAlign: "center",
                 color: "text.secondary",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                height: "100%",
               }}
             >
-              <Typography variant="body2">
-                Por favor seleccione un país para ver los calendarios disponibles.
+              <Typography 
+                variant="body2"
+                sx={{ fontSize: "0.6875rem" }}
+              >
+                Please select a country to view available calendars.
               </Typography>
             </Box>
           ) : calendarsLoading ? (
@@ -295,18 +323,32 @@ export function SelectCalendarsDialog({
                 justifyContent: "center",
                 alignItems: "center",
                 flexDirection: "column",
-                gap: 2,
+                gap: 1,
               }}
             >
-              <CircularProgress size={40} />
-              <Typography variant="body2" color="text.secondary">
-                Cargando calendarios...
+              <CircularProgress size={24} />
+              <Typography 
+                variant="body2" 
+                color="text.secondary"
+                sx={{ fontSize: "0.6875rem" }}
+              >
+                Loading calendars...
               </Typography>
             </Box>
           ) : calendarsError ? (
-            <Box sx={{ p: 2 }}>
-              <Alert severity="error">
-                Error al cargar los calendarios. Por favor intente nuevamente.
+            <Box sx={{ p: 1.5 }}>
+              <Alert 
+                severity="error"
+                sx={{
+                  "& .MuiAlert-message": {
+                    fontSize: "0.6875rem",
+                  },
+                  "& .MuiAlert-icon": {
+                    fontSize: "1rem",
+                  },
+                }}
+              >
+                Error loading calendars. Please try again.
               </Alert>
             </Box>
           ) : filteredCalendars.length === 0 ? (
@@ -315,20 +357,42 @@ export function SelectCalendarsDialog({
                 p: 4,
                 textAlign: "center",
                 color: "text.secondary",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                height: "100%",
               }}
             >
-              <Typography variant="body2">
+              <Typography 
+                variant="body2"
+                sx={{ fontSize: "0.6875rem" }}
+              >
                 {searchQuery
-                  ? "No hay calendarios que coincidan con la búsqueda."
-                  : "No hay calendarios disponibles para este país."}
+                  ? "No calendars found matching search."
+                  : "No calendars available for this country."}
               </Typography>
             </Box>
           ) : (
-            <TableContainer>
-              <Table size="small" stickyHeader>
+            <TableContainer sx={{ width: "100%", maxHeight: "100%" }}>
+              <Table 
+                size="small" 
+                stickyHeader 
+                sx={{ 
+                  width: "100%",
+                  tableLayout: "auto",
+                }}
+              >
                 <TableHead>
                   <TableRow>
-                    <TableCell padding="checkbox" sx={{ width: 50 }}>
+                    <TableCell 
+                      padding="checkbox" 
+                      sx={{ 
+                        width: 48,
+                        backgroundColor: theme.palette.mode === "dark" 
+                          ? alpha(theme.palette.background.paper, 0.8)
+                          : theme.palette.background.paper,
+                      }}
+                    >
                       <Checkbox
                         id="select-all-calendars-checkbox"
                         name="selectAllCalendars"
@@ -338,10 +402,54 @@ export function SelectCalendarsDialog({
                         size="small"
                       />
                     </TableCell>
-                    <TableCell sx={{ fontWeight: 600 }}>Calendario</TableCell>
-                    <TableCell sx={{ fontWeight: 600 }}>País</TableCell>
-                    <TableCell sx={{ fontWeight: 600 }}>Descripción</TableCell>
-                    <TableCell sx={{ fontWeight: 600 }}>Días</TableCell>
+                    <TableCell 
+                      sx={{ 
+                        fontWeight: 600,
+                        fontSize: "0.625rem",
+                        py: 1,
+                        backgroundColor: theme.palette.mode === "dark" 
+                          ? alpha(theme.palette.background.paper, 0.8)
+                          : theme.palette.background.paper,
+                      }}
+                    >
+                      Calendar
+                    </TableCell>
+                    <TableCell 
+                      sx={{ 
+                        fontWeight: 600,
+                        fontSize: "0.625rem",
+                        py: 1,
+                        backgroundColor: theme.palette.mode === "dark" 
+                          ? alpha(theme.palette.background.paper, 0.8)
+                          : theme.palette.background.paper,
+                      }}
+                    >
+                      Country
+                    </TableCell>
+                    <TableCell 
+                      sx={{ 
+                        fontWeight: 600,
+                        fontSize: "0.625rem",
+                        py: 1,
+                        backgroundColor: theme.palette.mode === "dark" 
+                          ? alpha(theme.palette.background.paper, 0.8)
+                          : theme.palette.background.paper,
+                      }}
+                    >
+                      Description
+                    </TableCell>
+                    <TableCell 
+                      sx={{ 
+                        fontWeight: 600,
+                        fontSize: "0.625rem",
+                        py: 1,
+                        backgroundColor: theme.palette.mode === "dark" 
+                          ? alpha(theme.palette.background.paper, 0.8)
+                          : theme.palette.background.paper,
+                      }}
+                    >
+                      Days
+                    </TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -374,12 +482,13 @@ export function SelectCalendarsDialog({
                             size="small"
                           />
                         </TableCell>
-                        <TableCell>
+                        <TableCell sx={{ py: 1 }}>
                           <Tooltip title={calendar.name} arrow>
                             <Typography
                               variant="body2"
                               sx={{
                                 fontWeight: isSelected ? 600 : 400,
+                                fontSize: "0.6875rem",
                                 maxWidth: 200,
                                 overflow: "hidden",
                                 textOverflow: "ellipsis",
@@ -390,35 +499,39 @@ export function SelectCalendarsDialog({
                             </Typography>
                           </Tooltip>
                         </TableCell>
-                        <TableCell>
+                        <TableCell sx={{ py: 1 }}>
                           {calendar.country ? (
                             <Chip
                               label={calendar.country.name}
                               size="small"
                               sx={{
-                                height: 22,
-                                fontSize: "0.75rem",
+                                height: 18,
+                                fontSize: "0.625rem",
                                 fontWeight: 500,
-                                bgcolor: alpha(theme.palette.primary.main, 0.08),
+                                bgcolor: alpha(theme.palette.primary.main, 0.1),
                                 color: theme.palette.primary.main,
+                                "& .MuiChip-label": {
+                                  px: 0.75,
+                                },
                               }}
                             />
                           ) : (
                             <Typography
                               variant="body2"
                               color="text.disabled"
-                              sx={{ fontSize: "0.75rem" }}
+                              sx={{ fontSize: "0.6875rem" }}
                             >
                               -
                             </Typography>
                           )}
                         </TableCell>
-                        <TableCell>
+                        <TableCell sx={{ py: 1 }}>
                           <Tooltip title={calendar.description || ""} arrow>
                             <Typography
                               variant="body2"
                               color="text.secondary"
                               sx={{
+                                fontSize: "0.6875rem",
                                 maxWidth: 300,
                                 overflow: "hidden",
                                 textOverflow: "ellipsis",
@@ -429,16 +542,19 @@ export function SelectCalendarsDialog({
                             </Typography>
                           </Tooltip>
                         </TableCell>
-                        <TableCell>
+                        <TableCell sx={{ py: 1 }}>
                           <Chip
-                            label={`${calendar.days.length} día${
-                              calendar.days.length !== 1 ? "s" : ""
+                            label={`${calendar.days.length} ${
+                              calendar.days.length !== 1 ? "days" : "day"
                             }`}
                             size="small"
                             sx={{
-                              height: 22,
-                              fontSize: "0.75rem",
+                              height: 18,
+                              fontSize: "0.625rem",
                               fontWeight: 500,
+                              "& .MuiChip-label": {
+                                px: 0.75,
+                              },
                             }}
                           />
                         </TableCell>
@@ -450,24 +566,8 @@ export function SelectCalendarsDialog({
             </TableContainer>
           )}
         </Box>
-      </DialogContent>
-
-      <DialogActions
-        sx={{
-          p: 2,
-          borderTop: `1px solid ${alpha(theme.palette.divider, 0.08)}`,
-        }}
-      >
-        <Button onClick={handleClose}>Cancelar</Button>
-        <Button
-          onClick={handleAdd}
-          variant="contained"
-          disabled={selectedIds.length === 0}
-        >
-          Agregar {selectedIds.length > 0 ? `(${selectedIds.length})` : ""}
-        </Button>
-      </DialogActions>
-    </Dialog>
+      </Box>
+    </BaseEditDialog>
   );
 }
 

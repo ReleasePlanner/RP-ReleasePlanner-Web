@@ -28,4 +28,8 @@ export const PreviewContainer = styled.div<{
   width: ${(props) => props.width}px;
   height: ${(props) => props.height}px;
   z-index: ${(props) => props.zIndex};
+  will-change: transform, left, width;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-font-smoothing: subpixel-antialiased;
 `;

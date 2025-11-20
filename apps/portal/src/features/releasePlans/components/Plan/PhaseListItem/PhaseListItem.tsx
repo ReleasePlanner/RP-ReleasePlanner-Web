@@ -81,7 +81,7 @@ export default function PhaseListItem({
         }}
       >
         {/* Edit icon positioned at the left edge of color indicator */}
-        <Tooltip title="Editar fase" arrow placement="top">
+        <Tooltip title="Edit phase" arrow placement="top">
           <IconButton
             size="small"
             aria-label="Edit phase"
@@ -214,7 +214,7 @@ export default function PhaseListItem({
         )}
         
         {onDelete && (
-          <Tooltip title="Eliminar fase" arrow placement="top">
+          <Tooltip title="Delete phase" arrow placement="top">
             <IconButton
               size="small"
               aria-label="Delete phase"

@@ -81,22 +81,43 @@ const PlanCard = forwardRef<PlanCardHandle, PlanCardProps>(function PlanCard({ p
   // Local state for pending changes - only saved when user clicks save button
   const [localMetadata, setLocalMetadata] = useState(originalMetadata);
   
+  // Use ref to track the last synced updatedAt to prevent overwriting local edits
+  const lastSyncedUpdatedAtRef = useRef<string | undefined>(plan.updatedAt);
+  const isEditingRef = useRef(false);
+  
   // Sync local metadata when plan changes from external source
+  // Only sync if the plan's updatedAt has changed (indicating a real update from server)
+  // Don't sync if we're currently editing locally
   useEffect(() => {
-    // Debug: Log references when plan changes
-    if (originalMetadata.references && originalMetadata.references.length > 0) {
-      console.log('[PlanCard] Syncing references from originalMetadata:', {
-        count: originalMetadata.references.length,
-        references: originalMetadata.references.map(r => ({ id: r.id, type: r.type, title: r.title })),
+    // Only sync if updatedAt changed and we're not currently editing
+    const updatedAtChanged = plan.updatedAt !== lastSyncedUpdatedAtRef.current;
+    
+    if (updatedAtChanged && !isEditingRef.current) {
+      console.log('[PlanCard] Syncing localMetadata from originalMetadata (real update from server):', {
+        planId: plan.id,
+        planUpdatedAt: plan.updatedAt,
+        lastSyncedUpdatedAt: lastSyncedUpdatedAtRef.current,
+        originalPhasesCount: originalMetadata.phases?.length || 0,
+        localPhasesCount: localMetadata?.phases?.length || 0,
       });
-    } else {
-      console.log('[PlanCard] No references in originalMetadata:', {
-        references: originalMetadata.references,
-        referencesLength: originalMetadata.references?.length,
-      });
+      
+      // Debug: Log references when plan changes
+      if (originalMetadata.references && originalMetadata.references.length > 0) {
+        console.log('[PlanCard] Syncing references from originalMetadata:', {
+          count: originalMetadata.references.length,
+          references: originalMetadata.references.map(r => ({ id: r.id, type: r.type, title: r.title })),
+        });
+      } else {
+        console.log('[PlanCard] No references in originalMetadata:', {
+          references: originalMetadata.references,
+          referencesLength: originalMetadata.references?.length,
+        });
+      }
+      
+      setLocalMetadata(originalMetadata);
+      lastSyncedUpdatedAtRef.current = plan.updatedAt;
     }
-    setLocalMetadata(originalMetadata);
-  }, [originalMetadata]);
+  }, [plan.id, plan.updatedAt, originalMetadata]);
   
   // Get all features for the product to update their status (use originalMetadata.productId to avoid initialization error)
   const { data: allProductFeatures = [] } = useFeatures(originalMetadata?.productId);
@@ -977,14 +998,14 @@ const PlanCard = forwardRef<PlanCardHandle, PlanCardProps>(function PlanCard({ p
           // NEVER retry validation errors (400) - they won't succeed on retry
           if (errorContext.category === ErrorCategory.VALIDATION) {
             console.log('[handleSaveTab] Validation error - not retrying:', errorContext.userMessage);
-            throw new Error(errorContext.userMessage || error?.message || `Error de validación al guardar el tab ${tabIndex}.`);
+            throw new Error(errorContext.userMessage || error?.message || `Validation error saving tab ${tabIndex}.`);
           }
           
           // NEVER retry server errors (500) here - httpClient already handles retries
           // Only retry optimistic locking conflicts (409) and rate limits (429)
           if (errorContext.category === ErrorCategory.SERVER_ERROR) {
             console.log('[handleSaveTab] Server error - not retrying (httpClient handles retries):', errorContext.userMessage);
-            throw new Error(errorContext.userMessage || error?.message || `Error del servidor al guardar el tab ${tabIndex}.`);
+            throw new Error(errorContext.userMessage || error?.message || `Server error saving tab ${tabIndex}.`);
           }
           
           // Only retry concurrency conflicts (409) and rate limits (429) - these are handled here
@@ -1019,12 +1040,12 @@ const PlanCard = forwardRef<PlanCardHandle, PlanCardProps>(function PlanCard({ p
             } else {
               // Max retries reached - throw a user-friendly error
               console.log('[handleSaveTab] Max retries reached');
-              throw new Error(errorContext.userMessage || `Error al guardar el tab ${tabIndex}. Por favor, intente nuevamente.`);
+              throw new Error(errorContext.userMessage || `Error saving tab ${tabIndex}. Please try again.`);
             }
           } else {
             // Not a retryable error, throw immediately with user-friendly message
             console.log('[handleSaveTab] Non-retryable error - throwing immediately');
-            throw new Error(errorContext.userMessage || error?.message || `Error al guardar el tab ${tabIndex}.`);
+            throw new Error(errorContext.userMessage || error?.message || `Error saving tab ${tabIndex}.`);
           }
         }
       }
@@ -1033,7 +1054,7 @@ const PlanCard = forwardRef<PlanCardHandle, PlanCardProps>(function PlanCard({ p
       throw lastError || new Error(`Failed to save tab ${tabIndex} after multiple retries`);
     } catch (error: any) {
       // Show error to user via snackbar
-      const errorMessage = error?.message || `Error al guardar el tab ${tabIndex}. Por favor, intente nuevamente.`;
+      const errorMessage = error?.message || `Error saving tab ${tabIndex}. Please try again.`;
       console.error('[handleSaveTab] Error saving tab:', error);
       setErrorSnackbar({ open: true, message: errorMessage });
       throw error; // Re-throw to allow parent to handle if needed
@@ -1048,20 +1069,137 @@ const PlanCard = forwardRef<PlanCardHandle, PlanCardProps>(function PlanCard({ p
 
     while (retryCount < maxRetries) {
       try {
-        // Atomic update with optimistic locking
-        const savedPlan = await updatePlanMutation.mutateAsync({
-          id: plan.id,
-          data: createPartialUpdateDto(
-            plan,
-            {
-              phases: metadata.phases,
-              // Note: cellData has been removed
-          // cellData: metadata.cellData,
-              milestones: metadata.milestones,
-            },
-            plan.updatedAt // Pass original updatedAt for optimistic locking
-          ),
+        // Validate and filter phases data before sending
+        const phasesToSave = metadata.phases || [];
+        const validatedPhases = phasesToSave
+          .filter((p) => {
+            // Filter out invalid phases instead of throwing
+            if (!p.name || !p.startDate || !p.endDate) {
+              console.warn(`[PlanCard] Skipping invalid phase ${p.id}: missing required fields`, {
+                phaseId: p.id,
+                hasName: !!p.name,
+                hasStartDate: !!p.startDate,
+                hasEndDate: !!p.endDate,
+                phase: p,
+              });
+              return false;
+            }
+            if (p.startDate >= p.endDate) {
+              console.warn(`[PlanCard] Skipping invalid phase ${p.id}: endDate before or equal to startDate`, {
+                phaseId: p.id,
+                phaseName: p.name,
+                startDate: p.startDate,
+                endDate: p.endDate,
+              });
+              return false;
+            }
+            return true;
+          })
+          .map((p) => ({
+            name: p.name!.trim(),
+            startDate: p.startDate!,
+            endDate: p.endDate!,
+            color: p.color || "#185ABD",
+          }));
+        
+        // Log if any phases were filtered out
+        if (validatedPhases.length !== phasesToSave.length) {
+          console.warn(`[PlanCard] Filtered out ${phasesToSave.length - validatedPhases.length} invalid phases`, {
+            originalCount: phasesToSave.length,
+            validatedCount: validatedPhases.length,
+          });
+        }
+
+        // Create update DTO
+        const updateDto = createPartialUpdateDto(
+          plan,
+          {
+            phases: validatedPhases as typeof metadata.phases,
+            milestones: metadata.milestones,
+          },
+          plan.updatedAt // Pass original updatedAt for optimistic locking
+        );
+
+        // Log the data being sent for debugging
+        console.log('[PlanCard] Saving timeline with data:', {
+          planId: plan.id,
+          phasesCount: updateDto.phases?.length || 0,
+          milestonesCount: updateDto.milestones?.length || 0,
+          updatedAt: updateDto.updatedAt || plan.updatedAt || 'undefined',
+          planUpdatedAt: plan.updatedAt,
+          phases: updateDto.phases?.map(p => ({
+            name: p.name,
+            startDate: p.startDate,
+            endDate: p.endDate,
+            color: p.color,
+            hasName: !!p.name && p.name.trim() !== '',
+            hasStartDate: !!p.startDate && p.startDate.trim() !== '',
+            hasEndDate: !!p.endDate && p.endDate.trim() !== '',
+          })),
+          milestones: updateDto.milestones?.map(m => ({
+            name: m.name,
+            date: m.date,
+            phaseId: m.phaseId,
+          })),
         });
+        
+        // Log the full DTO separately for better visibility
+        console.log('[PlanCard] Full updateDto being sent:', JSON.stringify(updateDto, null, 2));
+        
+        // Validate phases one more time before sending
+        if (updateDto.phases) {
+          const invalidPhases = updateDto.phases.filter(
+            p => !p.name || !p.name.trim() || !p.startDate || !p.startDate.trim() || !p.endDate || !p.endDate.trim()
+          );
+          if (invalidPhases.length > 0) {
+            console.error('[PlanCard] Invalid phases detected in updateDto:', invalidPhases);
+            throw new Error(`Cannot save plan: ${invalidPhases.length} phase(s) are missing required fields (name, startDate, or endDate)`);
+          }
+          
+          // Validate date formats
+          const invalidDateFormats = updateDto.phases.filter(
+            p => {
+              try {
+                if (p.startDate) new Date(p.startDate);
+                if (p.endDate) new Date(p.endDate);
+                return false;
+              } catch {
+                return true;
+              }
+            }
+          );
+          if (invalidDateFormats.length > 0) {
+            console.error('[PlanCard] Invalid date formats detected:', invalidDateFormats);
+            throw new Error(`Cannot save plan: ${invalidDateFormats.length} phase(s) have invalid date formats`);
+          }
+        }
+
+        // Atomic update with optimistic locking
+        try {
+          const savedPlan = await updatePlanMutation.mutateAsync({
+            id: plan.id,
+            data: updateDto,
+          });
+          
+          console.log('[PlanCard] Plan saved successfully:', {
+            planId: savedPlan.id,
+            phasesCount: savedPlan.phases?.length || 0,
+          });
+        } catch (error: any) {
+          // Log detailed error information
+          console.error('[PlanCard] Error saving plan:', {
+            error,
+            errorMessage: error?.message,
+            errorResponse: error?.response,
+            errorData: error?.response?.data,
+            errorStatus: error?.response?.status,
+            errorStatusText: error?.response?.statusText,
+            updateDto: JSON.stringify(updateDto, null, 2),
+          });
+          
+          // Re-throw to be handled by the outer catch block
+          throw error;
+        }
         
         // Invalidate queries to ensure fresh data is fetched
         await queryClient.invalidateQueries({ queryKey: ['plans'] });
@@ -1083,8 +1221,36 @@ const PlanCard = forwardRef<PlanCardHandle, PlanCardProps>(function PlanCard({ p
       } catch (error: any) {
         lastError = error;
         
+        // Log detailed error information for debugging
+        console.error('[PlanCard] Error saving timeline:', {
+          error,
+          errorType: typeof error,
+          errorConstructor: error?.constructor?.name,
+          errorMessage: error?.message,
+          errorStatus: error?.statusCode || error?.response?.status || error?.status,
+          errorResponse: error?.response?.data,
+          errorResponseStatus: error?.response?.status,
+          errorResponseStatusText: error?.response?.statusText,
+          errorCode: error?.code,
+          errorName: error?.name,
+          errorStack: error?.stack,
+          retryCount,
+          maxRetries,
+          fullError: JSON.stringify(error, Object.getOwnPropertyNames(error), 2),
+        });
+        
         // Use advanced error categorization
         const errorContext = categorizeError(error);
+        
+        // Log error context
+        console.error('[PlanCard] Error context:', {
+          category: errorContext.category,
+          retryable: errorContext.retryable,
+          userMessage: errorContext.userMessage,
+          technicalMessage: errorContext.technicalMessage,
+          statusCode: errorContext.statusCode,
+          code: errorContext.code,
+        });
         
         // Check if it's a concurrency conflict or retryable error
         if (
@@ -1115,11 +1281,11 @@ const PlanCard = forwardRef<PlanCardHandle, PlanCardProps>(function PlanCard({ p
             continue;
           } else {
             // Max retries reached - throw a user-friendly error
-            throw new Error(errorContext.userMessage || 'Error al guardar el timeline. Por favor, intente nuevamente.');
+            throw new Error(errorContext.userMessage || 'Error saving timeline. Please try again.');
           }
         } else {
           // Not a retryable error, throw immediately with user-friendly message
-          throw new Error(errorContext.userMessage || error?.message || 'Error al guardar el timeline.');
+          throw new Error(errorContext.userMessage || error?.message || 'Error saving timeline.');
         }
       }
     }
@@ -1390,11 +1556,11 @@ const PlanCard = forwardRef<PlanCardHandle, PlanCardProps>(function PlanCard({ p
             continue;
           } else {
             // Max retries reached - throw a user-friendly error
-            throw new Error(errorContext.userMessage || 'Error al guardar. Por favor, intente nuevamente.');
+            throw new Error(errorContext.userMessage || 'Error saving. Please try again.');
           }
         } else {
           // Not a retryable error, throw immediately with user-friendly message
-          throw new Error(errorContext.userMessage || error?.message || 'Error al guardar.');
+          throw new Error(errorContext.userMessage || error?.message || 'Error saving.');
         }
       }
     }
@@ -1526,6 +1692,8 @@ const PlanCard = forwardRef<PlanCardHandle, PlanCardProps>(function PlanCard({ p
         onClose={() => setPhaseOpen(false)}
         onSubmit={handleAddPhaseOptimized}
         existingPhases={metadata.phases ?? []}
+        planStartDate={metadata.startDate}
+        planEndDate={metadata.endDate}
       />
 
       <PhaseEditDialog
@@ -1534,15 +1702,74 @@ const PlanCard = forwardRef<PlanCardHandle, PlanCardProps>(function PlanCard({ p
         planPhases={metadata.phases || []}
         onCancel={() => setEditOpen(false)}
         onSave={(updatedPhase) => {
+          // Mark that we're editing to prevent sync from overwriting
+          isEditingRef.current = true;
+          
           // Only update local state - save via save button
-          const updatedPhases = (metadata.phases || []).map((p) =>
-            p.id === updatedPhase.id ? updatedPhase : p
-          );
-          setLocalMetadata(prev => ({
-            ...prev,
-                phases: updatedPhases,
-          }));
-            setEditOpen(false);
+          console.log('[PlanCard] Saving edited phase:', {
+            updatedPhaseId: updatedPhase.id,
+            updatedPhaseName: updatedPhase.name,
+            updatedPhaseStartDate: updatedPhase.startDate,
+            updatedPhaseEndDate: updatedPhase.endDate,
+            existingPhases: (metadata.phases || []).map(p => ({ id: p.id, name: p.name, startDate: p.startDate, endDate: p.endDate })),
+          });
+          
+          // Ensure the phase has all required fields before saving
+          if (!updatedPhase.id || !updatedPhase.name || !updatedPhase.startDate || !updatedPhase.endDate) {
+            console.error('[PlanCard] Cannot save phase - missing required fields:', {
+              phase: updatedPhase,
+              hasId: !!updatedPhase.id,
+              hasName: !!updatedPhase.name,
+              hasStartDate: !!updatedPhase.startDate,
+              hasEndDate: !!updatedPhase.endDate,
+            });
+            isEditingRef.current = false;
+            return;
+          }
+          
+          // Find the phase by ID and update it
+          const existingPhaseIndex = (metadata.phases || []).findIndex((p) => p.id === updatedPhase.id);
+          
+          if (existingPhaseIndex < 0) {
+            // Phase doesn't exist - this shouldn't happen, but log it
+            console.error('[PlanCard] Phase not found for update:', {
+              phaseId: updatedPhase.id,
+              phaseName: updatedPhase.name,
+              existingPhases: (metadata.phases || []).map(p => ({ id: p.id, name: p.name })),
+            });
+            isEditingRef.current = false;
+            return;
+          }
+          
+          // Phase exists - update it
+          const updatedPhases = [...(metadata.phases || [])];
+          updatedPhases[existingPhaseIndex] = updatedPhase;
+          
+          console.log('[PlanCard] Phase updated successfully:', {
+            phaseId: updatedPhase.id,
+            phaseName: updatedPhase.name,
+            index: existingPhaseIndex,
+            totalPhases: updatedPhases.length,
+          });
+          
+          setLocalMetadata(prev => {
+            const newMetadata = {
+              ...prev,
+              phases: updatedPhases,
+            };
+            console.log('[PlanCard] Updated localMetadata with phases:', {
+              phaseCount: newMetadata.phases?.length || 0,
+              phases: newMetadata.phases?.map(p => ({ id: p.id, name: p.name, startDate: p.startDate, endDate: p.endDate })),
+            });
+            return newMetadata;
+          });
+          
+          setEditOpen(false);
+          
+          // Reset editing flag after a short delay to allow state updates to complete
+          setTimeout(() => {
+            isEditingRef.current = false;
+          }, 100);
         }}
       />
 

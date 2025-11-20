@@ -23,6 +23,7 @@ import {
   useDeleteFeature,
 } from "../api/hooks";
 import { useITOwners } from "../api/hooks/useITOwners";
+import { categorizeError } from "@/api/resilience/ErrorHandler";
 import { useFeatureCategories } from "../api/hooks/useFeatureCategories";
 import type { Feature as APIFeature } from "../api/services/features.service";
 
@@ -255,9 +256,21 @@ export function FeatureMaintenancePage() {
         });
       }
       handleCloseDialog();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving feature:', error);
-      alert("Error saving feature. Please try again.");
+      
+      // Use ErrorHandler to get user-friendly message
+      const errorContext = categorizeError(error);
+      let errorMessage = errorContext.userMessage;
+      
+      // For 409 Conflict errors, try to extract the specific backend message
+      if (error?.statusCode === 409 && error?.message) {
+        // Backend sends: "Feature with name "X" already exists"
+        // Use the backend message directly as it's more specific
+        errorMessage = error.message;
+      }
+      
+      alert(errorMessage);
     }
   };
 

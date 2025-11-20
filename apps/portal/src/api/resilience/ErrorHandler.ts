@@ -155,11 +155,11 @@ export function categorizeError(error: any): ErrorContext {
   }
 
   // Conflict errors (including optimistic locking)
-  if (error?.statusCode === 409 || error?.code === 'CONFLICT' || error?.code === 'CONCURRENT_MODIFICATION') {
+  if (error?.statusCode === 409 || error?.code === 'CONFLICT' || error?.code === 'CONCURRENT_MODIFICATION' || error?.code === 'DUPLICATE_FEATURE_NAME') {
     return {
       category: ErrorCategory.CONFLICT,
-      retryable: true,
-      userMessage: error?.message || 'El recurso fue modificado por otro usuario. Por favor, recargue y vuelva a intentar.',
+      retryable: false, // Don't retry duplicate name errors
+      userMessage: error?.message || 'The resource was modified by another user. Please refresh and try again.',
       technicalMessage: `Conflict error: ${error.message}`,
       statusCode: 409,
       code: error?.code,
@@ -182,26 +182,49 @@ export function categorizeError(error: any): ErrorContext {
 
   // Server errors
   if (error?.statusCode >= 500) {
+    // Extract backend error message if available
+    const backendMessage = error?.response?.data?.message || error?.response?.data?.error || error?.message;
+    const backendError = error?.response?.data;
+    
     return {
       category: ErrorCategory.SERVER_ERROR,
       retryable: true,
-      userMessage: 'Error del servidor. Por favor, intente más tarde.',
-      technicalMessage: `Server error: ${error.message}`,
-      statusCode: error?.statusCode,
-      code: error?.code,
-      correlationId: error?.correlationId,
+      userMessage: backendMessage || 'Server error. Please try again later.',
+      technicalMessage: `Server error (${error.statusCode}): ${error.message || backendMessage || 'Unknown error'}`,
+      statusCode: error.statusCode,
+      code: error?.code || error?.response?.data?.code,
+      correlationId: error?.correlationId || error?.response?.data?.correlationId,
     };
   }
 
-  // HttpClientError
-  if (error instanceof HttpClientError) {
+  // HttpClientError - handle directly to preserve statusCode
+  if (error instanceof HttpClientError || error?.name === 'HttpClientError') {
+    const statusCode = error.statusCode || error?.statusCode;
+    const code = error.code || error?.code;
+    const message = error.message || error?.message;
+    
+    // Handle server errors (500+)
+    if (statusCode >= 500) {
+      return {
+        category: ErrorCategory.SERVER_ERROR,
+        retryable: true,
+        userMessage: message || 'Server error. Please try again later.',
+        technicalMessage: `Server error (${statusCode}): ${message || 'Unknown error'}`,
+        statusCode,
+        code,
+        correlationId: error.correlationId || error?.correlationId,
+      };
+    }
+    
+    // Handle other HTTP errors by recursing with proper structure
     return categorizeError({
-      statusCode: error.statusCode,
-      code: error.code,
-      message: error.message,
-      correlationId: error.correlationId,
-      isNetworkError: error.isNetworkError,
-      isTimeout: error.isTimeout,
+      statusCode,
+      code,
+      message,
+      correlationId: error.correlationId || error?.correlationId,
+      isNetworkError: error.isNetworkError || error?.isNetworkError,
+      isTimeout: error.isTimeout || error?.isTimeout,
+      response: error.response || error?.response,
     });
   }
 

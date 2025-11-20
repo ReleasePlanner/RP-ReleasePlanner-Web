@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useCallback } from "react";
+import { useEffect, useMemo, useRef, useCallback, memo } from "react";
 import { useTheme } from "@mui/material/styles";
 import { Tooltip } from "@mui/material";
 import GanttTimeline from "../Gantt/GanttTimeline/GanttTimeline";
@@ -91,22 +91,36 @@ export default function GanttChart({
   isSavingTimeline = false,
 }: GanttChartProps) {
   const labelWidth = LABEL_WIDTH; // sticky label column width for phase names
-  // mark intentionally unused until we support non-year-spanning views
-  void _endDate;
-  // Force calendar to full year (Jan 1 to Dec 31) based on plan's start year
-  const yearStart = useMemo(() => {
+  
+  // Calculate timeline range: from start of year of startDate to end of year of endDate
+  // This allows continuous scrolling across multiple years
+  const timelineStart = useMemo(() => {
     const y = new Date(startDate).getFullYear();
-    return new Date(y, 0, 1);
+    return new Date(y, 0, 1); // January 1st of start year
   }, [startDate]);
-  const yearEnd = useMemo(
-    () => new Date(yearStart.getFullYear(), 11, 31),
-    [yearStart]
-  );
+  
+  const timelineEnd = useMemo(() => {
+    if (!_endDate) {
+      // Fallback: if no endDate provided, use end of current year + 2 years
+      const currentYear = new Date().getFullYear();
+      return new Date(currentYear + 2, 11, 31);
+    }
+    
+    const endYear = new Date(_endDate).getFullYear();
+    // Add buffer: show at least 2 years after the plan end date for better scrolling
+    const bufferYear = endYear + 2; // Show two additional years for better visibility and scrolling
+    const endDate = new Date(bufferYear, 11, 31); // December 31st of buffer year
+    
+    return endDate;
+  }, [_endDate, timelineStart, startDate]);
 
-  const start = yearStart;
-  const end = yearEnd;
+  const start = timelineStart;
+  const end = timelineEnd;
   const totalDays = useMemo(
-    () => Math.max(1, daysBetween(start, end)),
+    () => {
+      const days = Math.max(1, daysBetween(start, end));
+      return days;
+    },
     [start, end]
   );
 
@@ -165,6 +179,8 @@ export default function GanttChart({
   const { drag, editDrag, setDrag, setEditDrag, clientXToDayIndex } =
     useGanttDragAndDrop({
       days,
+      pxPerDay,
+      trackHeight,
       onPhaseRangeChange,
       containerRef,
       contentRef,
@@ -225,30 +241,34 @@ export default function GanttChart({
       calendar.days.forEach((day) => {
         const dateKey = day.date; // Already in YYYY-MM-DD format
 
-        // Handle recurring days - check if date falls within the year range
+        // Handle recurring days - check if date falls within the timeline range
         if (day.recurring) {
           const dayDate = new Date(day.date);
           const dayMonth = dayDate.getMonth();
           const dayDay = dayDate.getDate();
 
-          // Check if this recurring day falls within the current year
-          const currentYear = yearStart.getFullYear();
-          const recurringDate = new Date(currentYear, dayMonth, dayDay);
-
-          if (recurringDate >= yearStart && recurringDate <= yearEnd) {
-            const recurringDateKey = recurringDate.toISOString().slice(0, 10);
-            if (!map.has(recurringDateKey)) {
-              map.set(recurringDateKey, []);
+          // Check all years in the timeline range for recurring days
+          const startYear = start.getFullYear();
+          const endYear = end.getFullYear();
+          
+          for (let year = startYear; year <= endYear; year++) {
+            const recurringDate = new Date(year, dayMonth, dayDay);
+            
+            if (recurringDate >= start && recurringDate <= end) {
+              const recurringDateKey = recurringDate.toISOString().slice(0, 10);
+              if (!map.has(recurringDateKey)) {
+                map.set(recurringDateKey, []);
+              }
+              map.get(recurringDateKey)!.push({
+                day,
+                calendarName: calendar.name,
+              });
             }
-            map.get(recurringDateKey)!.push({
-              day,
-              calendarName: calendar.name,
-            });
           }
         } else {
           // Non-recurring day - use exact date
           const dayDate = new Date(day.date);
-          if (dayDate >= yearStart && dayDate <= yearEnd) {
+          if (dayDate >= start && dayDate <= end) {
             if (!map.has(dateKey)) {
               map.set(dateKey, []);
             }
@@ -262,9 +282,12 @@ export default function GanttChart({
     });
 
     return map;
-  }, [planCalendars, yearStart, yearEnd]);
+  }, [planCalendars, start, end]);
 
   // Create a map of milestone references by phaseId and date for quick lookup
+  // Note: Preview is now handled directly in DOM via useGanttDragAndDrop hook
+  // No React re-renders during drag for maximum performance
+
   const milestoneReferencesMap = useMemo(() => {
     const map = new Map<string, PlanReference>();
     milestoneReferences.forEach((ref) => {
@@ -715,17 +738,44 @@ export default function GanttChart({
                   const len = Math.max(1, daysBetween(ts, te));
                   const top = laneTop(idx);
                   const color = ph.color ?? theme.palette.secondary.main;
+                  // Calculate duration in weeks and days
+                  const weeks = Math.floor(len / 7);
+                  const remainingDays = len % 7;
+                  const durationText = weeks > 0 
+                    ? `${weeks} week${weeks !== 1 ? 's' : ''}${remainingDays > 0 ? `, ${remainingDays} day${remainingDays !== 1 ? 's' : ''}` : ''}`
+                    : `${len} day${len !== 1 ? 's' : ''}`;
+                  
                   const tooltip = (
-                    <div className="text-[11px] leading-3.5">
-                      <div>
-                        <strong>{ph.name}</strong>
+                    <div style={{ fontSize: "0.75rem", lineHeight: 1.6, maxWidth: 280 }}>
+                      <div style={{ fontWeight: 600, marginBottom: "8px", fontSize: "0.8125rem", color: theme.palette.mode === "dark" ? "#fff" : "#000" }}>
+                        {ph.name}
                       </div>
-                      <div>
-                        {ts.toISOString().slice(0, 10)} →{" "}
-                        {te.toISOString().slice(0, 10)}
+                      <div style={{ marginBottom: "6px", opacity: 0.9 }}>
+                        <div style={{ fontSize: "0.6875rem", marginBottom: "2px" }}>
+                          <strong>Start:</strong> {ts.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
+                        </div>
+                        <div style={{ fontSize: "0.6875rem" }}>
+                          <strong>End:</strong> {te.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
+                        </div>
                       </div>
-                      <div>Duration: {len} days</div>
-                      {ph.color ? <div>Color: {ph.color}</div> : null}
+                      <div style={{ marginBottom: "6px", fontSize: "0.6875rem", opacity: 0.9 }}>
+                        <strong>Duration:</strong> {durationText} ({len} day{len !== 1 ? 's' : ''})
+                      </div>
+                      {ph.color && (
+                        <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.6875rem", opacity: 0.9 }}>
+                          <strong>Color:</strong>
+                          <div
+                            style={{
+                              width: 16,
+                              height: 16,
+                              borderRadius: 2,
+                              backgroundColor: ph.color,
+                              border: `1px solid ${theme.palette.mode === "dark" ? "rgba(255,255,255,0.2)" : "rgba(0,0,0,0.2)"}`,
+                            }}
+                          />
+                          <span>{ph.color}</span>
+                        </div>
+                      )}
                     </div>
                   );
                   // Build weekday-only segments so weekends keep non-working color
@@ -733,7 +783,10 @@ export default function GanttChart({
                   let segStart: number | null = null;
                   for (let di = 0; di < len; di++) {
                     const dayIdx = offset + di;
+                    // Ensure dayIdx is within bounds
+                    if (dayIdx < 0 || dayIdx >= days.length) continue;
                     const d = days[dayIdx];
+                    if (!d) continue;
                     const isWeekend = d.getDay() === 0 || d.getDay() === 6;
                     if (isWeekend) {
                       if (segStart !== null) {
@@ -786,25 +839,27 @@ export default function GanttChart({
                           });
                         }}
                         onStartResizeLeft={(e) => {
-                          const anchorIdx = clientXToDayIndex(e.clientX);
+                          // Use the left edge index as anchor for resize-left
+                          const anchorIdx = offset;
                           setEditDrag({
                             phaseId: ph.id,
                             phaseIdx: idx,
                             mode: "resize-left",
                             anchorIdx,
-                            currentIdx: anchorIdx,
+                            currentIdx: clientXToDayIndex(e.clientX),
                             originalStartIdx: offset,
                             originalLen: len,
                           });
                         }}
                         onStartResizeRight={(e) => {
-                          const anchorIdx = clientXToDayIndex(e.clientX);
+                          // Use the right edge index as anchor for resize-right
+                          const anchorIdx = offset + len - 1;
                           setEditDrag({
                             phaseId: ph.id,
                             phaseIdx: idx,
                             mode: "resize-right",
                             anchorIdx,
-                            currentIdx: anchorIdx,
+                            currentIdx: clientXToDayIndex(e.clientX),
                             originalStartIdx: offset,
                             originalLen: len,
                           });
@@ -987,17 +1042,44 @@ export default function GanttChart({
                 const barWidth = len * pxPerDay;
                 const top = laneTop(idx);
                 const color = ph.color ?? theme.palette.secondary.main;
+                // Calculate duration in weeks and days
+                const weeks = Math.floor(len / 7);
+                const remainingDays = len % 7;
+                const durationText = weeks > 0 
+                  ? `${weeks} week${weeks !== 1 ? 's' : ''}${remainingDays > 0 ? `, ${remainingDays} day${remainingDays !== 1 ? 's' : ''}` : ''}`
+                  : `${len} day${len !== 1 ? 's' : ''}`;
+                
                 const tooltip = (
-                  <div className="text-[11px] leading-3.5">
-                    <div>
-                      <strong>{ph.name}</strong>
+                  <div style={{ fontSize: "0.75rem", lineHeight: 1.6, maxWidth: 280 }}>
+                    <div style={{ fontWeight: 600, marginBottom: "8px", fontSize: "0.8125rem", color: theme.palette.mode === "dark" ? "#fff" : "#000" }}>
+                      {ph.name}
                     </div>
-                    <div>
-                      {ts.toISOString().slice(0, 10)} →{" "}
-                      {te.toISOString().slice(0, 10)}
+                    <div style={{ marginBottom: "6px", opacity: 0.9 }}>
+                      <div style={{ fontSize: "0.6875rem", marginBottom: "2px" }}>
+                        <strong>Start:</strong> {ts.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
+                      </div>
+                      <div style={{ fontSize: "0.6875rem" }}>
+                        <strong>End:</strong> {te.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
+                      </div>
                     </div>
-                    <div>Duration: {len} days</div>
-                    {ph.color ? <div>Color: {ph.color}</div> : null}
+                    <div style={{ marginBottom: "6px", fontSize: "0.6875rem", opacity: 0.9 }}>
+                      <strong>Duration:</strong> {durationText} ({len} day{len !== 1 ? 's' : ''})
+                    </div>
+                    {ph.color && (
+                      <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.6875rem", opacity: 0.9 }}>
+                        <strong>Color:</strong>
+                        <div
+                          style={{
+                            width: 16,
+                            height: 16,
+                            borderRadius: 2,
+                            backgroundColor: ph.color,
+                            border: `1px solid ${theme.palette.mode === "dark" ? "rgba(255,255,255,0.2)" : "rgba(0,0,0,0.2)"}`,
+                          }}
+                        />
+                        <span>{ph.color}</span>
+                      </div>
+                    )}
                   </div>
                 );
                 return (
@@ -1026,25 +1108,27 @@ export default function GanttChart({
                       });
                     }}
                     onStartResizeLeft={(e) => {
-                      const anchorIdx = clientXToDayIndex(e.clientX);
+                      // Use the left edge index as anchor for resize-left
+                      const anchorIdx = offset;
                       setEditDrag({
                         phaseId: ph.id,
                         phaseIdx: idx,
                         mode: "resize-left",
                         anchorIdx,
-                        currentIdx: anchorIdx,
+                        currentIdx: clientXToDayIndex(e.clientX),
                         originalStartIdx: offset,
                         originalLen: len,
                       });
                     }}
                     onStartResizeRight={(e) => {
-                      const anchorIdx = clientXToDayIndex(e.clientX);
+                      // Use the right edge index as anchor for resize-right
+                      const anchorIdx = offset + len - 1;
                       setEditDrag({
                         phaseId: ph.id,
                         phaseIdx: idx,
                         mode: "resize-right",
                         anchorIdx,
-                        currentIdx: anchorIdx,
+                        currentIdx: clientXToDayIndex(e.clientX),
                         originalStartIdx: offset,
                         originalLen: len,
                       });
@@ -1052,89 +1136,10 @@ export default function GanttChart({
                   />
                 );
               })}
-              {/* selection preview */}
-              {drag
-                ? (() => {
-                    const a = Math.min(drag.startIdx, drag.currentIdx);
-                    const b = Math.max(drag.startIdx, drag.currentIdx);
-                    const left = a * pxPerDay;
-                    const widthSel = (b - a + 1) * pxPerDay;
-                    const top = laneTop(drag.phaseIdx);
-                    return (
-                      <PreviewContainer
-                        left={left}
-                        top={top}
-                        width={widthSel}
-                        height={trackHeight}
-                        zIndex={5}
-                      >
-                        <Preview />
-                      </PreviewContainer>
-                    );
-                  })()
-                : null}
-              {editDrag
-                ? (() => {
-                    const {
-                      mode,
-                      currentIdx,
-                      originalStartIdx,
-                      originalLen,
-                      phaseIdx,
-                      anchorIdx,
-                    } = editDrag;
-                    let newStartIdx = originalStartIdx;
-                    let newLen = originalLen;
-                    if (mode === "move") {
-                      const delta = currentIdx - anchorIdx;
-                      newStartIdx = Math.max(
-                        0,
-                        Math.min(
-                          days.length - originalLen,
-                          originalStartIdx + delta
-                        )
-                      );
-                      newLen = originalLen;
-                    } else if (mode === "resize-left") {
-                      newStartIdx = Math.max(
-                        0,
-                        Math.min(originalStartIdx + originalLen - 1, currentIdx)
-                      );
-                      newLen = Math.max(
-                        1,
-                        originalStartIdx + originalLen - newStartIdx
-                      );
-                    } else if (mode === "resize-right") {
-                      const proposedEnd = Math.max(
-                        originalStartIdx + 1,
-                        currentIdx
-                      );
-                      newLen = Math.max(
-                        1,
-                        Math.min(
-                          days.length - originalStartIdx,
-                          proposedEnd - originalStartIdx
-                        )
-                      );
-                    }
-                    const left = newStartIdx * pxPerDay;
-                    const widthSel = newLen * pxPerDay;
-                    const top = laneTop(phaseIdx);
-                    return (
-                      <PreviewContainer
-                        left={left}
-                        top={top}
-                        width={widthSel}
-                        height={trackHeight}
-                        zIndex={6}
-                      >
-                        <Preview />
-                      </PreviewContainer>
-                    );
-                  })()
-                : null}
-              {/* Individual cells for each phase-day intersection */}
-              {phases.map((ph, phaseIdx) => {
+              {/* Preview is now handled directly in DOM via useGanttDragAndDrop hook */}
+              {/* No React re-renders during drag for maximum performance */}
+              {/* Individual cells for each phase-day intersection - optimized to skip during drag */}
+              {!(drag || editDrag) && phases.map((ph, phaseIdx) => {
                 return days.map((day, dayIdx) => {
                   const dateKey = day.toISOString().slice(0, 10);
                   // Filter references for this specific cell (day-level with phaseId)

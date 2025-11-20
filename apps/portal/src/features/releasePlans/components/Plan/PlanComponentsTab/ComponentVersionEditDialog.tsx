@@ -86,7 +86,7 @@ export function ComponentVersionEditDialog({
     setFinalVersion(cleaned);
 
     if (cleaned && !validateVersionFormat(cleaned)) {
-      setVersionError("Formato inválido. Use versionado semántico (ej: 1.0.0)");
+      setVersionError("Invalid format. Use semantic versioning (e.g., 1.0.0)");
       return;
     }
 
@@ -94,7 +94,7 @@ export function ComponentVersionEditDialog({
     if (cleaned && currentVersion) {
       const comparison = compareVersions(cleaned, currentVersion);
       if (comparison <= 0) {
-        setVersionError(`La versión final debe ser mayor que la versión actual (${currentVersion})`);
+        setVersionError(`The new version must be greater than the current version (${currentVersion})`);
         return;
       }
     }
@@ -107,7 +107,7 @@ export function ComponentVersionEditDialog({
 
     // Validate format
     if (!validateVersionFormat(finalVersion)) {
-      setVersionError("Formato inválido. Use versionado semántico (ej: 1.0.0)");
+      setVersionError("Invalid format. Use semantic versioning (e.g., 1.0.0)");
       return;
     }
 
@@ -115,7 +115,7 @@ export function ComponentVersionEditDialog({
     if (currentVersion) {
       const comparison = compareVersions(finalVersion, currentVersion);
       if (comparison <= 0) {
-        setVersionError(`La versión final debe ser mayor que la versión actual (${currentVersion})`);
+        setVersionError(`The new version must be greater than the current version (${currentVersion})`);
         return;
       }
     }
@@ -149,7 +149,7 @@ export function ComponentVersionEditDialog({
         }}
       >
         <Typography variant="h6" sx={{ fontWeight: 600, fontSize: "1.125rem" }}>
-          Edit Final Version
+          Edit New Version
         </Typography>
       </DialogTitle>
 
@@ -191,7 +191,7 @@ export function ComponentVersionEditDialog({
           <TextField
             id="component-final-version-input"
             name="componentFinalVersion"
-            label="Final Version"
+            label="New Version"
             fullWidth
             required
             value={finalVersion}
@@ -200,7 +200,7 @@ export function ComponentVersionEditDialog({
             error={!!versionError}
             helperText={
               versionError ||
-              "Enter the final version that will be used in this release plan"
+              "Enter the new version that will be used in this release plan"
             }
             variant="outlined"
             size="small"

@@ -139,7 +139,7 @@ const TabPanel = memo(function TabPanel(props: TabPanelProps) {
                   isSaving
                     ? "Guardando..."
                     : hasPendingChanges
-                      ? "Guardar cambios"
+                      ? "Save changes"
                       : "No hay cambios pendientes"
                 }
                 arrow
@@ -543,19 +543,19 @@ function PlanLeftPaneComponent({
             },
           }}
         >
-          <Tab label="Datos Comunes" {...a11yProps(0)} />
+          <Tab label="Common Data" {...a11yProps(0)} />
           <Tab
             label="Features"
             {...a11yProps(1)}
             disabled={!requiredFieldsFilled}
           />
           <Tab
-            label="Componentes"
+            label="Components"
             {...a11yProps(2)}
             disabled={!requiredFieldsFilled}
           />
-          <Tab label="Calendarios" {...a11yProps(3)} />
-          <Tab label="Referencias" {...a11yProps(4)} />
+          <Tab label="Calendars" {...a11yProps(3)} />
+          <Tab label="References" {...a11yProps(4)} />
         </Tabs>
       </Box>
 
@@ -583,27 +583,27 @@ function PlanLeftPaneComponent({
         >
           <Box
             sx={{
-              p: { xs: 2, sm: 2.5 },
+              p: { xs: 1.5, sm: 2 },
               width: "100%",
               flex: 1,
               display: "flex",
               flexDirection: "column",
             }}
           >
-            <Stack spacing={2} sx={{ width: "100%" }}>
+            <Stack spacing={1.5} sx={{ width: "100%" }}>
               {/* Plan Name */}
               <Box>
                 <Typography
                   variant="caption"
                   sx={{
-                    fontSize: "0.75rem",
+                    fontSize: "0.625rem",
                     fontWeight: 500,
                     color: theme.palette.text.secondary,
-                    mb: 0.75,
+                    mb: 0.5,
                     display: "block",
                   }}
                 >
-                  Nombre del Plan <span style={{ color: theme.palette.error.main }}>*</span>
+                  Plan Name <span style={{ color: theme.palette.error.main }}>*</span>
                 </Typography>
                 <TextField
                   id="plan-name-input"
@@ -638,15 +638,18 @@ function PlanLeftPaneComponent({
                       onNameChange(e.target.value);
                     }
                   }}
-                  placeholder="Nombre del plan..."
+                  placeholder="Plan name..."
                   variant="outlined"
                   size="small"
                   sx={{
                     "& .MuiOutlinedInput-root": {
-                      fontSize: "0.875rem",
+                      fontSize: "0.6875rem",
                       bgcolor: theme.palette.mode === "dark"
                         ? alpha(theme.palette.background.paper, 0.5)
                         : "background.paper",
+                      "& input": {
+                        py: 0.625,
+                      },
                       "& fieldset": {
                         borderColor: alpha(theme.palette.divider, 0.2),
                         borderWidth: 1,
@@ -668,14 +671,14 @@ function PlanLeftPaneComponent({
                 <Typography
                   variant="caption"
                   sx={{
-                    fontSize: "0.75rem",
+                    fontSize: "0.625rem",
                     fontWeight: 500,
                     color: theme.palette.text.secondary,
-                    mb: 0.75,
+                    mb: 0.5,
                     display: "block",
                   }}
                 >
-                  Descripción
+                  Description
                 </Typography>
                 <TextField
                   id="plan-description-input"
@@ -712,15 +715,18 @@ function PlanLeftPaneComponent({
                       onDescriptionChange(e.target.value);
                     }
                   }}
-                  placeholder="Descripción del plan de release..."
+                  placeholder="Release plan description..."
                   variant="outlined"
                   size="small"
                   sx={{
                     "& .MuiOutlinedInput-root": {
-                      fontSize: "0.875rem",
+                      fontSize: "0.6875rem",
                       bgcolor: theme.palette.mode === "dark"
                         ? alpha(theme.palette.background.paper, 0.5)
                         : "background.paper",
+                      "& textarea": {
+                        py: 0.625,
+                      },
                       "& fieldset": {
                         borderColor: alpha(theme.palette.divider, 0.2),
                         borderWidth: 1,
@@ -742,14 +748,14 @@ function PlanLeftPaneComponent({
                 <Typography
                   variant="caption"
                   sx={{
-                    fontSize: "0.75rem",
+                    fontSize: "0.625rem",
                     fontWeight: 500,
                     color: theme.palette.text.secondary,
-                    mb: 0.75,
+                    mb: 0.5,
                     display: "block",
                   }}
                 >
-                  Estado <span style={{ color: theme.palette.error.main }}>*</span>
+                  Status <span style={{ color: theme.palette.error.main }}>*</span>
                 </Typography>
                 <Select
                   id="plan-status-select"
@@ -766,12 +772,17 @@ function PlanLeftPaneComponent({
                     }
                   }}
                   displayEmpty
+                  size="small"
                   sx={{
                     width: "100%",
-                    fontSize: "0.875rem",
+                    fontSize: "0.6875rem",
                     bgcolor: theme.palette.mode === "dark"
                       ? alpha(theme.palette.background.paper, 0.5)
                       : "background.paper",
+                    "& .MuiSelect-select": {
+                      py: 0.625,
+                      fontSize: "0.6875rem",
+                    },
                     "& .MuiOutlinedInput-notchedOutline": {
                       borderColor: alpha(theme.palette.divider, 0.2),
                       borderWidth: 1,
@@ -785,10 +796,10 @@ function PlanLeftPaneComponent({
                     },
                   }}
                 >
-                  <MenuItem value="planned" sx={{ fontSize: "0.875rem" }}>Planificado</MenuItem>
-                  <MenuItem value="in_progress" sx={{ fontSize: "0.875rem" }}>En Progreso</MenuItem>
-                  <MenuItem value="done" sx={{ fontSize: "0.875rem" }}>Completado</MenuItem>
-                  <MenuItem value="paused" sx={{ fontSize: "0.875rem" }}>Pausado</MenuItem>
+                  <MenuItem value="planned" sx={{ fontSize: "0.6875rem", py: 0.5, minHeight: 32 }}>Planned</MenuItem>
+                  <MenuItem value="in_progress" sx={{ fontSize: "0.6875rem", py: 0.5, minHeight: 32 }}>In Progress</MenuItem>
+                  <MenuItem value="done" sx={{ fontSize: "0.6875rem", py: 0.5, minHeight: 32 }}>Done</MenuItem>
+                  <MenuItem value="paused" sx={{ fontSize: "0.6875rem", py: 0.5, minHeight: 32 }}>Paused</MenuItem>
                 </Select>
               </Box>
 
@@ -797,18 +808,18 @@ function PlanLeftPaneComponent({
                 <Typography
                   variant="caption"
                   sx={{
-                    fontSize: "0.75rem",
+                    fontSize: "0.625rem",
                     fontWeight: 500,
                     color: theme.palette.text.secondary,
-                    mb: 0.75,
+                    mb: 0.5,
                     display: "block",
                   }}
                 >
-                  Período <span style={{ color: theme.palette.error.main }}>*</span>
+                  Period <span style={{ color: theme.palette.error.main }}>*</span>
                 </Typography>
                 <Stack 
                   direction={{ xs: "column", sm: "row" }} 
-                  spacing={1.5}
+                  spacing={1}
                 >
                   <TextField
                     id="plan-start-date-input"
@@ -848,10 +859,13 @@ function PlanLeftPaneComponent({
                     fullWidth
                     sx={{
                       "& .MuiOutlinedInput-root": {
-                        fontSize: "0.875rem",
+                        fontSize: "0.6875rem",
                         bgcolor: theme.palette.mode === "dark"
                           ? alpha(theme.palette.background.paper, 0.5)
                           : "background.paper",
+                        "& input": {
+                          py: 0.625,
+                        },
                         "& fieldset": {
                           borderColor: alpha(theme.palette.divider, 0.2),
                           borderWidth: 1,
@@ -904,10 +918,13 @@ function PlanLeftPaneComponent({
                     fullWidth
                     sx={{
                       "& .MuiOutlinedInput-root": {
-                        fontSize: "0.875rem",
+                        fontSize: "0.6875rem",
                         bgcolor: theme.palette.mode === "dark"
                           ? alpha(theme.palette.background.paper, 0.5)
                           : "background.paper",
+                        "& input": {
+                          py: 0.625,
+                        },
                         "& fieldset": {
                           borderColor: alpha(theme.palette.divider, 0.2),
                           borderWidth: 1,
@@ -926,9 +943,9 @@ function PlanLeftPaneComponent({
                 <Typography
                   variant="caption"
                   sx={{
-                    fontSize: "0.6875rem",
+                    fontSize: "0.625rem",
                     color: theme.palette.text.secondary,
-                    mt: 0.75,
+                    mt: 0.5,
                     display: "flex",
                     alignItems: "center",
                     gap: 0.5,
@@ -937,7 +954,7 @@ function PlanLeftPaneComponent({
                 >
                   <span>{formattedDateRange}</span>
                   <span>•</span>
-                  <span>{duration} {duration === 1 ? "día" : "días"}</span>
+                  <span>{duration} {duration === 1 ? "day" : "days"}</span>
                 </Typography>
               </Box>
 
@@ -948,14 +965,14 @@ function PlanLeftPaneComponent({
                   <Typography
                     variant="caption"
                     sx={{
-                      fontSize: "0.75rem",
+                      fontSize: "0.625rem",
                       fontWeight: 500,
                       color: theme.palette.text.secondary,
-                      mb: 0.75,
+                      mb: 0.5,
                       display: "block",
                     }}
                   >
-                    Producto
+                    Product
                   </Typography>
                   <TextField
                     id="plan-product-display"
@@ -978,10 +995,11 @@ function PlanLeftPaneComponent({
                         borderRadius: 1,
                       },
                       "& .MuiInputBase-input": {
-                        fontSize: "0.875rem",
+                        fontSize: "0.6875rem",
                         fontWeight: 500,
                         color: theme.palette.text.primary,
                         cursor: "default",
+                        py: 0.625,
                       },
                       "& .MuiOutlinedInput-notchedOutline": {
                         borderColor: alpha(theme.palette.divider, 0.15),
@@ -996,14 +1014,14 @@ function PlanLeftPaneComponent({
                   <Typography
                     variant="caption"
                     sx={{
-                      fontSize: "0.75rem",
+                      fontSize: "0.625rem",
                       fontWeight: 500,
                       color: theme.palette.text.secondary,
-                      mb: 0.75,
+                      mb: 0.5,
                       display: "block",
                     }}
                   >
-                    Producto <span style={{ color: theme.palette.error.main }}>*</span>
+                    Product <span style={{ color: theme.palette.error.main }}>*</span>
                   </Typography>
                   <Select
                     id="plan-product-select"
@@ -1044,16 +1062,21 @@ function PlanLeftPaneComponent({
                     }}
                     renderValue={(selected) => {
                       if (!selected || selected === "") {
-                        return <em style={{ color: theme.palette.text.secondary, fontStyle: "normal" }}>Seleccione un producto</em>;
+                        return <em style={{ color: theme.palette.text.secondary, fontStyle: "normal", fontSize: "0.6875rem" }}>Select a product</em>;
                       }
                       const product = products.find((p) => p.id === selected);
-                      return product ? product.name : selected;
+                      return <span style={{ fontSize: "0.6875rem" }}>{product ? product.name : selected}</span>;
                     }}
+                    size="small"
                     sx={{
-                      fontSize: "0.875rem",
+                      fontSize: "0.6875rem",
                       bgcolor: theme.palette.mode === "dark"
                         ? alpha(theme.palette.background.paper, 0.3)
                         : "background.paper",
+                      "& .MuiSelect-select": {
+                        py: 0.625,
+                        fontSize: "0.6875rem",
+                      },
                       "& .MuiOutlinedInput-notchedOutline": {
                         borderColor: alpha(theme.palette.divider, 0.2),
                         borderWidth: 1,
@@ -1067,11 +1090,11 @@ function PlanLeftPaneComponent({
                       },
                     }}
                   >
-                    <MenuItem value="" sx={{ fontSize: "0.875rem" }}>
-                      <em>Ninguno</em>
+                    <MenuItem value="" sx={{ fontSize: "0.6875rem", py: 0.5, minHeight: 32 }}>
+                      <em>None</em>
                     </MenuItem>
                     {products.map((product) => (
-                      <MenuItem key={product.id} value={product.id} sx={{ fontSize: "0.875rem" }}>
+                      <MenuItem key={product.id} value={product.id} sx={{ fontSize: "0.6875rem", py: 0.5, minHeight: 32 }}>
                         {product.name}
                       </MenuItem>
                     ))}
@@ -1084,10 +1107,10 @@ function PlanLeftPaneComponent({
                 <Typography
                   variant="caption"
                   sx={{
-                    fontSize: "0.75rem",
+                    fontSize: "0.625rem",
                     fontWeight: 500,
                     color: theme.palette.text.secondary,
-                    mb: 0.75,
+                    mb: 0.5,
                     display: "block",
                   }}
                 >
@@ -1123,17 +1146,22 @@ function PlanLeftPaneComponent({
                   }}
                   renderValue={(selected) => {
                     if (!selected || selected === "") {
-                      return <em style={{ color: theme.palette.text.secondary, fontStyle: "normal" }}>Ninguno</em>;
+                      return <em style={{ color: theme.palette.text.secondary, fontStyle: "normal", fontSize: "0.6875rem" }}>None</em>;
                     }
                     const owner = itOwners.find((o) => o.id === selected);
-                    return owner ? owner.name : selected;
+                    return <span style={{ fontSize: "0.6875rem" }}>{owner ? owner.name : selected}</span>;
                   }}
+                  size="small"
                   sx={{
                     width: "100%",
-                    fontSize: "0.875rem",
+                    fontSize: "0.6875rem",
                     bgcolor: theme.palette.mode === "dark"
                       ? alpha(theme.palette.background.paper, 0.5)
                       : "background.paper",
+                    "& .MuiSelect-select": {
+                      py: 0.625,
+                      fontSize: "0.6875rem",
+                    },
                     "& .MuiOutlinedInput-notchedOutline": {
                       borderColor: alpha(theme.palette.divider, 0.2),
                       borderWidth: 1,
@@ -1147,16 +1175,16 @@ function PlanLeftPaneComponent({
                     },
                   }}
                 >
-                  <MenuItem value="" sx={{ fontSize: "0.875rem" }}>
-                    <em>Ninguno</em>
+                  <MenuItem value="" sx={{ fontSize: "0.6875rem", py: 0.5, minHeight: 32 }}>
+                    <em>None</em>
                   </MenuItem>
                   {isLoadingITOwners ? (
-                    <MenuItem disabled sx={{ fontSize: "0.875rem" }}>
-                      Cargando...
+                    <MenuItem disabled sx={{ fontSize: "0.6875rem", py: 0.5, minHeight: 32 }}>
+                      Loading...
                     </MenuItem>
                   ) : (
                     itOwners.map((owner) => (
-                      <MenuItem key={owner.id} value={owner.id} sx={{ fontSize: "0.875rem" }}>
+                      <MenuItem key={owner.id} value={owner.id} sx={{ fontSize: "0.6875rem", py: 0.5, minHeight: 32 }}>
                         {owner.name}
                       </MenuItem>
                     ))

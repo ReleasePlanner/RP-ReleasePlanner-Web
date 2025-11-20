@@ -108,6 +108,7 @@ export type Plan = {
   id: string;
   metadata: PlanMetadata;
   tasks: PlanTask[];
+  updatedAt?: string; // ISO date string from API for optimistic locking
 };
 
 export type ReleasePlansState = {

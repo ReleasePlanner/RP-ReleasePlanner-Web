@@ -64,9 +64,9 @@ export function CellCommentsDialog({
     >
       <DialogTitle sx={{ py: 1.5, display: "flex", alignItems: "center" }}>
         <CommentIcon sx={{ mr: 1, fontSize: 20 }} />
-        <span>Comentarios</span>
+        <span>Comments</span>
         <IconButton
-          aria-label="cerrar"
+          aria-label="close"
           onClick={onClose}
           sx={{ ml: "auto", size: "small" }}
           size="small"
@@ -101,7 +101,7 @@ export function CellCommentsDialog({
             size="small"
             sx={{ alignSelf: "flex-end", textTransform: "none" }}
           >
-            Agregar Comentario
+            Add Comment
           </Button>
 
           <Divider />
@@ -155,7 +155,7 @@ export function CellCommentsDialog({
       </DialogContent>
       <DialogActions sx={{ px: 3, pb: 2 }}>
         <Button onClick={onClose} sx={{ textTransform: "none" }}>
-          Cerrar
+          Close
         </Button>
       </DialogActions>
     </Dialog>
@@ -204,7 +204,7 @@ export function CellFilesDialog({
         <FileIcon sx={{ mr: 1, fontSize: 20 }} />
         <span>Archivos</span>
         <IconButton
-          aria-label="cerrar"
+          aria-label="close"
           onClick={onClose}
           sx={{ ml: "auto" }}
           size="small"
@@ -241,7 +241,7 @@ export function CellFilesDialog({
             size="small"
             sx={{ alignSelf: "flex-end", textTransform: "none" }}
           >
-            Agregar Archivo
+            Add File
           </Button>
 
           <Divider />
@@ -300,7 +300,7 @@ export function CellFilesDialog({
       </DialogContent>
       <DialogActions sx={{ px: 3, pb: 2 }}>
         <Button onClick={onClose} sx={{ textTransform: "none" }}>
-          Cerrar
+          Close
         </Button>
       </DialogActions>
     </Dialog>
@@ -355,7 +355,7 @@ export function CellLinksDialog({
         <LinkIcon sx={{ mr: 1, fontSize: 20 }} />
         <span>Enlaces</span>
         <IconButton
-          aria-label="cerrar"
+          aria-label="close"
           onClick={onClose}
           sx={{ ml: "auto" }}
           size="small"
@@ -403,7 +403,7 @@ export function CellLinksDialog({
             size="small"
             sx={{ alignSelf: "flex-end", textTransform: "none" }}
           >
-            Agregar Enlace
+            Add Link
           </Button>
 
           <Divider />
@@ -467,7 +467,7 @@ export function CellLinksDialog({
       </DialogContent>
       <DialogActions sx={{ px: 3, pb: 2 }}>
         <Button onClick={onClose} sx={{ textTransform: "none" }}>
-          Cerrar
+          Close
         </Button>
       </DialogActions>
     </Dialog>

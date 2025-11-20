@@ -19,6 +19,7 @@ import type {
 export function convertAPIPlanToLocal(apiPlan: APIPlan): LocalPlan {
   return {
     id: apiPlan.id,
+    updatedAt: apiPlan.updatedAt, // Preserve updatedAt for optimistic locking
     metadata: {
       id: apiPlan.id,
       name: apiPlan.name,
@@ -27,13 +28,54 @@ export function convertAPIPlanToLocal(apiPlan: APIPlan): LocalPlan {
       endDate: apiPlan.endDate,
       status: apiPlan.status,
       description: apiPlan.description,
-      phases: apiPlan.phases?.map((p) => ({
-        id: p.id,
-        name: p.name,
-        startDate: p.startDate,
-        endDate: p.endDate,
-        color: p.color,
-      })),
+      phases: apiPlan.phases?.map((p, index, array) => {
+        // If phase doesn't have dates, assign default dates based on plan range
+        let startDate = p.startDate;
+        let endDate = p.endDate;
+        
+        if (!startDate || !endDate) {
+          // Calculate default dates based on plan range
+          const planStart = new Date(apiPlan.startDate);
+          const planEnd = new Date(apiPlan.endDate);
+          const planDuration = Math.max(1, Math.ceil((planEnd.getTime() - planStart.getTime()) / (1000 * 60 * 60 * 24)));
+          
+          // Distribute phases evenly across the plan duration
+          const phaseCount = array.length;
+          const phaseDuration = Math.max(1, Math.floor(planDuration / Math.max(1, phaseCount)));
+          
+          if (!startDate) {
+            const defaultStart = new Date(planStart);
+            defaultStart.setDate(defaultStart.getDate() + (index * phaseDuration));
+            startDate = defaultStart.toISOString().slice(0, 10);
+          }
+          
+          if (!endDate) {
+            const defaultEnd = new Date(startDate);
+            defaultEnd.setDate(defaultEnd.getDate() + phaseDuration);
+            // Ensure end date doesn't exceed plan end date
+            endDate = defaultEnd.getTime() > planEnd.getTime() 
+              ? planEnd.toISOString().slice(0, 10) 
+              : defaultEnd.toISOString().slice(0, 10);
+          }
+          
+          console.warn('[planConverters] Phase missing dates, assigned defaults:', {
+            phaseId: p.id,
+            phaseName: p.name,
+            originalStartDate: p.startDate,
+            originalEndDate: p.endDate,
+            assignedStartDate: startDate,
+            assignedEndDate: endDate,
+          });
+        }
+        
+        return {
+          id: p.id,
+          name: p.name,
+          startDate,
+          endDate,
+          color: p.color,
+        };
+      }),
       productId: apiPlan.productId,
       itOwner: apiPlan.itOwner,
       featureIds: apiPlan.featureIds || [],
@@ -197,11 +239,42 @@ export function convertLocalPlanToUpdateDto(
 
 // Helper functions to reduce cognitive complexity
 function mapPhasesToDto(phases: LocalPlan["metadata"]["phases"]) {
-  return phases?.map((p) => ({
-    name: p.name,
-    startDate: p.startDate,
-    endDate: p.endDate,
-    color: p.color,
+  if (!phases) return undefined;
+  
+  // Filter out invalid phases (missing required fields)
+  const validPhases = phases.filter((p) => {
+    const isValid = 
+      p.name && 
+      p.name.trim() !== "" && 
+      p.startDate && 
+      p.startDate.trim() !== "" && 
+      p.endDate && 
+      p.endDate.trim() !== "";
+    
+    if (!isValid) {
+      console.warn('[planConverters] Filtering out invalid phase in mapPhasesToDto:', {
+        phaseId: p.id,
+        name: p.name,
+        hasStartDate: !!p.startDate,
+        hasEndDate: !!p.endDate,
+        startDate: p.startDate,
+        endDate: p.endDate,
+      });
+    }
+    
+    return isValid;
+  });
+  
+  if (validPhases.length === 0) {
+    console.warn('[planConverters] No valid phases after filtering');
+    return [];
+  }
+  
+  return validPhases.map((p) => ({
+    name: p.name.trim(),
+    startDate: p.startDate.trim(),
+    endDate: p.endDate.trim(),
+    color: p.color || "#185ABD", // Default color if missing
   }));
 }
 
@@ -285,10 +358,25 @@ export function createPartialUpdateDto(
 
   // Complex field mappings using helper functions
   if (changes.phases !== undefined) {
-    dto.phases = mapPhasesToDto(changes.phases);
+    const mappedPhases = mapPhasesToDto(changes.phases);
+    // Only include phases if there are valid phases
+    if (mappedPhases && mappedPhases.length > 0) {
+      dto.phases = mappedPhases;
+    } else {
+      // If phases array is empty, don't include it in the DTO
+      // This allows the backend to keep existing phases
+      delete dto.phases;
+    }
   }
   if (changes.milestones !== undefined) {
-    dto.milestones = mapMilestonesToDto(changes.milestones);
+    const mappedMilestones = mapMilestonesToDto(changes.milestones);
+    // Only include milestones if there are valid milestones
+    if (mappedMilestones && mappedMilestones.length > 0) {
+      dto.milestones = mappedMilestones;
+    } else {
+      // If milestones array is empty, don't include it in the DTO
+      delete dto.milestones;
+    }
   }
   // Note: cellData has been removed - references are now handled via plan_references table
   if (changes.references !== undefined) {

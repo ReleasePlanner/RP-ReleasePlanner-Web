@@ -64,7 +64,7 @@ export function ProductSelector({
                 color: theme.palette.text.primary,
               }}
             >
-              Seleccionar Producto
+              Select Product
             </Typography>
             <Typography
               variant="body2"

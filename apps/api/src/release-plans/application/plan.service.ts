@@ -545,8 +545,32 @@ export class PlanService {
     // Update phases if provided (replace all phases)
     if (dto.phases !== undefined) {
       validateArray(dto.phases, 'Phases');
-      // Clear existing phases array (TypeORM will handle deletion via cascade)
-      plan.phases = [];
+      
+      // Defensive: Ensure plan.id is available
+      if (!plan.id) {
+        throw new Error('Plan ID is required to update phases');
+      }
+      
+      // Remove existing phases first to avoid constraint violations
+      if (plan.phases && plan.phases.length > 0) {
+        const existingPhases = [...plan.phases];
+        plan.phases = [];
+        // Remove existing phases from database before creating new ones
+        const planRepo = this.repository as any;
+        if (planRepo.repository && planRepo.repository.manager) {
+          await planRepo.repository.manager.remove(PlanPhase, existingPhases);
+        } else {
+          // Fallback: use repository's manager directly if available
+          const repo = (this.repository as any).repository;
+          if (repo && repo.manager) {
+            await repo.manager.remove(PlanPhase, existingPhases);
+          }
+        }
+      } else {
+        // Ensure phases array is initialized
+        plan.phases = [];
+      }
+      
       // Create new phases with explicit planId
       dto.phases.forEach((p) => {
         // Defensive: Validate phase data
@@ -560,7 +584,15 @@ export class PlanService {
         // Explicitly set planId before adding to ensure it's not null
         // This is critical to prevent null constraint violations
         phase.planId = plan.id;
+        // Double-check that planId is set
+        if (!phase.planId) {
+          throw new Error(`Failed to set planId for phase: ${p.name}. Plan ID: ${plan.id}`);
+        }
         plan.addPhase(phase);
+        // Verify planId is still set after adding
+        if (!phase.planId) {
+          throw new Error(`PlanId was lost after adding phase: ${p.name}`);
+        }
       });
     }
 

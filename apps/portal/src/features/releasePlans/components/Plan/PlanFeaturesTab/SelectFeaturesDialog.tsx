@@ -26,6 +26,7 @@ import {
   Chip,
   Stack,
   Alert,
+  CircularProgress,
 } from "@mui/material";
 import {
   Search as SearchIcon,
@@ -38,7 +39,6 @@ import type { SortBy } from "@/features/feature/components/FeatureToolbar";
 import { processFeatures } from "@/features/feature/utils/featureUtils";
 import type { FeatureStatus } from "@/features/feature/types";
 import { usePlans, useFeatures, useProducts } from "@/api/hooks";
-import { useAppSelector } from "@/store/hooks";
 import { convertAPIPlanToLocal } from "@/features/releasePlans/lib/planConverters";
 import type { PlanStatus } from "@/features/releasePlans/types";
 import type { Feature } from "@/api/services/features.service";
@@ -72,17 +72,17 @@ export function SelectFeaturesDialog({
     return apiPlans.map(convertAPIPlanToLocal);
   }, [apiPlans]);
 
-  // Get all features for the product from API (Features maintenance)
-  const { data: allProductFeatures = [], isLoading: isLoadingFeatures } = useFeatures(productId);
-
-  // Get products from Redux store (maintenance data) - same as PlanLeftPane
-  const products = useAppSelector((state) => state.products.products);
+  // Get products from API (Products maintenance) - same as SelectComponentsDialog
+  const { data: products = [], isLoading: isLoadingProducts } = useProducts();
   
-  // Get product name from Redux store instead of API
+  // Get product from API
   const selectedProduct = useMemo(() => {
     if (!productId) return null;
     return products.find((p) => p.id === productId) || null;
   }, [productId, products]);
+
+  // Get all features for the product from API (Features maintenance)
+  const { data: allProductFeatures = [], isLoading: isLoadingFeatures } = useFeatures(productId);
 
   // Create a map of featureId -> array of plans (excluding current plan) that contain this feature
   // Only include plans that are NOT in "done" status
@@ -229,6 +229,7 @@ export function SelectFeaturesDialog({
     >
       <DialogTitle
         sx={{
+          py: 1.5,
           pb: 1.5,
           borderBottom: `1px solid ${alpha(theme.palette.divider, 0.08)}`,
         }}
@@ -240,15 +241,30 @@ export function SelectFeaturesDialog({
             alignItems: "center",
           }}
         >
-          <Typography variant="h6" component="div" sx={{ fontWeight: 600 }}>
-            Seleccionar Features
+          <Typography 
+            variant="h6" 
+            component="div" 
+            sx={{ 
+              fontWeight: 600,
+              fontSize: "0.8125rem",
+              letterSpacing: "-0.01em",
+            }}
+          >
+            Select Features
           </Typography>
           {selectedIds.length > 0 && (
             <Chip
-              label={`${selectedIds.length} seleccionada${selectedIds.length !== 1 ? "s" : ""}`}
+              label={`${selectedIds.length} selected`}
               color="primary"
               size="small"
-              sx={{ fontWeight: 500 }}
+              sx={{ 
+                fontWeight: 500,
+                height: 18,
+                fontSize: "0.625rem",
+                "& .MuiChip-label": {
+                  px: 0.75,
+                },
+              }}
             />
           )}
         </Box>
@@ -262,8 +278,8 @@ export function SelectFeaturesDialog({
           <Box
             sx={{
               px: 2,
-              pt: 2,
-              pb: 1.5,
+              pt: 1.5,
+              pb: 1,
               borderBottom: `1px solid ${alpha(theme.palette.divider, 0.08)}`,
             }}
           >
@@ -278,21 +294,21 @@ export function SelectFeaturesDialog({
                 variant="caption"
                 sx={{
                   color: theme.palette.text.secondary,
-                  fontSize: "0.75rem",
+                  fontSize: "0.625rem",
                   fontWeight: 500,
                   textTransform: "uppercase",
                   letterSpacing: "0.5px",
                 }}
               >
-                Producto:
+                Product:
               </Typography>
               {selectedProduct?.name ? (
                 <Chip
                   label={selectedProduct.name}
                   size="small"
                   sx={{
-                    height: 24,
-                    fontSize: "0.8125rem",
+                    height: 18,
+                    fontSize: "0.625rem",
                     fontWeight: 500,
                     backgroundColor: theme.palette.mode === "dark"
                       ? alpha(theme.palette.primary.main, 0.15)
@@ -300,7 +316,7 @@ export function SelectFeaturesDialog({
                     color: theme.palette.primary.main,
                     border: `1px solid ${alpha(theme.palette.primary.main, 0.3)}`,
                     "& .MuiChip-label": {
-                      px: 1.5,
+                      px: 0.75,
                     },
                   }}
                 />
@@ -309,11 +325,11 @@ export function SelectFeaturesDialog({
                   variant="body2"
                   sx={{
                     color: theme.palette.text.secondary,
-                    fontSize: "0.875rem",
+                    fontSize: "0.6875rem",
                     fontStyle: "italic",
                   }}
                 >
-                  Producto no encontrado
+                  Product not found
                 </Typography>
               )}
             </Box>
@@ -324,17 +340,21 @@ export function SelectFeaturesDialog({
         <Alert 
           severity="info" 
           sx={{ 
-            m: 2, 
-            mb: 1.5,
-            mt: selectedProduct ? 1 : 2,
+            m: 1.5, 
+            mb: 1,
+            mt: selectedProduct ? 1 : 1.5,
             borderRadius: 1.5,
             "& .MuiAlert-message": {
-              fontSize: "0.875rem",
+              fontSize: "0.6875rem",
+              lineHeight: 1.5,
+            },
+            "& .MuiAlert-icon": {
+              fontSize: "1rem",
             },
           }}
         >
-          Solo se pueden agregar features con estado <strong>Completed</strong> al plan de release.
-          Las features que ya están en otros planes activos (no cerrados) no están disponibles para agregar.
+          Only features with <strong>Completed</strong> status can be added to the release plan.
+          Features that are already in other active plans (not closed) are not available to add.
         </Alert>
 
         {/* Toolbar */}
@@ -342,17 +362,18 @@ export function SelectFeaturesDialog({
           sx={{
             px: 2,
             pb: 1.5,
+            pt: 1,
             borderBottom: `1px solid ${alpha(theme.palette.divider, 0.08)}`,
             display: "flex",
             flexDirection: "column",
-            gap: 1.5,
+            gap: 1,
           }}
         >
           {/* Search and Sort Row */}
           <Box
             sx={{
               display: "flex",
-              gap: 1.5,
+              gap: 1,
               alignItems: "center",
               flexWrap: "wrap",
             }}
@@ -362,44 +383,66 @@ export function SelectFeaturesDialog({
               id="select-features-search-input"
               name="featuresSearch"
               size="small"
-              placeholder="Buscar features..."
+              placeholder="Search features..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               slotProps={{
                 input: {
                   startAdornment: (
                     <InputAdornment position="start">
-                      <SearchIcon fontSize="small" sx={{ color: theme.palette.text.secondary }} />
+                      <SearchIcon fontSize="small" sx={{ fontSize: 16, color: theme.palette.text.secondary }} />
                     </InputAdornment>
                   ),
                 },
               }}
               sx={{
-                flex: { xs: "1 1 100%", sm: "0 1 280px" },
-                minWidth: 200,
+                flex: { xs: "1 1 100%", sm: "0 1 240px" },
+                minWidth: 180,
+                fontSize: "0.6875rem",
                 "& .MuiOutlinedInput-root": {
                   borderRadius: 1.5,
+                  fontSize: "0.6875rem",
+                },
+                "& input": {
+                  py: 0.75,
+                  fontSize: "0.6875rem",
                 },
               }}
             />
 
             {/* Sort */}
-            <FormControl size="small" sx={{ minWidth: 160 }}>
-              <InputLabel id="features-sort-label">Ordenar por</InputLabel>
+            <FormControl size="small" sx={{ minWidth: 140 }}>
+              <InputLabel 
+                id="features-sort-label"
+                sx={{ fontSize: "0.625rem" }}
+              >
+                Sort by
+              </InputLabel>
               <Select
                 id="select-features-sort-select"
                 name="featuresSort"
                 labelId="features-sort-label"
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as SortBy)}
-                label="Ordenar por"
+                label="Sort by"
                 sx={{
                   borderRadius: 1.5,
+                  fontSize: "0.6875rem",
+                  "& .MuiSelect-select": {
+                    py: 0.75,
+                    fontSize: "0.6875rem",
+                  },
                 }}
               >
-                <MenuItem value="name">Nombre</MenuItem>
-                <MenuItem value="status">Estado</MenuItem>
-                <MenuItem value="date">Fecha</MenuItem>
+                <MenuItem value="name" sx={{ fontSize: "0.6875rem", py: 0.5, minHeight: 32 }}>
+                  Name
+                </MenuItem>
+                <MenuItem value="status" sx={{ fontSize: "0.6875rem", py: 0.5, minHeight: 32 }}>
+                  Status
+                </MenuItem>
+                <MenuItem value="date" sx={{ fontSize: "0.6875rem", py: 0.5, minHeight: 32 }}>
+                  Date
+                </MenuItem>
               </Select>
             </FormControl>
 
@@ -409,15 +452,18 @@ export function SelectFeaturesDialog({
                 size="small"
                 onClick={handleSelectAll}
                 startIcon={
-                  isAllSelected ? <CheckBox /> : <CheckBoxOutlineBlank />
+                  isAllSelected ? <CheckBox sx={{ fontSize: 16 }} /> : <CheckBoxOutlineBlank sx={{ fontSize: 16 }} />
                 }
                 sx={{ 
                   textTransform: "none",
                   borderRadius: 1.5,
                   ml: "auto",
+                  fontSize: "0.6875rem",
+                  px: 1.25,
+                  py: 0.5,
                 }}
               >
-                {isAllSelected ? "Deseleccionar todas" : "Seleccionar todas"}
+                {isAllSelected ? "Deselect all" : "Select all"}
               </Button>
             )}
           </Box>
@@ -427,17 +473,24 @@ export function SelectFeaturesDialog({
             sx={{
               display: "flex",
               alignItems: "center",
-              gap: 1,
+              gap: 0.75,
               flexWrap: "wrap",
             }}
           >
-            <FilterIcon fontSize="small" sx={{ color: theme.palette.text.secondary, mr: 0.5 }} />
-            <Typography variant="caption" sx={{ color: theme.palette.text.secondary, mr: 0.5 }}>
-              Filtrar por estado:
+            <FilterIcon fontSize="small" sx={{ fontSize: 14, color: theme.palette.text.secondary }} />
+            <Typography 
+              variant="caption" 
+              sx={{ 
+                color: theme.palette.text.secondary, 
+                fontSize: "0.625rem",
+                fontWeight: 500,
+              }}
+            >
+              Filter by status:
             </Typography>
-            <Stack direction="row" spacing={0.75} flexWrap="wrap" gap={0.75}>
+            <Stack direction="row" spacing={0.5} flexWrap="wrap" gap={0.5}>
               <Chip
-                label={`Todas (${statusCounts.all})`}
+                label={`All (${statusCounts.all})`}
                 size="small"
                 onClick={() => setStatusFilter("all")}
                 color={statusFilter === "all" ? "primary" : "default"}
@@ -445,6 +498,11 @@ export function SelectFeaturesDialog({
                 sx={{
                   fontWeight: statusFilter === "all" ? 600 : 400,
                   cursor: "pointer",
+                  height: 20,
+                  fontSize: "0.625rem",
+                  "& .MuiChip-label": {
+                    px: 0.75,
+                  },
                 }}
               />
               {(Object.keys(STATUS_LABELS) as FeatureStatus[]).map((status) => (
@@ -459,6 +517,11 @@ export function SelectFeaturesDialog({
                     fontWeight: statusFilter === status ? 600 : 400,
                     cursor: "pointer",
                     opacity: statusCounts[status] === 0 ? 0.5 : 1,
+                    height: 20,
+                    fontSize: "0.625rem",
+                    "& .MuiChip-label": {
+                      px: 0.75,
+                    },
                   }}
                 />
               ))}
@@ -468,7 +531,7 @@ export function SelectFeaturesDialog({
 
         {/* Features Table */}
         <Box sx={{ flex: 1, overflow: "auto", minHeight: 0 }}>
-          {isLoadingFeatures ? (
+          {isLoadingProducts || isLoadingFeatures ? (
             <Box
               sx={{
                 p: 4,
@@ -476,7 +539,16 @@ export function SelectFeaturesDialog({
                 color: "text.secondary",
               }}
             >
-              <Typography variant="body2">Cargando features...</Typography>
+              <CircularProgress size={24} />
+              <Typography 
+                variant="body2" 
+                sx={{ 
+                  fontSize: "0.6875rem",
+                  mt: 1,
+                }}
+              >
+                Loading features...
+              </Typography>
             </Box>
           ) : !productId ? (
             <Box
@@ -486,8 +558,11 @@ export function SelectFeaturesDialog({
                 color: "text.secondary",
               }}
             >
-              <Typography variant="body2">
-                Por favor seleccione un producto en el tab de Datos Comunes para ver las features disponibles.
+              <Typography 
+                variant="body2"
+                sx={{ fontSize: "0.6875rem" }}
+              >
+                Please select a product in the Common Data tab to view available features.
               </Typography>
             </Box>
           ) : processedFeatures.length === 0 ? (
@@ -498,12 +573,15 @@ export function SelectFeaturesDialog({
                 color: "text.secondary",
               }}
             >
-              <Typography variant="body2">
+              <Typography 
+                variant="body2"
+                sx={{ fontSize: "0.6875rem" }}
+              >
                 {searchQuery
-                  ? "No se encontraron features que coincidan con la búsqueda."
+                  ? "No features found matching the search."
                   : statusFilter === "all"
-                  ? "No hay features disponibles para agregar."
-                  : `No hay features con estado ${STATUS_LABELS[statusFilter as FeatureStatus]}.`}
+                  ? "No features available to add."
+                  : `No features with status ${STATUS_LABELS[statusFilter as FeatureStatus]}.`}
               </Typography>
             </Box>
           ) : (
@@ -533,42 +611,50 @@ export function SelectFeaturesDialog({
                     <TableCell 
                       sx={{ 
                         fontWeight: 600,
+                        fontSize: "0.625rem",
+                        py: 1,
                         backgroundColor: theme.palette.mode === "dark" 
                           ? alpha(theme.palette.background.paper, 0.8)
                           : theme.palette.background.paper,
                       }}
                     >
-                      Nombre
+                      Name
                     </TableCell>
                     <TableCell 
                       sx={{ 
                         fontWeight: 600,
+                        fontSize: "0.625rem",
+                        py: 1,
                         backgroundColor: theme.palette.mode === "dark" 
                           ? alpha(theme.palette.background.paper, 0.8)
                           : theme.palette.background.paper,
                       }}
                     >
-                      Categoría
+                      Category
                     </TableCell>
                     <TableCell 
                       sx={{ 
                         fontWeight: 600,
+                        fontSize: "0.625rem",
+                        py: 1,
                         backgroundColor: theme.palette.mode === "dark" 
                           ? alpha(theme.palette.background.paper, 0.8)
                           : theme.palette.background.paper,
                       }}
                     >
-                      Estado
+                      Status
                     </TableCell>
                     <TableCell 
                       sx={{ 
                         fontWeight: 600,
+                        fontSize: "0.625rem",
+                        py: 1,
                         backgroundColor: theme.palette.mode === "dark" 
                           ? alpha(theme.palette.background.paper, 0.8)
                           : theme.palette.background.paper,
                       }}
                     >
-                      Descripción
+                      Description
                     </TableCell>
                   </TableRow>
                 </TableHead>
@@ -583,10 +669,10 @@ export function SelectFeaturesDialog({
                     // Create tooltip message for disabled features
                     let disabledReason = "";
                     if (!isCompleted) {
-                      disabledReason = "Solo se pueden agregar features con estado Completed";
+                      disabledReason = "Only features with Completed status can be added";
                     } else if (isInActivePlan) {
                       const planNames = activePlans.map((p) => p.name).join(", ");
-                      disabledReason = `Esta feature está en el plan activo: ${planNames}`;
+                      disabledReason = `This feature is in the active plan: ${planNames}`;
                     }
                     
                     return (
@@ -626,7 +712,7 @@ export function SelectFeaturesDialog({
                             </span>
                           </Tooltip>
                         </TableCell>
-                        <TableCell>
+                        <TableCell sx={{ py: 1 }}>
                           <Tooltip 
                             title={
                               isDisabled && disabledReason 
@@ -639,6 +725,7 @@ export function SelectFeaturesDialog({
                               variant="body2"
                               sx={{
                                 fontWeight: isSelected ? 600 : 400,
+                                fontSize: "0.6875rem",
                                 maxWidth: 200,
                                 overflow: "hidden",
                                 textOverflow: "ellipsis",
@@ -649,29 +736,37 @@ export function SelectFeaturesDialog({
                             </Typography>
                           </Tooltip>
                         </TableCell>
-                        <TableCell>
-                          <Typography variant="body2" color="text.secondary">
+                        <TableCell sx={{ py: 1 }}>
+                          <Typography 
+                            variant="body2" 
+                            color="text.secondary"
+                            sx={{ fontSize: "0.6875rem" }}
+                          >
                             {feature.category.name}
                           </Typography>
                         </TableCell>
-                        <TableCell>
+                        <TableCell sx={{ py: 1 }}>
                           <Chip
                             label={STATUS_LABELS[feature.status]}
                             size="small"
                             color={STATUS_COLORS[feature.status]}
                             variant="outlined"
                             sx={{
-                              fontSize: "0.75rem",
-                              height: 22,
+                              fontSize: "0.625rem",
+                              height: 18,
+                              "& .MuiChip-label": {
+                                px: 0.75,
+                              },
                             }}
                           />
                         </TableCell>
-                        <TableCell>
+                        <TableCell sx={{ py: 1 }}>
                           <Tooltip title={feature.description || "-"} arrow>
                             <Typography
                               variant="body2"
                               color="text.secondary"
                               sx={{
+                                fontSize: "0.6875rem",
                                 maxWidth: 300,
                                 overflow: "hidden",
                                 textOverflow: "ellipsis",
@@ -694,33 +789,40 @@ export function SelectFeaturesDialog({
 
       <DialogActions
         sx={{
-          p: 2,
+          p: 1.5,
+          px: 2,
           borderTop: `1px solid ${alpha(theme.palette.divider, 0.08)}`,
           gap: 1,
         }}
       >
         <Button 
           onClick={handleClose}
+          size="small"
           sx={{
             borderRadius: 1.5,
             textTransform: "none",
             px: 2,
+            fontSize: "0.6875rem",
+            py: 0.625,
           }}
         >
-          Cancelar
+          Cancel
         </Button>
         <Button
           onClick={handleAdd}
           variant="contained"
+          size="small"
           disabled={selectedIds.length === 0}
           sx={{
             borderRadius: 1.5,
             textTransform: "none",
-            px: 3,
+            px: 2,
+            fontSize: "0.6875rem",
             fontWeight: 500,
+            py: 0.625,
           }}
         >
-          Agregar {selectedIds.length > 0 ? `(${selectedIds.length})` : ""}
+          Add {selectedIds.length > 0 ? `(${selectedIds.length})` : ""}
         </Button>
       </DialogActions>
     </Dialog>

@@ -1,4 +1,4 @@
-import { memo, useCallback, useRef, useState, useEffect, startTransition } from "react";
+import { memo, useCallback, useRef, useState, useEffect } from "react";
 import {
   Box,
   Stack,
@@ -6,18 +6,13 @@ import {
   IconButton,
   Typography,
   Chip,
-  ListItemButton,
-  ListItemIcon,
+  Divider,
   useTheme,
   alpha,
+  CircularProgress,
 } from "@mui/material";
-import { keyframes } from "@mui/system";
 import {
   ExpandMore,
-  Person as PersonIcon,
-  CalendarToday as CalendarIcon,
-  Timeline as TimelineIcon,
-  Assignment as TaskIcon,
   InfoOutlined as InfoIcon,
   Delete as DeleteIcon,
   Save as SaveIcon,
@@ -30,16 +25,6 @@ import { getUserErrorMessage } from "@/api/resilience/ErrorHandler";
 // Lazy load PlanCard only when needed
 const PlanCard = lazy(() => import("@/features/releasePlans/components/PlanCard/PlanCard"));
 import type { PlanCardHandle } from "@/features/releasePlans/components/PlanCard/PlanCard";
-
-// ⚡ Elegant shimmer animation for loading state
-const shimmerAnimation = keyframes`
-  0% {
-    background-position: 200% 0;
-  }
-  100% {
-    background-position: -200% 0;
-  }
-`;
 
 type PlanListItemProps = {
   plan: LocalPlan;
@@ -74,14 +59,8 @@ const PlanListItem = memo(function PlanListItem({
   const planCardRef = useRef<PlanCardHandle>(null);
   const [isSaving, setIsSaving] = useState(false);
 
-  // ⚡ Advanced optimization: Use startTransition to mark expansion as non-urgent
-  // This allows React to prioritize the UI update and defer heavy rendering
   const handleToggle = useCallback(() => {
-    // Mark the toggle as a transition (non-urgent update)
-    // This allows React to keep the UI responsive while preparing the heavy content
-    startTransition(() => {
-      onToggle(plan.id);
-    });
+    onToggle(plan.id);
   }, [plan.id, onToggle]);
 
   const handleDelete = useCallback(
@@ -147,58 +126,52 @@ const PlanListItem = memo(function PlanListItem({
 
   return (
     <Box sx={{ width: "100%" }}>
-      <ListItemButton
+      <Box
         onClick={handleToggle}
         onContextMenu={handleContextMenu}
         sx={{
           px: 2,
           py: 1.5,
-          minHeight: "auto",
           width: "100%",
           display: "flex",
           flexDirection: "row",
           alignItems: "center",
           gap: 1,
-          borderBottom:
-            index < totalPlans - 1
-              ? `1px solid ${alpha(theme.palette.divider, 0.08)}`
-              : "none",
+          cursor: "pointer",
           "&:hover": {
             bgcolor: alpha(theme.palette.primary.main, 0.04),
           },
         }}
       >
         {/* Expand/Collapse Icon */}
-        <ListItemIcon
+        <IconButton
+          size="small"
+          onClick={(e) => {
+            e.stopPropagation();
+            handleToggle();
+          }}
           sx={{
-            minWidth: 32,
-            mr: 0,
+            fontSize: 16,
+            p: 0.75,
+            color: theme.palette.text.secondary,
+            transform: expanded ? "rotate(180deg)" : "rotate(0deg)",
+            transition: "transform 0.15s ease",
+            "&:hover": {
+              bgcolor: alpha(theme.palette.primary.main, 0.08),
+            },
           }}
         >
-          <IconButton
-            size="small"
-            sx={{
-              p: 0.5,
-              color: theme.palette.text.secondary,
-              transform: expanded ? "rotate(180deg)" : "rotate(0deg)",
-              transition: "transform 0.2s ease",
-            }}
-          >
-            <ExpandMore fontSize="small" />
-          </IconButton>
-        </ListItemIcon>
+          <ExpandMore fontSize="inherit" />
+        </IconButton>
 
-        {/* Plan Name and Info - All in one line */}
+        {/* Plan Name and Info */}
         <Box
           sx={{
             flex: 1,
             minWidth: 0,
-            width: { xs: "100%", sm: "auto" },
             display: "flex",
-            flexDirection: "row",
-            alignItems: "center",
-            gap: { xs: 0.75, sm: 1 },
-            flexWrap: { xs: "wrap", sm: "nowrap" },
+            flexDirection: "column",
+            gap: 0.25,
           }}
         >
           {/* Plan Name */}
@@ -211,24 +184,19 @@ const PlanListItem = memo(function PlanListItem({
               overflow: "hidden",
               textOverflow: "ellipsis",
               whiteSpace: "nowrap",
-              flexShrink: { xs: 1, sm: 0 },
-              minWidth: 0,
-              maxWidth: { xs: "100%", sm: "180px", md: "250px", lg: "300px" },
             }}
           >
             {plan.metadata.name}
           </Typography>
 
-          {/* Chips - Inline with name */}
+          {/* Info Chips - Simple, no icons */}
           <Stack
             direction="row"
-            spacing={{ xs: 0.5, sm: 0.75 }}
+            spacing={0.5}
             alignItems="center"
             sx={{
               flexWrap: "wrap",
-              gap: { xs: 0.5, sm: 0.75 },
-              flex: { xs: "1 1 100%", sm: "0 1 auto" },
-              minWidth: 0,
+              gap: 0.5,
             }}
           >
             {/* Status Chip */}
@@ -245,99 +213,69 @@ const PlanListItem = memo(function PlanListItem({
               }}
             />
 
-            {/* Owner */}
-            <Chip
-              icon={<PersonIcon sx={{ fontSize: 10 }} />}
-              label={plan.metadata.owner}
-              size="small"
-              variant="outlined"
+            {/* Owner - Simple text */}
+            <Typography
+              variant="caption"
               sx={{
-                height: 18,
-                fontSize: "0.625rem",
-                borderColor: alpha(theme.palette.divider, 0.3),
+                fontSize: "0.6875rem",
                 color: theme.palette.text.secondary,
-                display: { xs: "none", sm: "flex" },
-                "& .MuiChip-label": {
-                  px: 0.75,
-                },
+                display: { xs: "none", sm: "block" },
               }}
-            />
+            >
+              {plan.metadata.owner}
+            </Typography>
 
-            {/* Date Range */}
-            <Chip
-              icon={<CalendarIcon sx={{ fontSize: 10 }} />}
-              label={`${formatCompactDate(plan.metadata.startDate)} - ${formatCompactDate(
-                plan.metadata.endDate
-              )}`}
-              size="small"
-              variant="outlined"
+            {/* Date Range - Simple text */}
+            <Typography
+              variant="caption"
               sx={{
-                height: 18,
-                fontSize: "0.625rem",
-                borderColor: alpha(theme.palette.divider, 0.3),
+                fontSize: "0.6875rem",
                 color: theme.palette.text.secondary,
-                "& .MuiChip-label": {
-                  px: 0.75,
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  maxWidth: { xs: 120, sm: "none" },
-                },
               }}
-            />
+            >
+              {formatCompactDate(plan.metadata.startDate)} - {formatCompactDate(plan.metadata.endDate)}
+            </Typography>
 
-            {/* Phases Count */}
+            {/* Phases Count - Simple text */}
             {phasesCount > 0 && (
-              <Chip
-                icon={<TimelineIcon sx={{ fontSize: 10 }} />}
-                label={`${phasesCount} ${phasesCount === 1 ? "phase" : "phases"}`}
-                size="small"
-                variant="outlined"
+              <Typography
+                variant="caption"
                 sx={{
-                  height: 18,
-                  fontSize: "0.625rem",
-                  borderColor: alpha(theme.palette.divider, 0.3),
+                  fontSize: "0.6875rem",
                   color: theme.palette.text.secondary,
-                  "& .MuiChip-label": {
-                    px: 0.75,
-                  },
                 }}
-              />
+              >
+                {phasesCount} {phasesCount === 1 ? "phase" : "phases"}
+              </Typography>
             )}
 
-            {/* Tasks Count */}
+            {/* Tasks Count - Simple text */}
             {tasksCount > 0 && (
-              <Chip
-                icon={<TaskIcon sx={{ fontSize: 10 }} />}
-                label={`${tasksCount} ${tasksCount === 1 ? "task" : "tasks"}`}
-                size="small"
-                variant="outlined"
+              <Typography
+                variant="caption"
                 sx={{
-                  height: 18,
-                  fontSize: "0.625rem",
-                  borderColor: alpha(theme.palette.divider, 0.3),
+                  fontSize: "0.6875rem",
                   color: theme.palette.text.secondary,
-                  display: { xs: "none", md: "flex" },
-                  "& .MuiChip-label": {
-                    px: 0.75,
-                  },
+                  display: { xs: "none", md: "block" },
                 }}
-              />
+              >
+                {tasksCount} {tasksCount === 1 ? "task" : "tasks"}
+              </Typography>
             )}
           </Stack>
         </Box>
 
         {/* Action Buttons: Save, Info (Copy ID) and Delete */}
-        <Box
+        <Stack
+          direction="row"
+          spacing={0.25}
           sx={{
             ml: "auto",
-            display: "flex",
-            alignItems: "center",
-            gap: 0.5,
             flexShrink: 0,
           }}
         >
           {expanded && (
-            <Tooltip title="Save plan changes" arrow placement="top">
+            <Tooltip title="Save plan changes">
               <span>
                 <IconButton
                   size="small"
@@ -346,24 +284,22 @@ const PlanListItem = memo(function PlanListItem({
                   sx={{
                     fontSize: 16,
                     p: 0.75,
-                    color: theme.palette.success.main,
-                    opacity: hasPendingChanges ? 1 : 0.5,
-                    transition: "all 0.2s ease-in-out",
+                    color: hasPendingChanges ? theme.palette.success.main : theme.palette.text.disabled,
                     "&:hover:not(:disabled)": {
-                      opacity: 1,
                       bgcolor: alpha(theme.palette.success.main, 0.08),
-                    },
-                    "&:disabled": {
-                      opacity: 0.5,
                     },
                   }}
                 >
-                  <SaveIcon fontSize="inherit" />
+                  {isSaving ? (
+                    <CircularProgress size={14} color="inherit" />
+                  ) : (
+                    <SaveIcon fontSize="inherit" />
+                  )}
                 </IconButton>
               </span>
             </Tooltip>
           )}
-          <Tooltip title="Copy plan ID" arrow placement="top">
+          <Tooltip title="Copy plan ID">
             <IconButton
               size="small"
               onClick={handleCopyId}
@@ -372,15 +308,15 @@ const PlanListItem = memo(function PlanListItem({
                 p: 0.75,
                 color: theme.palette.text.secondary,
                 "&:hover": {
-                  color: theme.palette.info.main,
-                  bgcolor: alpha(theme.palette.info.main, 0.08),
+                  color: theme.palette.primary.main,
+                  bgcolor: alpha(theme.palette.primary.main, 0.08),
                 },
               }}
             >
               <InfoIcon fontSize="inherit" />
             </IconButton>
           </Tooltip>
-          <Tooltip title="Delete plan" arrow placement="top">
+          <Tooltip title="Delete plan">
             <IconButton
               size="small"
               onClick={handleDelete}
@@ -397,18 +333,18 @@ const PlanListItem = memo(function PlanListItem({
               <DeleteIcon fontSize="inherit" />
             </IconButton>
           </Tooltip>
-        </Box>
-      </ListItemButton>
+        </Stack>
+      </Box>
+      
+      {index < totalPlans - 1 && (
+        <Divider sx={{ borderColor: alpha(theme.palette.divider, 0.08) }} />
+      )}
 
       {/* Expanded Content - Lazy loaded for performance */}
       {expanded && (
         <Box
           sx={{
             borderTop: `1px solid ${alpha(theme.palette.divider, 0.08)}`,
-            bgcolor:
-              theme.palette.mode === "dark"
-                ? alpha(theme.palette.background.default, 0.5)
-                : alpha(theme.palette.background.default, 0.3),
             width: "100%",
             overflow: "hidden",
           }}
@@ -417,39 +353,13 @@ const PlanListItem = memo(function PlanListItem({
             fallback={
               <Box
                 sx={{
-                  position: "relative",
-                  width: "100%",
-                  minHeight: 200,
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  py: 4,
                 }}
               >
-                {/* ⚡ Minimalist and elegant progress animation */}
-                <Box
-                  sx={{
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    height: 2,
-                    zIndex: 1,
-                    backgroundColor: alpha(theme.palette.primary.main, 0.08),
-                    overflow: "hidden",
-                  }}
-                >
-                  <Box
-                    sx={{
-                      width: "100%",
-                      height: "100%",
-                      background: `linear-gradient(90deg, 
-                        transparent 0%, 
-                        ${alpha(theme.palette.primary.main, 0.3)} 25%,
-                        ${theme.palette.primary.main} 50%,
-                        ${alpha(theme.palette.primary.main, 0.3)} 75%,
-                        transparent 100%)`,
-                      backgroundSize: "200% 100%",
-                      animation: `${shimmerAnimation} 1.5s ease-in-out infinite`,
-                    }}
-                  />
-                </Box>
+                <CircularProgress size={24} />
               </Box>
             }
           >

@@ -458,7 +458,7 @@ export function ReferenceEditDialog({
           letterSpacing: "-0.015em",
         }}
       >
-        {isCreating ? "Nueva Referencia" : "Editar Referencia"}
+        {isCreating ? "New Reference" : "Edit Reference"}
       </DialogTitle>
 
       <DialogContent sx={{ pt: 3.5, px: 3, pb: 2 }}>
@@ -667,7 +667,7 @@ export function ReferenceEditDialog({
                       },
                     }}
                   >
-                    Seleccionar archivos
+                    Select files
                   </Button>
                 </label>
                 {selectedFiles.length > 0 && (
@@ -1200,7 +1200,7 @@ export function ReferenceEditDialog({
             },
           }}
         >
-          Cancelar
+          Cancel
         </Button>
         <Button
           onClick={handleSave}
@@ -1233,7 +1233,7 @@ export function ReferenceEditDialog({
             },
           }}
         >
-          {isCreating ? "Agregar" : "Guardar"}
+          {isCreating ? "Add" : "Save"}
         </Button>
       </DialogActions>
     </Dialog>

@@ -169,7 +169,7 @@ export function RegisterForm({ onSuccess, onSwitchToLogin }: RegisterFormProps) 
 
         <TextField
           fullWidth
-          label="Confirmar Contraseña"
+          label="Confirm Password"
           type="password"
           value={formData.confirmPassword}
           onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}

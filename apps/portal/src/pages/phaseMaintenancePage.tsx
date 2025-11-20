@@ -16,7 +16,7 @@ export function PhaseMaintenancePage() {
     dispatch(
       addBasePhase({
         id: `base-${Date.now()}`,
-        name: "Nueva fase",
+        name: "New phase",
         color: "#185ABD",
       })
     );
@@ -43,13 +43,13 @@ export function PhaseMaintenancePage() {
             borderRadius: 2,
           }}
         >
-          Nueva fase
+          New Phase
         </Button>
       </Box>
       <Box sx={{ display: "grid", gap: 2 }}>
         {phases.length === 0 ? (
           <Box sx={{ textAlign: "center", color: "text.secondary", py: 8 }}>
-            No hay fases registradas.
+            No phases registered.
           </Box>
         ) : (
           phases.map((phase) => (
@@ -83,7 +83,7 @@ export function PhaseMaintenancePage() {
                 variant="text"
                 sx={{ textTransform: "none" }}
               >
-                Editar
+                Edit
               </Button>
             </Box>
           ))

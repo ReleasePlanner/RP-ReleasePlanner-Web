@@ -9,6 +9,14 @@ import {
   Tooltip,
   IconButton,
   CircularProgress,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  Chip,
 } from "@mui/material";
 import {
   Add as AddIcon,
@@ -143,7 +151,7 @@ export function PlanComponentsTab({
         }}
       >
         <Typography variant="body2">
-          Por favor seleccione un producto en el tab de Datos Comunes para gestionar los componentes.
+          Please select a product in the Common Data tab to manage components.
         </Typography>
       </Box>
     );
@@ -170,263 +178,339 @@ export function PlanComponentsTab({
         height: "100%",
         display: "flex",
         flexDirection: "column",
+        overflow: "hidden",
       }}
     >
-      <Stack spacing={1.5} sx={{ flex: 1, minHeight: 0 }}>
+      <Stack spacing={1} sx={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
         {/* Header */}
         <Box
           sx={{
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
+            gap: 1,
             pb: 1,
             borderBottom: `1px solid ${alpha(theme.palette.divider, 0.08)}`,
+            flexShrink: 0,
+            flexWrap: { xs: "wrap", sm: "nowrap" },
           }}
         >
           <Typography 
             variant="subtitle2" 
             sx={{ 
               fontWeight: 600,
-              fontSize: "0.8125rem",
+              fontSize: { xs: "0.625rem", sm: "0.6875rem" },
               color: theme.palette.text.primary,
+              flex: { xs: "1 1 100%", sm: "0 1 auto" },
             }}
           >
-            Componentes para {productName} ({planComponentsWithDetails.length})
+            Components ({planComponentsWithDetails.length})
           </Typography>
-          <Tooltip title="Agregar componentes del producto" arrow placement="top">
+          <Tooltip title="Add product components" arrow placement="top">
             <Button
               variant="outlined"
               size="small"
-              startIcon={<AddIcon sx={{ fontSize: 16 }} />}
+              startIcon={<AddIcon sx={{ fontSize: 14 }} />}
               onClick={() => setSelectDialogOpen(true)}
               sx={{
                 textTransform: "none",
-                fontSize: "0.75rem",
+                fontSize: { xs: "0.625rem", sm: "0.6875rem" },
                 fontWeight: 500,
-                px: 1.5,
+                px: { xs: 1, sm: 1.25 },
                 py: 0.5,
                 borderRadius: 1,
-                minHeight: 28,
+                minHeight: 26,
                 borderColor: alpha(theme.palette.primary.main, 0.5),
                 color: theme.palette.primary.main,
+                flexShrink: 0,
                 "&:hover": {
                   borderColor: theme.palette.primary.main,
                   bgcolor: alpha(theme.palette.primary.main, 0.08),
                 },
               }}
             >
-              Agregar
+              Add
             </Button>
           </Tooltip>
         </Box>
 
         {/* Components Table */}
-        <Box sx={{ flex: 1, overflow: "auto", minHeight: 0 }}>
+        <Box 
+          sx={{ 
+            flex: 1, 
+            overflow: "hidden", 
+            minHeight: 0,
+            display: "flex",
+            flexDirection: "column",
+          }}
+        >
           {planComponentsWithDetails.length === 0 ? (
             <Box
               sx={{
                 p: 3,
                 textAlign: "center",
                 color: "text.secondary",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                height: "100%",
               }}
             >
               <Typography 
                 variant="body2"
-                sx={{ fontSize: "0.8125rem" }}
+                sx={{ fontSize: "0.6875rem" }}
               >
-                No hay componentes agregados a este plan. Haz clic en "Agregar" para
-                seleccionar componentes del producto.
+                No components added to this plan. Click "Add" to
+                select components from the product.
               </Typography>
             </Box>
           ) : (
-            <Box
-              component="table"
-              sx={{ width: "100%", borderCollapse: "collapse" }}
-            >
-              <Box component="thead">
-                <Box
-                  component="tr"
-                  sx={{
-                    borderBottom: `1px solid ${alpha(
-                      theme.palette.divider,
-                      0.5
-                    )}`,
+            <Box sx={{ flex: 1, overflow: "auto", minHeight: 0, display: "flex", flexDirection: "column" }}>
+              <TableContainer 
+                component={Paper} 
+                elevation={0}
+                sx={{
+                  border: `1px solid ${alpha(theme.palette.divider, 0.08)}`,
+                  borderRadius: 2,
+                  overflowX: "auto",
+                  overflowY: "auto",
+                  height: "100%",
+                  display: "flex",
+                  flexDirection: "column",
+                  width: "100%",
+                }}
+              >
+                <Table 
+                  size="small" 
+                  stickyHeader 
+                  sx={{ 
+                    width: "100%",
+                    tableLayout: "auto",
                   }}
                 >
-                  <Box
-                    component="th"
-                    sx={{
-                      textAlign: "left",
-                      p: 1.5,
-                      fontWeight: 600,
-                      fontSize: "0.75rem",
-                      color: theme.palette.text.secondary,
-                      textTransform: "uppercase",
-                    }}
-                  >
-                    Component
-                  </Box>
-                  <Box
-                    component="th"
-                    sx={{
-                      textAlign: "left",
-                      p: 1.5,
-                      fontWeight: 600,
-                      fontSize: "0.75rem",
-                      color: theme.palette.text.secondary,
-                      textTransform: "uppercase",
-                    }}
-                  >
-                    Type
-                  </Box>
-                  <Box
-                    component="th"
-                    sx={{
-                      textAlign: "left",
-                      p: 1.5,
-                      fontWeight: 600,
-                      fontSize: "0.75rem",
-                      color: theme.palette.text.secondary,
-                      textTransform: "uppercase",
-                    }}
-                  >
-                    Current Version
-                  </Box>
-                  <Box
-                    component="th"
-                    sx={{
-                      textAlign: "left",
-                      p: 1.5,
-                      fontWeight: 600,
-                      fontSize: "0.75rem",
-                      color: theme.palette.text.secondary,
-                      textTransform: "uppercase",
-                    }}
-                  >
-                    Final Version
-                  </Box>
-                  <Box
-                    component="th"
-                    sx={{
-                      textAlign: "right",
-                      p: 1.5,
-                      fontWeight: 600,
-                      fontSize: "0.75rem",
-                      color: theme.palette.text.secondary,
-                      textTransform: "uppercase",
-                    }}
-                  >
-                    Actions
-                  </Box>
-                </Box>
-              </Box>
-              <Box component="tbody">
-                {planComponentsWithDetails.map((component) => (
-                  <Box
-                    key={component.id}
-                    component="tr"
-                    sx={{
-                      borderBottom: `1px solid ${alpha(
-                        theme.palette.divider,
-                        0.3
-                      )}`,
-                      "&:hover": {
-                        bgcolor: alpha(theme.palette.action.hover, 0.3),
-                      },
-                    }}
-                  >
-                    <Box component="td" sx={{ p: 1.5 }}>
-                      <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                        {component.name}
-                      </Typography>
-                    </Box>
-                    <Box component="td" sx={{ p: 1.5 }}>
-                      <Typography
-                        variant="body2"
-                        sx={{
-                          color: theme.palette.text.secondary,
-                          textTransform: "capitalize",
-                        }}
-                      >
-                        {component.type}
-                      </Typography>
-                    </Box>
-                    <Box component="td" sx={{ p: 1.5 }}>
-                      <Typography
-                        variant="body2"
-                        sx={{
-                          fontFamily: "monospace",
-                          color: theme.palette.text.secondary,
-                        }}
-                      >
-                        {component.currentVersion || "N/A"}
-                      </Typography>
-                    </Box>
-                    <Box component="td" sx={{ p: 1.5 }}>
-                      <Typography
-                        variant="body2"
-                        sx={{
-                          fontFamily: "monospace",
+                  <TableHead>
+                    <TableRow>
+                      <TableCell 
+                        sx={{ 
                           fontWeight: 600,
-                          color: theme.palette.primary.main,
+                          fontSize: { xs: "0.5625rem", sm: "0.625rem" },
+                          py: { xs: 0.5, sm: 0.75 },
+                          px: { xs: 0.25, sm: 0.5 },
+                          whiteSpace: "nowrap",
+                          letterSpacing: "0.02em",
+                          textTransform: "uppercase",
+                          backgroundColor: theme.palette.mode === "dark" 
+                            ? alpha(theme.palette.background.paper, 0.8)
+                            : theme.palette.background.paper,
+                          width: "auto",
                         }}
                       >
-                        {component.finalVersion}
-                      </Typography>
-                    </Box>
-                    <Box component="td" sx={{ p: 1.5, textAlign: "right" }}>
-                      <Box
+                        Actions
+                      </TableCell>
+                      <TableCell 
+                        sx={{ 
+                          fontWeight: 600,
+                          fontSize: { xs: "0.5625rem", sm: "0.625rem" },
+                          py: { xs: 0.5, sm: 0.75 },
+                          px: { xs: 0.5, sm: 0.75 },
+                          whiteSpace: "nowrap",
+                          letterSpacing: "0.02em",
+                          textTransform: "uppercase",
+                          backgroundColor: theme.palette.mode === "dark" 
+                            ? alpha(theme.palette.background.paper, 0.8)
+                            : theme.palette.background.paper,
+                        }}
+                      >
+                        Component
+                      </TableCell>
+                      <TableCell 
+                        sx={{ 
+                          fontWeight: 600,
+                          fontSize: { xs: "0.5625rem", sm: "0.625rem" },
+                          py: { xs: 0.5, sm: 0.75 },
+                          px: { xs: 0.5, sm: 0.75 },
+                          whiteSpace: "nowrap",
+                          letterSpacing: "0.02em",
+                          textTransform: "uppercase",
+                          backgroundColor: theme.palette.mode === "dark" 
+                            ? alpha(theme.palette.background.paper, 0.8)
+                            : theme.palette.background.paper,
+                        }}
+                      >
+                        Type
+                      </TableCell>
+                      <TableCell 
+                        sx={{ 
+                          fontWeight: 600,
+                          fontSize: { xs: "0.5625rem", sm: "0.625rem" },
+                          py: { xs: 0.5, sm: 0.75 },
+                          px: { xs: 0.5, sm: 0.75 },
+                          whiteSpace: "nowrap",
+                          letterSpacing: "0.02em",
+                          textTransform: "uppercase",
+                          backgroundColor: theme.palette.mode === "dark" 
+                            ? alpha(theme.palette.background.paper, 0.8)
+                            : theme.palette.background.paper,
+                        }}
+                      >
+                        Current Version
+                      </TableCell>
+                      <TableCell 
+                        sx={{ 
+                          fontWeight: 600,
+                          fontSize: { xs: "0.5625rem", sm: "0.625rem" },
+                          py: { xs: 0.5, sm: 0.75 },
+                          px: { xs: 0.5, sm: 0.75 },
+                          whiteSpace: "nowrap",
+                          letterSpacing: "0.02em",
+                          textTransform: "uppercase",
+                          backgroundColor: theme.palette.mode === "dark" 
+                            ? alpha(theme.palette.background.paper, 0.8)
+                            : theme.palette.background.paper,
+                        }}
+                      >
+                        New Version
+                      </TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {planComponentsWithDetails.map((component) => (
+                      <TableRow
+                        key={component.id}
                         sx={{
-                          display: "flex",
-                          gap: 0.5,
-                          justifyContent: "flex-end",
+                          borderBottom: `1px solid ${alpha(theme.palette.divider, 0.08)}`,
+                          transition: theme.transitions.create(["background-color"], {
+                            duration: theme.transitions.duration.shorter,
+                          }),
+                          "&:hover": {
+                            backgroundColor: alpha(theme.palette.action.hover, 0.04),
+                          },
                         }}
                       >
-                        <Tooltip title="Edit final version" arrow>
-                          <IconButton
-                            size="small"
-                            onClick={() => handleEditVersion(component)}
+                        <TableCell sx={{ py: { xs: 0.5, sm: 0.75 }, px: { xs: 0.25, sm: 0.5 }, whiteSpace: "nowrap" }}>
+                          <Box
                             sx={{
-                              color: alpha(theme.palette.text.secondary, 0.7),
-                              "&:hover": {
-                                color: theme.palette.primary.main,
-                                bgcolor: alpha(theme.palette.primary.main, 0.08),
-                              },
-                              "&:focus-visible": {
-                                outline: `2px solid ${alpha(theme.palette.primary.main, 0.5)}`,
-                                outlineOffset: 2,
-                              },
+                              display: "flex",
+                              gap: 0.25,
+                              alignItems: "center",
+                              flexWrap: "nowrap",
                             }}
                           >
-                            <EditIcon fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
-                        <Tooltip title="Remove component" arrow>
-                          <IconButton
+                            <Tooltip title="Edit new version" arrow placement="top">
+                              <IconButton
+                                size="small"
+                                onClick={() => handleEditVersion(component)}
+                                sx={{
+                                  fontSize: { xs: 14, sm: 16 },
+                                  p: { xs: 0.375, sm: 0.5 },
+                                  color: theme.palette.text.secondary,
+                                  transition: theme.transitions.create(["color", "background-color"], {
+                                    duration: theme.transitions.duration.shorter,
+                                  }),
+                                  "&:hover": {
+                                    color: theme.palette.primary.main,
+                                    bgcolor: alpha(theme.palette.primary.main, 0.08),
+                                  },
+                                }}
+                              >
+                                <EditIcon fontSize="inherit" />
+                              </IconButton>
+                            </Tooltip>
+                            <Tooltip title="Delete component" arrow placement="top">
+                              <IconButton
+                                size="small"
+                                onClick={() =>
+                                  handleDeleteComponent(component.planComponentId)
+                                }
+                                sx={{
+                                  fontSize: { xs: 14, sm: 16 },
+                                  p: { xs: 0.375, sm: 0.5 },
+                                  color: theme.palette.text.secondary,
+                                  transition: theme.transitions.create(["color", "background-color"], {
+                                    duration: theme.transitions.duration.shorter,
+                                  }),
+                                  "&:hover": {
+                                    color: theme.palette.error.main,
+                                    bgcolor: alpha(theme.palette.error.main, 0.08),
+                                  },
+                                }}
+                              >
+                                <DeleteIcon fontSize="inherit" />
+                              </IconButton>
+                            </Tooltip>
+                          </Box>
+                        </TableCell>
+                        <TableCell sx={{ py: { xs: 0.5, sm: 0.75 }, px: { xs: 0.5, sm: 0.75 } }}>
+                          <Typography 
+                            variant="body2" 
+                            sx={{ 
+                              fontWeight: 500,
+                              fontSize: { xs: "0.625rem", sm: "0.6875rem" },
+                              color: theme.palette.text.primary,
+                              lineHeight: 1.4,
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              display: "-webkit-box",
+                              WebkitLineClamp: 2,
+                              WebkitBoxOrient: "vertical",
+                            }}
+                            title={component.name}
+                          >
+                            {component.name}
+                          </Typography>
+                        </TableCell>
+                        <TableCell sx={{ py: { xs: 0.5, sm: 0.75 }, px: { xs: 0.5, sm: 0.75 }, whiteSpace: "nowrap" }}>
+                          <Chip
+                            label={component.type}
                             size="small"
-                            onClick={() =>
-                              handleDeleteComponent(component.planComponentId)
-                            }
                             sx={{
-                              color: alpha(theme.palette.text.secondary, 0.7),
-                              "&:hover": {
-                                color: theme.palette.error.main,
-                                bgcolor: alpha(theme.palette.error.main, 0.08),
-                              },
-                              "&:focus-visible": {
-                                outline: `2px solid ${alpha(theme.palette.error.main, 0.5)}`,
-                                outlineOffset: 2,
+                              height: { xs: 16, sm: 18 },
+                              fontSize: { xs: "0.5625rem", sm: "0.625rem" },
+                              fontWeight: 500,
+                              textTransform: "capitalize",
+                              bgcolor: alpha(theme.palette.info.main, 0.1),
+                              color: theme.palette.info.main,
+                              "& .MuiChip-label": {
+                                px: { xs: 0.5, sm: 0.625 },
                               },
                             }}
+                          />
+                        </TableCell>
+                        <TableCell sx={{ py: { xs: 0.5, sm: 0.75 }, px: { xs: 0.5, sm: 0.75 }, whiteSpace: "nowrap" }}>
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              fontFamily: "monospace",
+                              color: theme.palette.text.secondary,
+                              fontSize: { xs: "0.625rem", sm: "0.6875rem" },
+                              lineHeight: 1.4,
+                            }}
                           >
-                            <DeleteIcon fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
-                      </Box>
-                    </Box>
-                  </Box>
-                ))}
-              </Box>
+                            {component.currentVersion || "N/A"}
+                          </Typography>
+                        </TableCell>
+                        <TableCell sx={{ py: { xs: 0.5, sm: 0.75 }, px: { xs: 0.5, sm: 0.75 }, whiteSpace: "nowrap" }}>
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              fontFamily: "monospace",
+                              fontWeight: component.finalVersion ? 600 : 400,
+                              color: component.finalVersion 
+                                ? theme.palette.primary.main 
+                                : theme.palette.text.disabled,
+                              fontSize: { xs: "0.625rem", sm: "0.6875rem" },
+                              fontStyle: component.finalVersion ? "normal" : "italic",
+                              lineHeight: 1.4,
+                            }}
+                          >
+                            {component.finalVersion || "Not set"}
+                          </Typography>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
             </Box>
           )}
         </Box>

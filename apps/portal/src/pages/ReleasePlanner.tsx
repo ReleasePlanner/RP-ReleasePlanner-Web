@@ -91,13 +91,26 @@ export default function ReleasePlanner() {
       // If plan has no phases or empty phases array, initialize with base phases
       if (!plan.metadata.phases || plan.metadata.phases.length === 0) {
         if (basePhases.length > 0) {
-          // Create phases from base phases with unique IDs
-          plan.metadata.phases = basePhases.map((bp, index) => ({
-            id: `phase-${plan.id}-${Date.now()}-${index}-${bp.id}`,
-            name: bp.name,
-            color: bp.color,
-            // startDate and endDate will be set by the user or can be auto-generated
-          }));
+          // Calculate default dates for base phases: all start the same day (plan startDate), each with one week duration
+          const planStart = new Date(plan.metadata.startDate);
+          
+          // Create phases from base phases with unique IDs and default one-week dates
+          plan.metadata.phases = basePhases.map((bp, index) => {
+            // All phases start on the same day (plan start date)
+            const phaseStart = new Date(planStart);
+            
+            // End date: one week (7 days) after start date
+            const phaseEnd = new Date(phaseStart);
+            phaseEnd.setDate(phaseEnd.getDate() + 7);
+            
+            return {
+              id: `phase-${plan.id}-${Date.now()}-${index}-${bp.id}`,
+              name: bp.name,
+              color: bp.color,
+              startDate: phaseStart.toISOString().slice(0, 10),
+              endDate: phaseEnd.toISOString().slice(0, 10),
+            };
+          });
         }
       }
       return plan;
@@ -213,7 +226,7 @@ export default function ReleasePlanner() {
       console.error("Error copying to clipboard:", error);
       setSnackbar({
         open: true,
-        message: "Error al copiar el ID del plan",
+        message: "Error copying plan ID",
       });
     }
   };
@@ -225,13 +238,13 @@ export default function ReleasePlanner() {
       await navigator.clipboard.writeText(planId);
       setSnackbar({
         open: true,
-        message: `ID del plan copiado: ${planId}`,
+        message: `Plan ID copied: ${planId}`,
       });
     } catch (error) {
       console.error("Error copying to clipboard:", error);
       setSnackbar({
         open: true,
-        message: "Error al copiar el ID del plan",
+        message: "Error copying plan ID",
       });
     }
   }, []);
@@ -244,19 +257,38 @@ export default function ReleasePlanner() {
     endDate: string,
     productId: string
   ) => {
+    // Calculate default dates for base phases: all start the same day (plan startDate), each with one week duration
+    let phases: Array<{ name: string; color: string; startDate: string; endDate: string }> | undefined;
+    
+    if (basePhases.length > 0) {
+      const planStart = new Date(startDate);
+      
+      phases = basePhases.map((bp) => {
+        // All phases start on the same day (plan start date)
+        const phaseStart = new Date(planStart);
+        
+        // End date: one week (7 days) after start date
+        const phaseEnd = new Date(phaseStart);
+        phaseEnd.setDate(phaseEnd.getDate() + 7);
+        
+        return {
+          name: bp.name,
+          color: bp.color,
+          startDate: phaseStart.toISOString().slice(0, 10),
+          endDate: phaseEnd.toISOString().slice(0, 10),
+        };
+      });
+    }
+    
     // Don't catch the error here - let it propagate to the dialog
     await createMutation.mutateAsync({
       name,
-      owner: "Unassigned",
       startDate,
       endDate,
       status: status as PlanStatus,
       productId,
       description,
-      phases: basePhases.map((bp) => ({
-        name: bp.name,
-        color: bp.color,
-      })),
+      phases,
     });
     // Only close dialog if successful (no error thrown)
     setDialogOpen(false);
@@ -385,22 +417,22 @@ export default function ReleasePlanner() {
     switch (status) {
       case "planned":
         return {
-          label: "Planificado",
+          label: "Planned",
           color: "info" as const,
         };
       case "in_progress":
         return {
-          label: "En Progreso",
+          label: "In Progress",
           color: "primary" as const,
         };
       case "done":
         return {
-          label: "Completado",
+          label: "Completed",
           color: "success" as const,
         };
       case "paused":
         return {
-          label: "Pausado",
+          label: "Paused",
           color: "warning" as const,
         };
       default:
@@ -413,7 +445,7 @@ export default function ReleasePlanner() {
     return (
       <PageLayout
         title="Release Planner"
-        description="Gestiona y visualiza tus planes de release"
+        description="Manage and visualize your release plans"
       >
         <Box
           sx={{
@@ -441,7 +473,7 @@ export default function ReleasePlanner() {
     return (
       <PageLayout
         title="Release Planner"
-        description="Gestiona y visualiza tus planes de release"
+        description="Manage and visualize your release plans"
         actions={
           <Button
             variant="contained"
@@ -471,7 +503,7 @@ export default function ReleasePlanner() {
         }
       >
         <Alert severity="error" sx={{ mb: 2 }}>
-          Error al cargar los planes: {error instanceof Error ? error.message : 'Error desconocido'}
+          Error loading plans: {error instanceof Error ? error.message : 'Unknown error'}
         </Alert>
         <AddPlanDialog
           open={dialogOpen}
@@ -486,7 +518,7 @@ export default function ReleasePlanner() {
     return (
       <PageLayout
         title="Release Planner"
-        description="Gestiona y visualiza tus planes de release"
+        description="Manage and visualize your release plans"
         actions={
           <Button
             variant="contained"
@@ -550,17 +582,17 @@ export default function ReleasePlanner() {
   }
 
   const sortOptions = [
-    { value: "name", label: "Nombre" },
-    { value: "startDate", label: "Fecha Inicio" },
-    { value: "endDate", label: "Fecha Fin" },
-    { value: "status", label: "Estado" },
-    { value: "owner", label: "Propietario" },
+    { value: "name", label: "Sort: Name" },
+    { value: "startDate", label: "Sort: Start Date" },
+    { value: "endDate", label: "Sort: End Date" },
+    { value: "status", label: "Sort: Status" },
+    { value: "owner", label: "Sort: Owner" },
   ];
 
   return (
     <PageLayout
       title="Release Planner"
-      description="Gestiona y visualiza tus planes de release"
+      description="Manage and visualize your release plans"
       toolbar={
         <Box
           sx={{
@@ -617,7 +649,7 @@ export default function ReleasePlanner() {
           {/* Search Field */}
           <TextField
             size="small"
-            placeholder="Buscar planes..."
+            placeholder="Search plans..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             slotProps={{
@@ -655,7 +687,7 @@ export default function ReleasePlanner() {
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as SortOption)}
               displayEmpty
-              aria-label="Ordenar por"
+              aria-label="Sort by"
               sx={{
                 height: 32,
                 fontSize: "0.8125rem",
@@ -689,7 +721,7 @@ export default function ReleasePlanner() {
                   setStatusFilter(e.target.value as FilterStatus)
                 }
                 displayEmpty
-                aria-label="Filtrar por estado"
+                aria-label="Filter by status"
                 sx={{
                   height: 32,
                   fontSize: "0.8125rem",
@@ -706,11 +738,11 @@ export default function ReleasePlanner() {
                   },
                 }}
               >
-                <MenuItem value="all">Todos</MenuItem>
-                <MenuItem value="planned">Planificado</MenuItem>
-                <MenuItem value="in_progress">En Progreso</MenuItem>
-                <MenuItem value="paused">Pausado</MenuItem>
-                <MenuItem value="done">Completado</MenuItem>
+                <MenuItem value="all">All</MenuItem>
+                <MenuItem value="planned">Planned</MenuItem>
+                <MenuItem value="in_progress">In Progress</MenuItem>
+                <MenuItem value="paused">Paused</MenuItem>
+                <MenuItem value="done">Completed</MenuItem>
               </Select>
             </FormControl>
           )}
@@ -726,7 +758,7 @@ export default function ReleasePlanner() {
               ml: { xs: 0, md: "auto" },
             }}
           >
-            <Tooltip title="Mostrar/Ocultar filtros" arrow placement="top">
+            <Tooltip title="Show/Hide filters" arrow placement="top">
               <IconButton
                 size="small"
                 onClick={() => setShowFilters(!showFilters)}
@@ -748,7 +780,7 @@ export default function ReleasePlanner() {
                 <FilterIcon fontSize="small" />
               </IconButton>
             </Tooltip>
-            <Tooltip title="Expandir todos" arrow placement="top">
+            <Tooltip title="Expand all" arrow placement="top">
               <IconButton
                 size="small"
                 onClick={handleExpandAll}
@@ -764,7 +796,7 @@ export default function ReleasePlanner() {
                 <ExpandIcon fontSize="small" />
               </IconButton>
             </Tooltip>
-            <Tooltip title="Colapsar todos" arrow placement="top">
+            <Tooltip title="Collapse all" arrow placement="top">
               <IconButton
                 size="small"
                 onClick={handleCollapseAll}
@@ -972,7 +1004,7 @@ export default function ReleasePlanner() {
               color: theme.palette.error.main,
             }}
           >
-            Eliminar Plan de Release
+            Delete Release Plan
           </DialogTitle>
 
           <DialogContent sx={{ px: 3, pt: 4, pb: 2 }}>
@@ -990,12 +1022,12 @@ export default function ReleasePlanner() {
                   onClose={() => deleteMutation.reset()}
                 >
                   <Typography variant="body2" sx={{ fontWeight: 500, mb: 0.5 }}>
-                    Error al eliminar el plan
+                    Error deleting plan
                   </Typography>
                   <Typography variant="body2">
                     {deleteMutation.error instanceof Error
                       ? deleteMutation.error.message
-                      : "Ocurrió un error inesperado. Por favor, intenta nuevamente."}
+                      : "An unexpected error occurred. Please try again."}
                   </Typography>
                 </Alert>
               )}
@@ -1010,11 +1042,11 @@ export default function ReleasePlanner() {
                 }}
               >
                 <Typography variant="body2" sx={{ fontWeight: 500, mb: 0.5 }}>
-                  Esta acción no se puede deshacer
+                  This action cannot be undone
                 </Typography>
                 <Typography variant="body2">
-                  Se eliminará permanentemente el plan y todos sus datos relacionados
-                  (fases, tareas, hitos, referencias, etc.).
+                  The plan and all related data will be permanently deleted
+                  (phases, tasks, milestones, references, etc.).
                 </Typography>
               </Alert>
 
@@ -1039,7 +1071,7 @@ export default function ReleasePlanner() {
                       letterSpacing: "0.5px",
                     }}
                   >
-                    Plan a Eliminar
+                    Plan to Delete
                   </Typography>
                   <Stack spacing={1.5}>
                     <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
@@ -1121,7 +1153,7 @@ export default function ReleasePlanner() {
                       textAlign: "center",
                     }}
                   >
-                    Eliminando plan y todos sus datos relacionados...
+                    Deleting plan and all related data...
                   </Typography>
                   <Typography
                     variant="caption"
@@ -1130,7 +1162,7 @@ export default function ReleasePlanner() {
                       textAlign: "center",
                     }}
                   >
-                    Esto puede tomar unos momentos
+                    This may take a few moments
                   </Typography>
                 </Box>
               )}
@@ -1163,7 +1195,7 @@ export default function ReleasePlanner() {
                 },
               }}
             >
-              Cancelar
+              Cancel
             </Button>
             <Button
               onClick={handleDeleteConfirm}
@@ -1192,10 +1224,10 @@ export default function ReleasePlanner() {
               {deleteMutation.isPending ? (
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                   <CircularProgress size={16} sx={{ color: "inherit" }} />
-                  <span>Eliminando...</span>
+                  <span>Deleting...</span>
                 </Box>
               ) : (
-                "Eliminar Plan"
+                "Delete Plan"
               )}
             </Button>
           </DialogActions>

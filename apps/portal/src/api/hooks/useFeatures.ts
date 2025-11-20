@@ -16,7 +16,7 @@ export function useFeatures(productId?: string) {
   return useQuery({
     queryKey: QUERY_KEYS.list(productId),
     queryFn: () => featuresService.getAll(productId),
-    enabled: !!productId, // Only run query if productId is provided
+    // Always enabled - service supports fetching all features when productId is undefined
     staleTime: 5 * 60 * 1000, // 5 minutes - data stays fresh longer
     gcTime: 10 * 60 * 1000, // 10 minutes - cache persists longer (formerly cacheTime)
     refetchOnWindowFocus: false, // Don't refetch on window focus
@@ -37,9 +37,11 @@ export function useCreateFeature() {
 
   return useMutation({
     mutationFn: (data: CreateFeatureDto) => featuresService.create(data),
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.list() });
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.list(variables.productId) });
+    onSuccess: (createdFeature) => {
+      // Invalidate all list queries (both all features and product-specific)
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.lists() });
+      // Invalidate the detail query for the newly created feature
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.detail(createdFeature.id) });
     },
   });
 }
@@ -51,7 +53,8 @@ export function useUpdateFeature() {
     mutationFn: ({ id, data }: { id: string; data: UpdateFeatureDto }) =>
       featuresService.update(id, data),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.list() });
+      // Invalidate all list queries and the specific feature detail
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.lists() });
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.detail(variables.id) });
     },
   });
@@ -63,7 +66,8 @@ export function useDeleteFeature() {
   return useMutation({
     mutationFn: (id: string) => featuresService.delete(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.list() });
+      // Invalidate all list queries (both all features and product-specific)
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.lists() });
     },
   });
 }

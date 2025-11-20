@@ -19,14 +19,27 @@ import {
   MenuItem,
 } from "@mui/material";
 import type { SelectChangeEvent } from "@mui/material";
-import { getErrorMessage } from "@/utils/notifications/errorNotification";
-import { useAppSelector } from "@/store/hooks";
-import type { PlanStatus } from "../../types";
+import { getErrorMessage } from "../../../utils/notifications/errorNotification";
+import type { PlanStatus } from "../types";
+import { useProducts } from "../../../api/hooks";
+
+// Type guard for products array
+interface ProductWithId {
+  id: string;
+  name: string;
+}
 
 export interface AddPlanDialogProps {
-  open: boolean;
-  onClose: () => void;
-  onSubmit: (name: string, description: string, status: string, startDate: string, endDate: string, productId: string) => Promise<void>;
+  readonly open: boolean;
+  readonly onClose: () => void;
+  readonly onSubmit: (
+    name: string,
+    description: string,
+    status: string,
+    startDate: string,
+    endDate: string,
+    productId: string
+  ) => Promise<void>;
 }
 
 export default function AddPlanDialog({
@@ -35,7 +48,8 @@ export default function AddPlanDialog({
   onSubmit,
 }: AddPlanDialogProps) {
   const theme = useTheme();
-  const products = useAppSelector((state) => state.products.products);
+  // Use API hook instead of Redux store
+  const { data: products = [] } = useProducts();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [status, setStatus] = useState<PlanStatus>("planned");
@@ -49,7 +63,7 @@ export default function AddPlanDialog({
   useEffect(() => {
     if (open) {
       const nowUTC = new Date().toISOString().split("T")[0];
-      const year = parseInt(nowUTC.split("-")[0]);
+      const year = Number.parseInt(nowUTC.split("-")[0] ?? "2024", 10);
       setName("");
       setDescription("");
       setStatus("planned");
@@ -64,23 +78,23 @@ export default function AddPlanDialog({
   const handleSubmit = async () => {
     // Validate required fields
     if (!name.trim()) {
-      setError("El nombre del plan es obligatorio");
+      setError("Plan name is required");
       return;
     }
     if (!status) {
-      setError("El estado es obligatorio");
+      setError("Status is required");
       return;
     }
     if (!startDate) {
-      setError("La fecha de inicio es obligatoria");
+      setError("Start date is required");
       return;
     }
     if (!endDate) {
-      setError("La fecha de fin es obligatoria");
+      setError("End date is required");
       return;
     }
     if (!productId) {
-      setError("El producto es obligatorio");
+      setError("Product is required");
       return;
     }
 
@@ -88,7 +102,14 @@ export default function AddPlanDialog({
     setIsSubmitting(true);
 
     try {
-      await onSubmit(name.trim(), description.trim(), status, startDate, endDate, productId);
+      await onSubmit(
+        name.trim(),
+        description.trim(),
+        status,
+        startDate,
+        endDate,
+        productId
+      );
       // Only close and reset if successful
       setName("");
       setDescription("");
@@ -108,7 +129,7 @@ export default function AddPlanDialog({
 
   const handleClose = () => {
     if (isSubmitting) return; // Prevent closing while submitting
-    
+
     setName("");
     setDescription("");
     setStatus("planned");
@@ -120,7 +141,8 @@ export default function AddPlanDialog({
     onClose();
   };
 
-  const isFormValid = name.trim() && status && startDate && endDate && productId;
+  const isFormValid =
+    name.trim() && status && startDate && endDate && productId;
 
   return (
     <Dialog
@@ -128,9 +150,11 @@ export default function AddPlanDialog({
       onClose={handleClose}
       fullWidth
       maxWidth="sm"
-      PaperProps={{
-        sx: {
-          borderRadius: 3,
+      slotProps={{
+        paper: {
+          sx: {
+            borderRadius: 3,
+          },
         },
       }}
     >
@@ -145,16 +169,16 @@ export default function AddPlanDialog({
           color: theme.palette.text.primary,
         }}
       >
-        Nuevo Plan de Release
+        New Release Plan
       </DialogTitle>
 
       <DialogContent sx={{ px: 3, pt: 4, pb: 2 }}>
         <Stack spacing={3}>
           {/* Error Alert */}
           {error && (
-            <Alert 
-              severity="error" 
-              sx={{ 
+            <Alert
+              severity="error"
+              sx={{
                 borderRadius: 1.5,
                 "& .MuiAlert-message": {
                   fontSize: "0.875rem",
@@ -163,11 +187,9 @@ export default function AddPlanDialog({
               onClose={() => setError(null)}
             >
               <Typography variant="body2" sx={{ fontWeight: 500, mb: 0.5 }}>
-                Error al crear el plan
+                Error creating plan
               </Typography>
-              <Typography variant="body2">
-                {error}
-              </Typography>
+              <Typography variant="body2">{error}</Typography>
             </Alert>
           )}
 
@@ -184,13 +206,13 @@ export default function AddPlanDialog({
                 letterSpacing: "0.5px",
               }}
             >
-              Información Básica
+              Basic Information
             </Typography>
             <Stack spacing={2}>
               <TextField
                 id="add-plan-name-input"
                 name="planName"
-                label="Nombre del Plan"
+                label="Plan Name"
                 fullWidth
                 required
                 value={name}
@@ -203,7 +225,7 @@ export default function AddPlanDialog({
                 size="small"
                 autoFocus
                 disabled={isSubmitting}
-                error={!!error && error.toLowerCase().includes("nombre")}
+                error={!!error && error.toLowerCase().includes("name")}
                 sx={{
                   "& .MuiOutlinedInput-root": {
                     borderRadius: 1.5,
@@ -213,13 +235,15 @@ export default function AddPlanDialog({
               />
 
               <FormControl fullWidth size="small" required>
-                <InputLabel id="status-label" sx={{ fontSize: "0.875rem" }}>Estado</InputLabel>
+                <InputLabel id="status-label" sx={{ fontSize: "0.875rem" }}>
+                  Status
+                </InputLabel>
                 <Select
                   id="add-plan-status-select"
                   name="planStatus"
                   labelId="status-label"
                   value={status}
-                  label="Estado"
+                  label="Status"
                   onChange={(e: SelectChangeEvent) => {
                     setStatus(e.target.value as PlanStatus);
                     setError(null);
@@ -230,10 +254,18 @@ export default function AddPlanDialog({
                     borderRadius: 1.5,
                   }}
                 >
-                  <MenuItem value="planned" sx={{ fontSize: "0.875rem" }}>Planificado</MenuItem>
-                  <MenuItem value="in_progress" sx={{ fontSize: "0.875rem" }}>En Progreso</MenuItem>
-                  <MenuItem value="done" sx={{ fontSize: "0.875rem" }}>Completado</MenuItem>
-                  <MenuItem value="paused" sx={{ fontSize: "0.875rem" }}>Pausado</MenuItem>
+                  <MenuItem value="planned" sx={{ fontSize: "0.875rem" }}>
+                    Planificado
+                  </MenuItem>
+                  <MenuItem value="in_progress" sx={{ fontSize: "0.875rem" }}>
+                    En Progreso
+                  </MenuItem>
+                  <MenuItem value="done" sx={{ fontSize: "0.875rem" }}>
+                    Completado
+                  </MenuItem>
+                  <MenuItem value="paused" sx={{ fontSize: "0.875rem" }}>
+                    Pausado
+                  </MenuItem>
                 </Select>
               </FormControl>
 
@@ -252,9 +284,11 @@ export default function AddPlanDialog({
                   }}
                   variant="outlined"
                   size="small"
-                  InputLabelProps={{
-                    shrink: true,
-                    sx: { fontSize: "0.875rem" },
+                  slotProps={{
+                    inputLabel: {
+                      shrink: true,
+                      sx: { fontSize: "0.875rem" },
+                    },
                   }}
                   disabled={isSubmitting}
                   error={!!error && error.toLowerCase().includes("inicio")}
@@ -279,9 +313,11 @@ export default function AddPlanDialog({
                   }}
                   variant="outlined"
                   size="small"
-                  InputLabelProps={{
-                    shrink: true,
-                    sx: { fontSize: "0.875rem" },
+                  slotProps={{
+                    inputLabel: {
+                      shrink: true,
+                      sx: { fontSize: "0.875rem" },
+                    },
                   }}
                   disabled={isSubmitting}
                   error={!!error && error.toLowerCase().includes("fin")}
@@ -295,7 +331,9 @@ export default function AddPlanDialog({
               </Stack>
 
               <FormControl fullWidth size="small" required>
-                <InputLabel id="product-label" sx={{ fontSize: "0.875rem" }}>Producto</InputLabel>
+                <InputLabel id="product-label" sx={{ fontSize: "0.875rem" }}>
+                  Producto
+                </InputLabel>
                 <Select
                   id="add-plan-product-select"
                   name="planProductId"
@@ -316,8 +354,12 @@ export default function AddPlanDialog({
                   <MenuItem value="" sx={{ fontSize: "0.875rem" }}>
                     <em>Seleccione un producto</em>
                   </MenuItem>
-                  {products.map((product) => (
-                    <MenuItem key={product.id} value={product.id} sx={{ fontSize: "0.875rem" }}>
+                  {products.map((product: ProductWithId) => (
+                    <MenuItem
+                      key={product.id}
+                      value={product.id}
+                      sx={{ fontSize: "0.875rem" }}
+                    >
                       {product.name}
                     </MenuItem>
                   ))}
@@ -375,7 +417,7 @@ export default function AddPlanDialog({
             },
           }}
         >
-          Cancelar
+          Cancel
         </Button>
         <Button
           onClick={handleSubmit}
@@ -402,10 +444,10 @@ export default function AddPlanDialog({
           {isSubmitting ? (
             <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
               <CircularProgress size={16} sx={{ color: "inherit" }} />
-              <span>Creando...</span>
+              <span>Creating...</span>
             </Box>
           ) : (
-            "Crear Plan"
+            "Create Plan"
           )}
         </Button>
       </DialogActions>

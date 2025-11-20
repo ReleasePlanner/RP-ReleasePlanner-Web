@@ -114,19 +114,19 @@ export function PhasesMaintenancePage() {
             color: formData.color || "#1976D2",
           },
         });
-        setSnackbar({ open: true, message: 'Fase actualizada exitosamente', severity: 'success' });
+        setSnackbar({ open: true, message: 'Phase updated successfully', severity: 'success' });
       } else {
         await createMutation.mutateAsync({
           name: formData.name.trim(),
           color: formData.color || "#1976D2",
         });
-        setSnackbar({ open: true, message: 'Fase creada exitosamente', severity: 'success' });
+        setSnackbar({ open: true, message: 'Phase created successfully', severity: 'success' });
       }
       handleCloseDialog();
     } catch (error) {
       setSnackbar({
         open: true,
-        message: error instanceof Error ? error.message : 'Error al guardar la fase',
+        message: error instanceof Error ? error.message : 'Error saving phase',
         severity: 'error',
       });
     }
@@ -141,13 +141,13 @@ export function PhasesMaintenancePage() {
     if (phaseToDelete) {
       try {
         await deleteMutation.mutateAsync(phaseToDelete.id);
-        setSnackbar({ open: true, message: 'Fase eliminada exitosamente', severity: 'success' });
+        setSnackbar({ open: true, message: 'Phase deleted successfully', severity: 'success' });
         setDeleteDialogOpen(false);
         setPhaseToDelete(null);
       } catch (error) {
         setSnackbar({
           open: true,
-          message: error instanceof Error ? error.message : 'Error al eliminar la fase',
+          message: error instanceof Error ? error.message : 'Error deleting phase',
           severity: 'error',
         });
       }
@@ -156,7 +156,7 @@ export function PhasesMaintenancePage() {
 
   const handleDuplicate = (phase: BasePhase) => {
     setFormData({
-      name: `${phase.name} (Copia)`,
+      name: `${phase.name} (Copy)`,
       color: phase.color,
     });
     setEditingPhase(null);
@@ -190,7 +190,7 @@ export function PhasesMaintenancePage() {
     return (
       <Box p={3}>
         <Alert severity="error">
-          Error al cargar las fases: {error instanceof Error ? error.message : 'Error desconocido'}
+          Error loading phases: {error instanceof Error ? error.message : 'Unknown error'}
         </Alert>
       </Box>
     );
@@ -202,7 +202,7 @@ export function PhasesMaintenancePage() {
       <Box sx={{ mb: 3, display: "flex", alignItems: "center", gap: 2 }}>
         <PhasesIcon sx={{ fontSize: 32, color: theme.palette.primary.main }} />
         <Typography variant="h4" component="h1">
-          Mantenimiento de Fases Base
+          Base Phases Maintenance
         </Typography>
       </Box>
 
@@ -211,7 +211,7 @@ export function PhasesMaintenancePage() {
         <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
           <TextField
             size="small"
-            placeholder="Buscar fases..."
+            placeholder="Search phases..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             InputProps={{
@@ -231,7 +231,7 @@ export function PhasesMaintenancePage() {
             startIcon={<AddIcon />}
             onClick={() => handleOpenDialog()}
           >
-            Nueva Fase
+            New Phase
           </Button>
         </Stack>
       </Paper>
@@ -258,7 +258,7 @@ export function PhasesMaintenancePage() {
                 </Box>
               </CardContent>
               <CardActions>
-                <Tooltip title="Editar">
+                <Tooltip title="Edit">
                   <IconButton
                     size="small"
                     onClick={() => handleOpenDialog(phase)}
@@ -266,12 +266,12 @@ export function PhasesMaintenancePage() {
                     <EditIcon />
                   </IconButton>
                 </Tooltip>
-                <Tooltip title="Duplicar">
+                <Tooltip title="Duplicate">
                   <IconButton size="small" onClick={() => handleDuplicate(phase)}>
                     <DuplicateIcon />
                   </IconButton>
                 </Tooltip>
-                <Tooltip title="Eliminar">
+                <Tooltip title="Delete">
                   <IconButton
                     size="small"
                     color="error"
@@ -289,7 +289,7 @@ export function PhasesMaintenancePage() {
       {filteredPhases.length === 0 && (
         <Paper sx={{ p: 4, textAlign: "center" }}>
           <Typography variant="body1" color="text.secondary">
-            No se encontraron fases que coincidan con los filtros.
+            No phases found matching filters.
           </Typography>
         </Paper>
       )}
@@ -297,12 +297,12 @@ export function PhasesMaintenancePage() {
       {/* Create/Edit Dialog */}
       <Dialog open={dialogOpen} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
         <DialogTitle>
-          {editingPhase ? "Editar Fase Base" : "Nueva Fase Base"}
+          {editingPhase ? "Edit Base Phase" : "New Base Phase"}
         </DialogTitle>
         <DialogContent>
           <Stack spacing={2} sx={{ mt: 1 }}>
             <TextField
-              label="Nombre"
+              label="Name"
               fullWidth
               required
               value={formData.name}
@@ -318,7 +318,7 @@ export function PhasesMaintenancePage() {
           </Stack>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCloseDialog}>Cancelar</Button>
+          <Button onClick={handleCloseDialog}>Cancel</Button>
           <Button
             onClick={handleSave}
             variant="contained"
@@ -327,7 +327,7 @@ export function PhasesMaintenancePage() {
             {createMutation.isPending || updateMutation.isPending ? (
               <CircularProgress size={20} />
             ) : (
-              "Guardar"
+              "Save"
             )}
           </Button>
         </DialogActions>
@@ -335,22 +335,22 @@ export function PhasesMaintenancePage() {
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
-        <DialogTitle>Confirmar Eliminación</DialogTitle>
+        <DialogTitle>Confirm Deletion</DialogTitle>
         <DialogContent>
           <Typography>
-            ¿Estás seguro de que deseas eliminar la fase "{phaseToDelete?.name}"?
-            Esta acción no se puede deshacer.
+            Are you sure you want to delete the phase "{phaseToDelete?.name}"?
+            This action cannot be undone.
           </Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDeleteDialogOpen(false)}>Cancelar</Button>
+          <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
           <Button
             onClick={handleDeleteConfirm}
             color="error"
             variant="contained"
             disabled={deleteMutation.isPending}
           >
-            {deleteMutation.isPending ? <CircularProgress size={20} /> : "Eliminar"}
+            {deleteMutation.isPending ? <CircularProgress size={20} /> : "Delete"}
           </Button>
         </DialogActions>
       </Dialog>

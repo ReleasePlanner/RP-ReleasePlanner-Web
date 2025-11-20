@@ -162,16 +162,16 @@ export function FeatureEditDialog({
       open={open}
       onClose={onClose}
       editing={editing}
-      title={editing ? "Editar Feature" : "Nueva Feature"}
+      title={editing ? "Edit Feature" : "New Feature"}
       subtitle={
         editing
-          ? "Modifica los detalles de la feature"
-          : "Crea una nueva feature para el producto"
+          ? "Modify feature details"
+          : "Create a new feature for the product"
       }
       subtitleChip={selectedProductName || undefined}
       maxWidth="md"
       onSave={handleSave}
-      saveButtonText={editing ? "Actualizar Feature" : "Crear Feature"}
+      saveButtonText={editing ? "Update Feature" : "Create Feature"}
       isFormValid={isFormValid}
     >
         <Stack spacing={3}>
@@ -347,20 +347,20 @@ export function FeatureEditDialog({
                       <Box display="flex" alignItems="center" gap={1}>
                         <CircularProgress size={16} />
                         <Typography variant="body2" color="text.secondary" sx={{ fontSize: "0.6875rem" }}>
-                          Cargando categorías...
+                          Loading categories...
                         </Typography>
                       </Box>
                     </MenuItem>
                   ) : categoriesError ? (
                     <MenuItem disabled>
                       <Alert severity="error" sx={{ width: "100%" }}>
-                        Error al cargar categorías
+                        Error loading categories
                       </Alert>
                     </MenuItem>
                   ) : categories.length === 0 ? (
                     <MenuItem disabled>
                       <Typography variant="body2" color="text.secondary" sx={{ fontSize: "0.625rem" }}>
-                        No hay categorías disponibles
+                        No categories available
                       </Typography>
                     </MenuItem>
                   ) : (
@@ -373,7 +373,7 @@ export function FeatureEditDialog({
                 </Select>
                 {categoriesError && (
                   <Typography variant="caption" color="error" sx={{ mt: 0.5, ml: 1.75, fontSize: "0.625rem" }}>
-                    Error al cargar categorías. Por favor, actualiza la página.
+                    Error loading categories. Please refresh the page.
                   </Typography>
                 )}
                 </FormControl>
@@ -515,20 +515,20 @@ export function FeatureEditDialog({
                       <Box display="flex" alignItems="center" gap={1}>
                         <CircularProgress size={16} />
                         <Typography variant="body2" color="text.secondary" sx={{ fontSize: "0.625rem" }}>
-                          Cargando IT Owners...
+                          Loading IT Owners...
                         </Typography>
                       </Box>
                     </MenuItem>
                   ) : itOwnersError ? (
                     <MenuItem disabled>
                       <Alert severity="error" sx={{ width: "100%" }}>
-                        Error al cargar IT Owners
+                        Error loading IT Owners
                       </Alert>
                     </MenuItem>
                   ) : productOwners.length === 0 ? (
                     <MenuItem disabled>
                       <Typography variant="body2" color="text.secondary" sx={{ fontSize: "0.625rem" }}>
-                        No hay IT Owners disponibles
+                        No IT Owners available
                       </Typography>
                     </MenuItem>
                   ) : (
@@ -541,7 +541,7 @@ export function FeatureEditDialog({
                 </Select>
                 {itOwnersError && (
                   <Typography variant="caption" color="error" sx={{ mt: 0.5, ml: 1.75, fontSize: "0.625rem" }}>
-                    Error al cargar IT Owners. Por favor, actualiza la página.
+                    Error loading IT Owners. Please refresh the page.
                   </Typography>
                 )}
               </FormControl>
@@ -623,20 +623,20 @@ export function FeatureEditDialog({
                       <Box display="flex" alignItems="center" gap={1}>
                         <CircularProgress size={16} />
                         <Typography variant="body2" color="text.secondary" sx={{ fontSize: "0.625rem" }}>
-                          Cargando países...
+                          Loading countries...
                         </Typography>
                       </Box>
                     </MenuItem>
                   ) : countriesError ? (
                     <MenuItem disabled>
                       <Alert severity="error" sx={{ width: "100%" }}>
-                        Error al cargar países
+                        Error loading countries
                       </Alert>
                     </MenuItem>
                   ) : countries.length === 0 ? (
                     <MenuItem disabled>
                       <Typography variant="body2" color="text.secondary" sx={{ fontSize: "0.625rem" }}>
-                        No hay países disponibles
+                        No countries available
                       </Typography>
                     </MenuItem>
                   ) : (
@@ -649,7 +649,7 @@ export function FeatureEditDialog({
                 </Select>
                 {countriesError && (
                   <Typography variant="caption" color="error" sx={{ mt: 0.5, ml: 1.75, fontSize: "0.625rem" }}>
-                    Error al cargar países. Por favor, actualiza la página.
+                    Error loading countries. Please refresh the page.
                   </Typography>
                 )}
               </FormControl>

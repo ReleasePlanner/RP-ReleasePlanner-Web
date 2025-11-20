@@ -194,7 +194,7 @@ export function HeaderActions() {
             </MenuItem>
             <MenuItem onClick={handleLogout}>
               <LogoutIcon sx={{ mr: 1, fontSize: 20 }} />
-              Cerrar Sesión
+              Sign Out
             </MenuItem>
           </Menu>
         </>
