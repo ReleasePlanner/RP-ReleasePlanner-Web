@@ -15,7 +15,6 @@ import {
   useTheme,
   alpha,
   Tooltip,
-  Chip,
   FormControl,
   InputLabel,
   Select,
@@ -29,19 +28,18 @@ import {
   Search as SearchIcon,
   CheckBox,
   CheckBoxOutlineBlank,
-  Add as AddIcon,
 } from "@mui/icons-material";
-import { useProducts } from "@/api/hooks";
-import type { ComponentVersion } from "@/api/services/products.service";
-import type { PlanComponent } from "@/features/releasePlans/types";
-import { BaseEditDialog } from "@/components/BaseEditDialog";
+import { useProducts } from "../../../../../api/hooks";
+import type { ComponentVersion } from "../../../../../api/services/products.service";
+import type { PlanComponent } from "../../../types";
+import { BaseEditDialog } from "../../../../../components/BaseEditDialog";
 
 export type SelectComponentsDialogProps = {
-  open: boolean;
-  productId?: string;
-  selectedComponentIds: string[];
-  onClose: () => void;
-  onAddComponents: (components: PlanComponent[]) => void;
+  readonly open: boolean;
+  readonly productId?: string;
+  readonly selectedComponentIds: string[];
+  readonly onClose: () => void;
+  readonly onAddComponents: (components: PlanComponent[]) => void;
 };
 
 type SortBy = "name" | "type" | "version";
@@ -57,18 +55,22 @@ export function SelectComponentsDialog({
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<SortBy>("name");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [finalVersions, setFinalVersions] = useState<Record<string, string>>({});
-  const [versionErrors, setVersionErrors] = useState<Record<string, string>>({});
+  const [finalVersions, setFinalVersions] = useState<Record<string, string>>(
+    {}
+  );
+  const [versionErrors, setVersionErrors] = useState<Record<string, string>>(
+    {}
+  );
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
 
   // Get products from API (Products maintenance) - same as PlanLeftPane
   const { data: products = [], isLoading: isLoadingProducts } = useProducts();
-  
+
   // Get product from API
   const selectedProduct = useMemo(() => {
     if (!productId) return null;
-    return products.find((p) => p.id === productId) || null;
+    return products.find((p: { id: string }) => p.id === productId) ?? null;
   }, [productId, products]);
 
   // Get all components for the product from API (Products maintenance)
@@ -91,7 +93,7 @@ export function SelectComponentsDialog({
       (c: ComponentVersion) =>
         c.name?.toLowerCase().includes(query) ||
         c.type?.toLowerCase().includes(query) ||
-        (c.currentVersion && c.currentVersion.toLowerCase().includes(query))
+        c.currentVersion?.toLowerCase().includes(query)
     );
   }, [availableComponents, searchQuery]);
 
@@ -106,7 +108,9 @@ export function SelectComponentsDialog({
         sorted.sort((a, b) => (a.type || "").localeCompare(b.type || ""));
         break;
       case "version":
-        sorted.sort((a, b) => (a.currentVersion || "").localeCompare(b.currentVersion || ""));
+        sorted.sort((a, b) =>
+          (a.currentVersion || "").localeCompare(b.currentVersion || "")
+        );
         break;
     }
     return sorted;
@@ -118,7 +122,10 @@ export function SelectComponentsDialog({
    */
   const normalizeVersion = (version: string): string => {
     if (!version || version.trim().length === 0) return "0.0.0.0";
-    const parts = version.trim().split(".").map((p) => parseInt(p, 10) || 0);
+    const parts = version
+      .trim()
+      .split(".")
+      .map((p) => Number.parseInt(p, 10) || 0);
     while (parts.length < 4) {
       parts.push(0);
     }
@@ -131,7 +138,7 @@ export function SelectComponentsDialog({
    */
   const incrementVersion = (version: string): string => {
     const normalized = normalizeVersion(version);
-    const parts = normalized.split(".").map((p) => parseInt(p, 10));
+    const parts = normalized.split(".").map((p) => Number.parseInt(p, 10));
     parts[3] = (parts[3] || 0) + 1; // Increment patch version
     return parts.join(".");
   };
@@ -141,41 +148,26 @@ export function SelectComponentsDialog({
     currentVersion: string
   ) => {
     const isCurrentlySelected = selectedIds.includes(componentId);
-    
+
     setSelectedIds((prev) =>
       isCurrentlySelected
         ? prev.filter((id) => id !== componentId)
         : [...prev, componentId]
     );
-    
+
     // Set default final version when selecting
     if (!isCurrentlySelected) {
       // Set default to incremented version (currentVersion + 1 in patch)
-      const defaultFinalVersion = currentVersion 
+      const defaultFinalVersion = currentVersion
         ? incrementVersion(currentVersion)
         : "1.0.0.0";
-      
+
       setFinalVersions((prev) => ({
         ...prev,
         [componentId]: defaultFinalVersion,
       }));
-      
+
       // Clear any existing error for this component
-      if (versionErrors[componentId]) {
-        setVersionErrors((prev) => {
-          const updated = { ...prev };
-          delete updated[componentId];
-          return updated;
-        });
-      }
-    } else {
-      // Remove version when deselecting
-      setFinalVersions((prev) => {
-        const updated = { ...prev };
-        delete updated[componentId];
-        return updated;
-      });
-      // Clear error when deselecting
       if (versionErrors[componentId]) {
         setVersionErrors((prev) => {
           const updated = { ...prev };
@@ -191,7 +183,7 @@ export function SelectComponentsDialog({
       ...prev,
       [componentId]: version,
     }));
-    
+
     // Clear error for this component when user starts typing
     if (versionErrors[componentId]) {
       setVersionErrors((prev) => {
@@ -211,13 +203,13 @@ export function SelectComponentsDialog({
       const allIds = processedComponents.map((c: ComponentVersion) => c.id);
       setSelectedIds(allIds);
       const versions: Record<string, string> = {};
-      processedComponents.forEach((c: ComponentVersion) => {
+      for (const c of processedComponents) {
         // Set default to incremented version (currentVersion + 1 in patch)
-        const defaultFinalVersion = c.currentVersion 
+        const defaultFinalVersion = c.currentVersion
           ? incrementVersion(c.currentVersion)
           : "1.0.0.0";
         versions[c.id] = defaultFinalVersion;
-      });
+      }
       setFinalVersions(versions);
       setVersionErrors({}); // Clear errors when selecting all
     }
@@ -230,8 +222,8 @@ export function SelectComponentsDialog({
   const compareVersions = (v1: string, v2: string): number => {
     const normalized1 = normalizeVersion(v1);
     const normalized2 = normalizeVersion(v2);
-    const parts1 = normalized1.split(".").map((p) => parseInt(p, 10));
-    const parts2 = normalized2.split(".").map((p) => parseInt(p, 10));
+    const parts1 = normalized1.split(".").map((p) => Number.parseInt(p, 10));
+    const parts2 = normalized2.split(".").map((p) => Number.parseInt(p, 10));
 
     for (let i = 0; i < 4; i++) {
       if (parts1[i] < parts2[i]) return -1;
@@ -247,9 +239,11 @@ export function SelectComponentsDialog({
     const errors: Record<string, string> = {};
     const invalidComponents: string[] = [];
 
-    selectedIds.forEach((id) => {
-      const component = allProductComponents.find((c) => c.id === id);
-      if (!component) return;
+    for (const id of selectedIds) {
+      const component = allProductComponents.find(
+        (c: ComponentVersion) => c.id === id
+      );
+      if (!component) continue;
 
       const finalVersion = finalVersions[id] || component.currentVersion || "";
       const currentVersion = component.currentVersion || "";
@@ -262,17 +256,22 @@ export function SelectComponentsDialog({
 
       const comparison = compareVersions(finalVersion, currentVersion);
       if (comparison <= 0) {
-        errors[id] = `Final version must be greater than current version (${currentVersion})`;
+        errors[
+          id
+        ] = `Final version must be greater than current version (${currentVersion})`;
         invalidComponents.push(component.name || id);
       }
-    });
+    }
 
     // If there are validation errors, show them and don't add components
     if (Object.keys(errors).length > 0) {
       setVersionErrors(errors);
-      const errorMessage = invalidComponents.length === 1
-        ? `The final version of component "${invalidComponents[0]}" must be greater than the current version.`
-        : `The final versions of the following components must be greater than their current versions: ${invalidComponents.join(", ")}`;
+      const errorMessage =
+        invalidComponents.length === 1
+          ? `The final version of component "${invalidComponents[0]}" must be greater than the current version.`
+          : `The final versions of the following components must be greater than their current versions: ${invalidComponents.join(
+              ", "
+            )}`;
       setSnackbarMessage(errorMessage);
       setSnackbarOpen(true);
       return;
@@ -281,7 +280,9 @@ export function SelectComponentsDialog({
     // Clear errors and add components
     setVersionErrors({});
     const componentsToAdd: PlanComponent[] = selectedIds.map((id) => {
-      const component = allProductComponents.find((c) => c.id === id);
+      const component = allProductComponents.find(
+        (c: ComponentVersion) => c.id === id
+      );
       return {
         componentId: id,
         currentVersion: component?.currentVersion || "0.0.0.0", // Current version from product
@@ -317,12 +318,18 @@ export function SelectComponentsDialog({
         onClose={handleClose}
         editing={false}
         title="Select Components"
-        subtitle={selectedProduct?.name ? `Product: ${selectedProduct.name}` : undefined}
-        subtitleChip={selectedIds.length > 0 ? `${selectedIds.length} selected` : undefined}
+        subtitle={
+          selectedProduct?.name ? `Product: ${selectedProduct.name}` : undefined
+        }
+        subtitleChip={
+          selectedIds.length > 0 ? `${selectedIds.length} selected` : undefined
+        }
         maxWidth="lg"
         fullWidth={true}
         onSave={handleAdd}
-        saveButtonText={`Add ${selectedIds.length > 0 ? `(${selectedIds.length})` : ""}`}
+        saveButtonText={
+          selectedIds.length > 0 ? `Add (${selectedIds.length})` : "Add"
+        }
         saveButtonDisabled={selectedIds.length === 0}
         isFormValid={selectedIds.length > 0}
         showDefaultActions={true}
@@ -365,7 +372,13 @@ export function SelectComponentsDialog({
                   input: {
                     startAdornment: (
                       <InputAdornment position="start">
-                        <SearchIcon fontSize="small" sx={{ color: theme.palette.text.secondary, fontSize: 16 }} />
+                        <SearchIcon
+                          fontSize="small"
+                          sx={{
+                            color: theme.palette.text.secondary,
+                            fontSize: 16,
+                          }}
+                        />
                       </InputAdornment>
                     ),
                   },
@@ -386,7 +399,12 @@ export function SelectComponentsDialog({
 
               {/* Sort */}
               <FormControl size="small" sx={{ minWidth: 140 }}>
-                <InputLabel id="components-sort-label" sx={{ fontSize: "0.625rem" }}>Sort by</InputLabel>
+                <InputLabel
+                  id="components-sort-label"
+                  sx={{ fontSize: "0.625rem" }}
+                >
+                  Sort by
+                </InputLabel>
                 <Select
                   id="select-components-sort-select"
                   name="componentsSort"
@@ -403,9 +421,24 @@ export function SelectComponentsDialog({
                     },
                   }}
                 >
-                  <MenuItem value="name" sx={{ fontSize: "0.6875rem", py: 0.5, minHeight: 32 }}>Name</MenuItem>
-                  <MenuItem value="type" sx={{ fontSize: "0.6875rem", py: 0.5, minHeight: 32 }}>Type</MenuItem>
-                  <MenuItem value="version" sx={{ fontSize: "0.6875rem", py: 0.5, minHeight: 32 }}>Version</MenuItem>
+                  <MenuItem
+                    value="name"
+                    sx={{ fontSize: "0.6875rem", py: 0.5, minHeight: 32 }}
+                  >
+                    Name
+                  </MenuItem>
+                  <MenuItem
+                    value="type"
+                    sx={{ fontSize: "0.6875rem", py: 0.5, minHeight: 32 }}
+                  >
+                    Type
+                  </MenuItem>
+                  <MenuItem
+                    value="version"
+                    sx={{ fontSize: "0.6875rem", py: 0.5, minHeight: 32 }}
+                  >
+                    Version
+                  </MenuItem>
                 </Select>
               </FormControl>
 
@@ -415,9 +448,13 @@ export function SelectComponentsDialog({
                   size="small"
                   onClick={handleSelectAll}
                   startIcon={
-                    isAllSelected ? <CheckBox sx={{ fontSize: 16 }} /> : <CheckBoxOutlineBlank sx={{ fontSize: 16 }} />
+                    isAllSelected ? (
+                      <CheckBox sx={{ fontSize: 16 }} />
+                    ) : (
+                      <CheckBoxOutlineBlank sx={{ fontSize: 16 }} />
+                    )
                   }
-                  sx={{ 
+                  sx={{
                     textTransform: "none",
                     borderRadius: 1.5,
                     ml: "auto",
@@ -434,242 +471,273 @@ export function SelectComponentsDialog({
 
           {/* Components Table */}
           <Box sx={{ flex: 1, overflow: "auto", minHeight: 0 }}>
-            {isLoadingProducts ? (
-              <Box
-                sx={{
-                  p: 4,
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  gap: 1.5,
-                  color: "text.secondary",
-                }}
-              >
-                <CircularProgress size={24} />
-                <Typography variant="body2" sx={{ fontSize: "0.6875rem" }}>Loading components...</Typography>
-              </Box>
-            ) : !productId ? (
-              <Box
-                sx={{
-                  p: 4,
-                  textAlign: "center",
-                  color: "text.secondary",
-                }}
-              >
-                <Typography variant="body2" sx={{ fontSize: "0.6875rem" }}>
-                  Please select a product in the Common Data tab to view available components.
-                </Typography>
-              </Box>
-            ) : processedComponents.length === 0 ? (
-              <Box
-                sx={{
-                  p: 4,
-                  textAlign: "center",
-                  color: "text.secondary",
-                }}
-              >
-                <Typography variant="body2" sx={{ fontSize: "0.6875rem" }}>
-                  {searchQuery
-                    ? "No components found matching the search."
-                    : "No components available to add."}
-                </Typography>
-              </Box>
-            ) : (
-              <TableContainer>
-                <Table size="small" stickyHeader>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell 
-                        padding="checkbox" 
-                        sx={{ 
-                          width: 48,
-                          backgroundColor: theme.palette.mode === "dark" 
-                            ? alpha(theme.palette.background.paper, 0.8)
-                            : theme.palette.background.paper,
-                        }}
-                      >
-                        <Checkbox
-                          id="select-all-components-checkbox"
-                          name="selectAllComponents"
-                          indeterminate={isSomeSelected}
-                          checked={isAllSelected}
-                          onChange={handleSelectAll}
-                          size="small"
-                          disabled={processedComponents.length === 0}
-                        />
-                      </TableCell>
-                      <TableCell 
-                        sx={{ 
-                          fontWeight: 600,
-                          fontSize: "0.625rem",
-                          py: 0.75,
-                          backgroundColor: theme.palette.mode === "dark" 
-                            ? alpha(theme.palette.background.paper, 0.8)
-                            : theme.palette.background.paper,
-                        }}
-                      >
-                        Component
-                      </TableCell>
-                      <TableCell 
-                        sx={{ 
-                          fontWeight: 600,
-                          fontSize: "0.625rem",
-                          py: 0.75,
-                          backgroundColor: theme.palette.mode === "dark" 
-                            ? alpha(theme.palette.background.paper, 0.8)
-                            : theme.palette.background.paper,
-                        }}
-                      >
-                        Type
-                      </TableCell>
-                      <TableCell 
-                        sx={{ 
-                          fontWeight: 600,
-                          fontSize: "0.625rem",
-                          py: 0.75,
-                          backgroundColor: theme.palette.mode === "dark" 
-                            ? alpha(theme.palette.background.paper, 0.8)
-                            : theme.palette.background.paper,
-                        }}
-                      >
-                        Current Version
-                      </TableCell>
-                      <TableCell 
-                        sx={{ 
-                          fontWeight: 600,
-                          fontSize: "0.625rem",
-                          py: 0.75,
-                          backgroundColor: theme.palette.mode === "dark" 
-                            ? alpha(theme.palette.background.paper, 0.8)
-                            : theme.palette.background.paper,
-                        }}
-                      >
-                        Final Version
-                      </TableCell>
-                    </TableRow>
-                  </TableHead>
-                <TableBody>
-                  {processedComponents.map((component: ComponentVersion) => {
-                    const isSelected = selectedIds.includes(component.id);
-                    return (
-                      <TableRow
-                        key={component.id}
-                        hover
-                        onClick={() =>
-                          handleToggleComponent(
-                            component.id,
-                            component.currentVersion || ""
-                          )
-                        }
-                        sx={{
-                          cursor: "pointer",
-                          backgroundColor: isSelected
-                            ? alpha(theme.palette.primary.main, 0.08)
-                            : "transparent",
-                          "&:hover": {
-                            backgroundColor: isSelected
-                              ? alpha(theme.palette.primary.main, 0.12)
-                              : alpha(theme.palette.action.hover, 0.04),
-                          },
-                        }}
-                      >
-                        <TableCell padding="checkbox">
+            {(() => {
+              if (isLoadingProducts) {
+                return (
+                  <Box
+                    sx={{
+                      p: 4,
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      gap: 1.5,
+                      color: "text.secondary",
+                    }}
+                  >
+                    <CircularProgress size={24} />
+                    <Typography variant="body2" sx={{ fontSize: "0.6875rem" }}>
+                      Loading components...
+                    </Typography>
+                  </Box>
+                );
+              }
+
+              if (!productId) {
+                return (
+                  <Box
+                    sx={{
+                      p: 4,
+                      textAlign: "center",
+                      color: "text.secondary",
+                    }}
+                  >
+                    <Typography variant="body2" sx={{ fontSize: "0.6875rem" }}>
+                      Please select a product in the Common Data tab to view
+                      available components.
+                    </Typography>
+                  </Box>
+                );
+              }
+
+              if (processedComponents.length === 0) {
+                const emptyMessage = searchQuery
+                  ? "No components found matching the search."
+                  : "No components available to add.";
+                return (
+                  <Box
+                    sx={{
+                      p: 4,
+                      textAlign: "center",
+                      color: "text.secondary",
+                    }}
+                  >
+                    <Typography variant="body2" sx={{ fontSize: "0.6875rem" }}>
+                      {emptyMessage}
+                    </Typography>
+                  </Box>
+                );
+              }
+
+              return (
+                <TableContainer>
+                  <Table size="small" stickyHeader>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell
+                          padding="checkbox"
+                          sx={{
+                            width: 48,
+                            backgroundColor:
+                              theme.palette.mode === "dark"
+                                ? alpha(theme.palette.background.paper, 0.8)
+                                : theme.palette.background.paper,
+                          }}
+                        >
                           <Checkbox
-                            id={`component-checkbox-${component.id}`}
-                            name={`component-${component.id}`}
-                            checked={isSelected}
-                            onChange={() =>
-                              handleToggleComponent(
-                                component.id,
-                                component.currentVersion || ""
-                              )
-                            }
-                            onClick={(e) => e.stopPropagation()}
+                            id="select-all-components-checkbox"
+                            name="selectAllComponents"
+                            indeterminate={isSomeSelected}
+                            checked={isAllSelected}
+                            onChange={handleSelectAll}
                             size="small"
+                            disabled={processedComponents.length === 0}
                           />
                         </TableCell>
-                      <TableCell sx={{ py: 1 }}>
-                        <Tooltip title={component.name || ""} arrow>
-                          <Typography
-                            variant="body2"
-                            sx={{
-                              fontWeight: isSelected ? 600 : 400,
-                              fontSize: "0.6875rem",
-                              maxWidth: 200,
-                              overflow: "hidden",
-                              textOverflow: "ellipsis",
-                              whiteSpace: "nowrap",
-                            }}
-                          >
-                            {component.name || "-"}
-                          </Typography>
-                        </Tooltip>
-                      </TableCell>
-                      <TableCell sx={{ py: 1 }}>
-                        <Typography
-                          variant="body2"
-                          color="text.secondary"
-                          sx={{ 
-                            textTransform: "capitalize",
-                            fontSize: "0.6875rem",
+                        <TableCell
+                          sx={{
+                            fontWeight: 600,
+                            fontSize: "0.625rem",
+                            py: 0.75,
+                            backgroundColor:
+                              theme.palette.mode === "dark"
+                                ? alpha(theme.palette.background.paper, 0.8)
+                                : theme.palette.background.paper,
                           }}
                         >
-                          {component.type || "-"}
-                        </Typography>
-                      </TableCell>
-                      <TableCell sx={{ py: 1 }}>
-                        <Typography
-                          variant="body2"
+                          Component
+                        </TableCell>
+                        <TableCell
                           sx={{
-                            fontFamily: "monospace",
-                            color: theme.palette.text.secondary,
-                            fontSize: "0.6875rem",
+                            fontWeight: 600,
+                            fontSize: "0.625rem",
+                            py: 0.75,
+                            backgroundColor:
+                              theme.palette.mode === "dark"
+                                ? alpha(theme.palette.background.paper, 0.8)
+                                : theme.palette.background.paper,
                           }}
                         >
-                          {component.currentVersion || "N/A"}
-                        </Typography>
-                      </TableCell>
-                      <TableCell onClick={(e) => e.stopPropagation()} sx={{ py: 1 }}>
-                        <TextField
-                          id={`component-version-input-${component.id}`}
-                          name={`componentVersion-${component.id}`}
-                          size="small"
-                          value={
-                            finalVersions[component.id] ||
-                            component.currentVersion ||
-                            ""
-                          }
-                          onChange={(e) =>
-                            handleVersionChange(component.id, e.target.value)
-                          }
-                          placeholder="e.g., 1.0.0"
-                          disabled={!isSelected}
-                          error={!!versionErrors[component.id]}
-                          helperText={versionErrors[component.id]}
+                          Type
+                        </TableCell>
+                        <TableCell
                           sx={{
-                            width: 120,
-                            "& .MuiInputBase-input": {
-                              fontFamily: "monospace",
-                              fontSize: "0.6875rem",
-                              py: 0.625,
-                            },
-                            "& .MuiFormHelperText-root": {
-                              fontSize: "0.625rem",
-                              mt: 0.25,
-                            },
-                            "& .MuiInputLabel-root": {
-                              fontSize: "0.625rem",
-                            },
+                            fontWeight: 600,
+                            fontSize: "0.625rem",
+                            py: 0.75,
+                            backgroundColor:
+                              theme.palette.mode === "dark"
+                                ? alpha(theme.palette.background.paper, 0.8)
+                                : theme.palette.background.paper,
                           }}
-                        />
-                      </TableCell>
+                        >
+                          Current Version
+                        </TableCell>
+                        <TableCell
+                          sx={{
+                            fontWeight: 600,
+                            fontSize: "0.625rem",
+                            py: 0.75,
+                            backgroundColor:
+                              theme.palette.mode === "dark"
+                                ? alpha(theme.palette.background.paper, 0.8)
+                                : theme.palette.background.paper,
+                          }}
+                        >
+                          Final Version
+                        </TableCell>
                       </TableRow>
-                    );
-                  })}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            )}
+                    </TableHead>
+                    <TableBody>
+                      {processedComponents.map(
+                        (component: ComponentVersion) => {
+                          const isSelected = selectedIds.includes(component.id);
+                          return (
+                            <TableRow
+                              key={component.id}
+                              hover
+                              onClick={() =>
+                                handleToggleComponent(
+                                  component.id,
+                                  component.currentVersion || ""
+                                )
+                              }
+                              sx={{
+                                cursor: "pointer",
+                                backgroundColor: isSelected
+                                  ? alpha(theme.palette.primary.main, 0.08)
+                                  : "transparent",
+                                "&:hover": {
+                                  backgroundColor: isSelected
+                                    ? alpha(theme.palette.primary.main, 0.12)
+                                    : alpha(theme.palette.action.hover, 0.04),
+                                },
+                              }}
+                            >
+                              <TableCell padding="checkbox">
+                                <Checkbox
+                                  id={`component-checkbox-${component.id}`}
+                                  name={`component-${component.id}`}
+                                  checked={isSelected}
+                                  onChange={() =>
+                                    handleToggleComponent(
+                                      component.id,
+                                      component.currentVersion || ""
+                                    )
+                                  }
+                                  onClick={(e) => e.stopPropagation()}
+                                  size="small"
+                                />
+                              </TableCell>
+                              <TableCell sx={{ py: 1 }}>
+                                <Tooltip title={component.name || ""} arrow>
+                                  <Typography
+                                    variant="body2"
+                                    sx={{
+                                      fontWeight: isSelected ? 600 : 400,
+                                      fontSize: "0.6875rem",
+                                      maxWidth: 200,
+                                      overflow: "hidden",
+                                      textOverflow: "ellipsis",
+                                      whiteSpace: "nowrap",
+                                    }}
+                                  >
+                                    {component.name || "-"}
+                                  </Typography>
+                                </Tooltip>
+                              </TableCell>
+                              <TableCell sx={{ py: 1 }}>
+                                <Typography
+                                  variant="body2"
+                                  color="text.secondary"
+                                  sx={{
+                                    textTransform: "capitalize",
+                                    fontSize: "0.6875rem",
+                                  }}
+                                >
+                                  {component.type || "-"}
+                                </Typography>
+                              </TableCell>
+                              <TableCell sx={{ py: 1 }}>
+                                <Typography
+                                  variant="body2"
+                                  sx={{
+                                    fontFamily: "monospace",
+                                    color: theme.palette.text.secondary,
+                                    fontSize: "0.6875rem",
+                                  }}
+                                >
+                                  {component.currentVersion || "N/A"}
+                                </Typography>
+                              </TableCell>
+                              <TableCell
+                                onClick={(e) => e.stopPropagation()}
+                                sx={{ py: 1 }}
+                              >
+                                <TextField
+                                  id={`component-version-input-${component.id}`}
+                                  name={`componentVersion-${component.id}`}
+                                  size="small"
+                                  value={
+                                    finalVersions[component.id] ||
+                                    component.currentVersion ||
+                                    ""
+                                  }
+                                  onChange={(e) =>
+                                    handleVersionChange(
+                                      component.id,
+                                      e.target.value
+                                    )
+                                  }
+                                  placeholder="e.g., 1.0.0"
+                                  disabled={!isSelected}
+                                  error={!!versionErrors[component.id]}
+                                  helperText={versionErrors[component.id]}
+                                  sx={{
+                                    width: 120,
+                                    "& .MuiInputBase-input": {
+                                      fontFamily: "monospace",
+                                      fontSize: "0.6875rem",
+                                      py: 0.625,
+                                    },
+                                    "& .MuiFormHelperText-root": {
+                                      fontSize: "0.625rem",
+                                      mt: 0.25,
+                                    },
+                                    "& .MuiInputLabel-root": {
+                                      fontSize: "0.625rem",
+                                    },
+                                  }}
+                                />
+                              </TableCell>
+                            </TableRow>
+                          );
+                        }
+                      )}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              );
+            })()}
           </Box>
         </Box>
       </BaseEditDialog>
@@ -684,7 +752,7 @@ export function SelectComponentsDialog({
         <Alert
           onClose={() => setSnackbarOpen(false)}
           severity="error"
-          sx={{ 
+          sx={{
             width: "100%",
             "& .MuiAlert-message": {
               fontSize: "0.6875rem",

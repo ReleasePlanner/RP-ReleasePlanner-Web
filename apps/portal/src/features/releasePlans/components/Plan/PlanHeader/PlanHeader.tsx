@@ -1,22 +1,13 @@
-import { useState } from "react";
-import {
-  CardHeader,
-  IconButton,
-  Chip,
-  Tooltip,
-  Box,
-  TextField,
-  useTheme,
-  alpha,
-} from "@mui/material";
-import { ExpandMore } from "@mui/icons-material";
+import { CardHeader } from "@mui/material";
+import { usePlanNameEdit, usePlanHeaderStyles } from "./hooks";
+import { PlanTitle, ExpandButton } from "./components";
 
 export type PlanHeaderProps = {
-  id: string;
-  name: string;
-  expanded: boolean;
-  onToggleExpanded: () => void;
-  onNameChange?: (name: string) => void;
+  readonly id: string;
+  readonly name: string;
+  readonly expanded: boolean;
+  readonly onToggleExpanded: () => void;
+  readonly onNameChange?: (name: string) => void;
 };
 
 export default function PlanHeader({
@@ -26,171 +17,51 @@ export default function PlanHeader({
   onToggleExpanded,
   onNameChange,
 }: PlanHeaderProps) {
-  const theme = useTheme();
-  const [isEditing, setIsEditing] = useState(false);
-  const [editValue, setEditValue] = useState(name);
+  // Edit hook
+  const {
+    isEditing,
+    editValue,
+    setEditValue,
+    handleSave,
+    handleCancel,
+    handleStartEdit,
+    handleKeyDown,
+  } = usePlanNameEdit(name, onNameChange);
 
-  const handleSave = () => {
-    if (editValue.trim() && editValue !== name && onNameChange) {
-      onNameChange(editValue.trim());
-    }
-    setIsEditing(false);
-    setEditValue(name);
-  };
-
-  const handleCancel = () => {
-    setIsEditing(false);
-    setEditValue(name);
-  };
+  // Styles hook
+  const {
+    headerStyles,
+    idChipStyles,
+    nameDisplayStyles,
+    nameInputStyles,
+    expandButtonStyles,
+  } = usePlanHeaderStyles();
 
   return (
     <CardHeader
-      sx={{
-        px: 2,
-        py: 1.5,
-        backgroundColor: theme.palette.background.paper,
-        borderBottom: `1px solid ${alpha(theme.palette.divider, 0.08)}`,
-        position: "sticky",
-        top: 0,
-        zIndex: 2,
-        transition: theme.transitions.create(
-          ["background-color", "border-color"],
-          {
-            duration: theme.transitions.duration.short,
-          }
-        ),
-      }}
+      sx={headerStyles}
       title={
-        <Box
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            gap: 1.5,
-            flexWrap: "wrap",
-          }}
-        >
-          <Tooltip title="Plan ID" arrow placement="top">
-            <Chip
-              label={id}
-              size="small"
-              variant="outlined"
-              id={`plan-header-id-${id}`}
-              data-testid={`plan-header-id-${id}`}
-              aria-label={`Plan ID: ${id}`}
-              sx={{
-                height: 24,
-                fontSize: "0.6875rem",
-                fontWeight: 600,
-                letterSpacing: "0.02em",
-                borderColor: alpha(theme.palette.divider, 0.4),
-                color: theme.palette.text.secondary,
-                backgroundColor: alpha(theme.palette.grey[500], 0.04),
-                cursor: "help",
-                flexShrink: 0,
-              }}
-            />
-          </Tooltip>
-          {isEditing ? (
-            <TextField
-              value={editValue}
-              onChange={(e) => setEditValue(e.target.value)}
-              onBlur={handleSave}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  handleSave();
-                }
-                if (e.key === "Escape") {
-                  handleCancel();
-                }
-              }}
-              variant="standard"
-              size="small"
-              autoFocus
-              sx={{
-                minWidth: 120,
-                maxWidth: "400px",
-                "& .MuiInputBase-root": {
-                  fontSize: "1rem",
-                  fontWeight: 600,
-                  "&:before": {
-                    borderBottom: `2px solid ${theme.palette.primary.main}`,
-                  },
-                  "&:hover:not(.Mui-disabled):before": {
-                    borderBottom: `2px solid ${theme.palette.primary.main}`,
-                  },
-                },
-              }}
-            />
-          ) : (
-            <Tooltip title="Click to edit" arrow placement="top">
-              <Box
-                component="h2"
-                id={`plan-header-name-${id}`}
-                data-testid={`plan-header-name-${id}`}
-                aria-label={`Plan Name: ${name}`}
-                onClick={() => setIsEditing(true)}
-                sx={{
-                  fontWeight: 600,
-                  fontSize: "1rem",
-                  lineHeight: 1.4,
-                  color: theme.palette.text.primary,
-                  minWidth: 0,
-                  maxWidth: "400px",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  whiteSpace: "nowrap",
-                  cursor: "pointer",
-                  px: 0.5,
-                  py: 0.25,
-                  borderRadius: 0.5,
-                  transition: theme.transitions.create("background-color", {
-                    duration: theme.transitions.duration.short,
-                  }),
-                  "&:hover": {
-                    backgroundColor: alpha(theme.palette.primary.main, 0.08),
-                  },
-                }}
-              >
-                {name}
-              </Box>
-            </Tooltip>
-          )}
-        </Box>
+        <PlanTitle
+          id={id}
+          name={name}
+          isEditing={isEditing}
+          editValue={editValue}
+          idChipStyles={idChipStyles}
+          nameDisplayStyles={nameDisplayStyles}
+          nameInputStyles={nameInputStyles}
+          onStartEdit={handleStartEdit}
+          onEditChange={setEditValue}
+          onEditSave={handleSave}
+          onEditCancel={handleCancel}
+          onEditKeyDown={handleKeyDown}
+        />
       }
       action={
-        <Tooltip
-          title={expanded ? "Collapse plan" : "Expand plan"}
-          placement="top"
-          arrow
-        >
-          <IconButton
-            onClick={onToggleExpanded}
-            aria-label={expanded ? "Collapse plan" : "Expand plan"}
-            aria-expanded={expanded}
-            size="medium"
-            sx={{
-              color: theme.palette.action.active,
-              transition: theme.transitions.create(
-                ["transform", "color", "background-color"],
-                {
-                  duration: theme.transitions.duration.short,
-                }
-              ),
-              transform: expanded ? "rotate(180deg)" : "rotate(0deg)",
-              "&:hover": {
-                backgroundColor: alpha(theme.palette.primary.main, 0.08),
-                color: theme.palette.primary.main,
-              },
-              "&:focus-visible": {
-                outline: `2px solid ${theme.palette.primary.main}`,
-                outlineOffset: 2,
-              },
-            }}
-          >
-            <ExpandMore />
-          </IconButton>
-        </Tooltip>
+        <ExpandButton
+          expanded={expanded}
+          onToggle={onToggleExpanded}
+          sx={expandButtonStyles}
+        />
       }
     />
   );

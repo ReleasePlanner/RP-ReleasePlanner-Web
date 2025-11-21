@@ -23,7 +23,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { createFullUpdateDto, createPartialUpdateDto } from "../../lib/planConverters";
 import { categorizeError, getUserErrorMessage, ErrorCategory } from "../../../../api/resilience/ErrorHandler";
 import { MilestoneEditDialog } from "../Plan/MilestoneEditDialog";
-import { ReferenceEditDialog } from "../Plan/PlanReferencesTab/ReferenceEditDialog";
+import { ReferenceEditDialog } from "../Plan/PlanReferencesTab/ReferenceEditDialog/ReferenceEditDialog";
 // Note: CellDataDialogs have been removed - cell-level comments/files/links are now handled via PlanReferencesTab
 // Users can add references directly from the References tab, which supports day-level references with phaseId
 
@@ -565,22 +565,18 @@ const PlanCard = forwardRef<PlanCardHandle, PlanCardProps>(function PlanCard({ p
     }));
   }, []);
 
-  const openEditOptimized = (phaseId: string) => {
-    return L.safe(
-      () => {
-        const phase = metadata.phases?.find((p) => p.id === phaseId);
-        if (!phase) {
-          throw new Error(`Phase ${phaseId} not found`);
-        }
-
-        log.track("open_edit_phase");
-        openEdit(phaseId);
-        return { phaseId, phaseName: phase.name };
-      },
-      { phaseId, phaseName: "unknown" },
-      "PlanCard"
-    );
-  };
+  const openEditOptimized = useCallback((phaseId: string) => {
+    // Immediately open the edit dialog - no delays, no blocking operations
+    openEdit(phaseId);
+    
+    // Track action asynchronously to avoid any UI blocking
+    // Use requestIdleCallback if available, otherwise setTimeout with 0 delay
+    if (typeof requestIdleCallback !== 'undefined') {
+      requestIdleCallback(() => log.track("open_edit_phase"));
+    } else {
+      setTimeout(() => log.track("open_edit_phase"), 0);
+    }
+  }, [openEdit, log]);
 
 
   const handlePhaseRangeChangeOptimized = (

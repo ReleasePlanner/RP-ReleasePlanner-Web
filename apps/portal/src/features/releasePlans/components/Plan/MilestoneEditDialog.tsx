@@ -14,12 +14,12 @@ import {
 import type { PlanMilestone } from "../../types";
 
 interface MilestoneEditDialogProps {
-  open: boolean;
-  date: string | null;
-  milestone: PlanMilestone | null;
-  onClose: () => void;
-  onSave: (milestone: PlanMilestone) => void;
-  onDelete?: (milestoneId: string) => void;
+  readonly open: boolean;
+  readonly date: string | null;
+  readonly milestone: PlanMilestone | null;
+  readonly onClose: () => void;
+  readonly onSave: (milestone: PlanMilestone) => void;
+  readonly onDelete?: (milestoneId: string) => void;
 }
 
 export function MilestoneEditDialog({
@@ -81,9 +81,11 @@ export function MilestoneEditDialog({
       onClose={handleClose}
       maxWidth="sm"
       fullWidth
-      PaperProps={{
-        sx: {
-          borderRadius: 2,
+      slotProps={{
+        paper: {
+          sx: {
+            borderRadius: 2,
+          },
         },
       }}
     >
