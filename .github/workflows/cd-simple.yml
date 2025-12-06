@@ -18,32 +18,59 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Download build artifacts
+      - name: Download API build artifacts
         uses: actions/download-artifact@v4
         with:
-          pattern: '*-build'
-          merge-multiple: true
+          name: api-build
+          path: apps/api/dist
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ github.event.workflow_run.id }}
+        continue-on-error: true
+
+      - name: Download Portal build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: portal-build
+          path: apps/portal/dist
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ github.event.workflow_run.id }}
+        continue-on-error: true
+
+      - name: List downloaded artifacts
+        run: |
+          echo "Listing API dist:"
+          ls -la apps/api/dist || echo "No API dist found"
+          echo "Listing Portal dist:"
+          ls -la apps/portal/dist || echo "No Portal dist found"
 
       - name: Setup SSH
         uses: webfactory/ssh-agent@v0.9.0
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+        if: env.SSH_DEPLOY_ENABLED == 'true'
 
       - name: Deploy to server
         run: |
           # Example deployment script - customize based on your server setup
           # This assumes you have SSH access to your server
           
+          echo "Deployment configuration:"
+          echo "Host: $DEPLOY_HOST"
+          echo "User: $DEPLOY_USER"
+          
+          # Uncomment and customize these lines for actual deployment:
           # Copy files to server
-          # scp -r apps/api/dist user@server:/path/to/api
-          # scp -r apps/portal/dist user@server:/path/to/portal
+          # scp -r apps/api/dist $DEPLOY_USER@$DEPLOY_HOST:/path/to/api
+          # scp -r apps/portal/dist $DEPLOY_USER@$DEPLOY_HOST:/path/to/portal
           
           # Restart services
-          # ssh user@server "cd /path/to/api && npm install --production && pm2 restart api"
-          # ssh user@server "cd /path/to/portal && pm2 restart portal"
+          # ssh $DEPLOY_USER@$DEPLOY_HOST "cd /path/to/api && npm install --production && pm2 restart api"
+          # ssh $DEPLOY_USER@$DEPLOY_HOST "cd /path/to/portal && pm2 restart portal"
           
-          echo "Deployment completed successfully"
+          echo "Deployment completed successfully (dry-run mode)"
+          echo "To enable actual deployment, set SSH_DEPLOY_ENABLED secret to 'true'"
         env:
           DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
           DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          SSH_DEPLOY_ENABLED: ${{ secrets.SSH_DEPLOY_ENABLED }}
 

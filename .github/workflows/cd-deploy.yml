@@ -72,6 +72,8 @@ jobs:
           labels: ${{ steps.meta-api.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          build-args: |
+            NODE_ENV=production
 
       - name: Build and push Portal image
         uses: docker/build-push-action@v5
@@ -83,6 +85,8 @@ jobs:
           labels: ${{ steps.meta-portal.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          build-args: |
+            VITE_API_URL=${{ secrets.VITE_API_URL || 'http://localhost:3000/api' }}
 
   deploy-staging:
     name: Deploy to Staging

@@ -8,22 +8,34 @@ WORKDIR /app
 COPY package*.json ./
 COPY nx.json ./
 COPY tsconfig.base.json ./
+COPY babel.config.json ./
+COPY jest.preset.js ./
 
 # Copiar configuración de la API
 COPY apps/api/package.json ./apps/api/
 COPY apps/api/webpack.config.js ./apps/api/
 COPY apps/api/tsconfig*.json ./apps/api/
+COPY apps/api/jest.config.cts ./apps/api/
+
+# Copiar configuración de librerías compartidas
+COPY libs/rp-shared/package.json ./libs/rp-shared/ 2>/dev/null || true
+COPY libs/rp-shared/tsconfig*.json ./libs/rp-shared/ 2>/dev/null || true
 
 # Instalar dependencias del workspace
 RUN npm ci --legacy-peer-deps
 
-# Copiar código fuente de la API y librerías compartidas
-COPY apps/api/src ./apps/api/src
+# Copiar código fuente de las librerías compartidas primero
 COPY libs ./libs
+
+# Construir librerías compartidas
+RUN npx nx build rp-shared || echo "rp-shared build skipped"
+
+# Copiar código fuente de la API
+COPY apps/api/src ./apps/api/src
 
 # Construir la aplicación para producción
 WORKDIR /app
-RUN npx nx build api
+RUN npx nx build api --configuration=production
 
 # Stage 2: Production stage - Ejecutar la aplicación
 FROM node:20-alpine
@@ -49,6 +61,11 @@ RUN npm ci --omit=dev --legacy-peer-deps && \
 
 # Copiar archivos compilados desde el builder
 COPY --from=builder /app/apps/api/dist ./apps/api/dist
+
+# Copiar librerías compartidas compiladas si existen
+COPY --from=builder /app/dist/libs ./dist/libs 2>/dev/null || true
+
+# Copiar node_modules necesarios
 COPY --from=builder /app/node_modules ./node_modules
 
 # Cambiar propietario de los archivos
