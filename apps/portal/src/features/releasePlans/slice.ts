@@ -136,7 +136,14 @@ const releasePlansSlice = createSlice({
       const name = action.payload.name.trim();
       if (!name) return;
 
-      // Validate that the phase name is unique within this plan
+      // Validate that the phase name is unique within this plan (case-insensitive)
+      const normalizedName = name.toLowerCase();
+      const existingPhaseNames = (plan.metadata.phases ?? []).map((ph) =>
+        ph.name.toLowerCase().trim()
+      );
+      if (existingPhaseNames.includes(normalizedName)) {
+        return; // Prevent duplicate phase names
+      }
 
       const usedColors = (plan.metadata.phases ?? []).map((ph) => ph.color);
       // Use UTC dates for storage

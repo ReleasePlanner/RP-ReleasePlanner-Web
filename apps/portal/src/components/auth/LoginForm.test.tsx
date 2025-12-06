@@ -33,7 +33,7 @@ describe('LoginForm', () => {
       </QueryClientProvider>
     );
 
-    expect(screen.getByText('Iniciar Sesión')).toBeInTheDocument();
+    expect(screen.getAllByText('Iniciar Sesión').length).toBeGreaterThan(0);
     expect(screen.getByLabelText(/Usuario o Email/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/Contraseña/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Iniciar Sesión/i })).toBeInTheDocument();

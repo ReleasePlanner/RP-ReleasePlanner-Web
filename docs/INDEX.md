@@ -33,6 +33,9 @@ Documentación de integración continua y despliegue:
 - **[DEPLOYMENT_REVIEW.md](./ci-cd/DEPLOYMENT_REVIEW.md)** - Revisión de configuración de despliegue
 - **[DEPLOYMENT.md](./ci-cd/DEPLOYMENT.md)** - Guía de despliegue
 - **[README.DOCKER.md](./ci-cd/README.DOCKER.md)** - Documentación de Docker
+- **[DOCKER_VERIFICATION.md](./ci-cd/DOCKER_VERIFICATION.md)** - Guía de verificación de Docker deployment
+- **[DOCKER_VERIFICATION_SUMMARY.md](./ci-cd/DOCKER_VERIFICATION_SUMMARY.md)** - Resumen visual de verificación de Docker
+- **[MOBILE_REMOVAL_AND_DOCKER_VERIFICATION.md](./ci-cd/MOBILE_REMOVAL_AND_DOCKER_VERIFICATION.md)** - Resumen de eliminación de mobile y verificación
 - **[MONITORING_SETUP.md](./ci-cd/MONITORING_SETUP.md)** - Setup de monitoreo
 - **[MONITORING_README.md](./ci-cd/MONITORING_README.md)** - Documentación de monitoreo
 - **[JEST_VSCODE_SETUP.md](./ci-cd/JEST_VSCODE_SETUP.md)** - Configuración de Jest y VSCode
@@ -60,14 +63,6 @@ Documentación del Portal React:
 - **[FRONTEND_API_INTEGRATION.md](./portal/FRONTEND_API_INTEGRATION.md)** - Integración frontend con API
 - **[FRONTEND_API_SETUP_COMPLETE.md](./portal/FRONTEND_API_SETUP_COMPLETE.md)** - Setup completo de integración frontend
 - **[TESTING_SUMMARY.md](./portal/TESTING_SUMMARY.md)** - Resumen de tests del Portal
-
-### 📱 Mobile (`mobile/`)
-Documentación de la aplicación móvil:
-
-- **[MOBILE_ARCHITECTURE.md](./mobile/MOBILE_ARCHITECTURE.md)** - Arquitectura de la app móvil
-- **[README_MOBILE.md](./mobile/README_MOBILE.md)** - Guía de desarrollo móvil
-- **[CHECKLIST.md](./mobile/CHECKLIST.md)** - Checklist de verificación móvil
-- **[VERIFICATION.md](./mobile/VERIFICATION.md)** - Verificación de la app móvil
 
 ### 📦 Apps (`apps/`)
 Documentación técnica específica de aplicaciones:
@@ -122,6 +117,7 @@ Documentación de librerías compartidas:
 Documentación de scripts de utilidad:
 
 - **[README-remove-duplicates.md](./scripts/README-remove-duplicates.md)** - Script para eliminar duplicados
+- **[README-docker-verification.md](./scripts/README-docker-verification.md)** - Documentación de scripts de verificación de Docker
 
 ### ☸️ Helm (`helm/`)
 Documentación de Helm Charts:
@@ -152,6 +148,7 @@ Documentación histórica del portal legacy (solo referencia):
 ### Despliegue
 - `ci-cd/DEPLOYMENT_*`
 - `ci-cd/CI_CD_*`
+- `ci-cd/DOCKER_*`
 - `helm/README.md`
 
 ### Caching

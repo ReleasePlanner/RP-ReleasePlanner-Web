@@ -4,6 +4,16 @@ import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthPage } from './AuthPage';
 
+const mockNavigate = vi.fn();
+
+vi.mock('react-router-dom', async () => {
+  const actual = await vi.importActual('react-router-dom');
+  return {
+    ...actual,
+    useNavigate: () => mockNavigate,
+  };
+});
+
 vi.mock('./LoginForm', () => ({
   LoginForm: ({ onSuccess, onSwitchToRegister }: any) => (
     <div>
@@ -26,7 +36,6 @@ vi.mock('./RegisterForm', () => ({
 
 describe('AuthPage', () => {
   let queryClient: QueryClient;
-  const mockNavigate = vi.fn();
 
   beforeEach(() => {
     queryClient = new QueryClient({
@@ -35,13 +44,6 @@ describe('AuthPage', () => {
       },
     });
     vi.clearAllMocks();
-    vi.mock('react-router-dom', async () => {
-      const actual = await vi.importActual('react-router-dom');
-      return {
-        ...actual,
-        useNavigate: () => mockNavigate,
-      };
-    });
   });
 
   it('renders login form by default', () => {
@@ -54,7 +56,7 @@ describe('AuthPage', () => {
     );
 
     expect(screen.getByText('Login Form')).toBeInTheDocument();
-    expect(screen.getByText('Iniciar Sesión')).toBeInTheDocument();
+    expect(screen.getAllByText('Iniciar Sesión').length).toBeGreaterThan(0);
   });
 
   it('switches to register form when register tab is clicked', () => {

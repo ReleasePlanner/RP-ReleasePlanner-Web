@@ -1,6 +1,6 @@
 # 🚀 Release Planner System
 
-> **Sistema completo de gestión de planes de release** con Portal Web, API REST, aplicación móvil e infraestructura de despliegue.
+> **Sistema completo de gestión de planes de release** con Portal Web, API REST e infraestructura de despliegue.
 
 [![Nx](https://img.shields.io/badge/Nx-22.0.3-blue)](https://nx.dev)
 [![React](https://img.shields.io/badge/React-19.0-blue)](https://react.dev)
@@ -30,7 +30,6 @@
 
 - **🌐 Portal Web** (`apps/portal`): Aplicación React moderna con visualización tipo Gantt
 - **🔌 API REST** (`apps/api`): Backend NestJS siguiendo Clean Architecture
-- **📱 Aplicación Móvil** (`apps/mobile`): App React Native con Expo
 - **📦 Librerías Compartidas** (`libs/`): Tipos, utilidades y módulos comunes
 
 ### Características Clave
@@ -66,11 +65,6 @@
 - **Autenticación**: JWT + Guards
 - **Documentación**: Swagger/OpenAPI
 
-#### Mobile
-
-- **Framework**: React Native + Expo
-- **Navegación**: React Navigation
-
 #### Infraestructura
 
 - **Monorepo**: Nx 22
@@ -85,16 +79,14 @@
 │                      Release Planner System                  │
 ├─────────────────────────────────────────────────────────────┤
 │                                                             │
-│  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐ │
-│  │ Portal Web   │    │  Mobile App  │    │   API REST   │ │
-│  │  (React)     │◄───┤ (React Native)│◄───┤  (NestJS)    │ │
-│  └──────┬───────┘    └──────┬───────┘    └──────┬───────┘ │
-│         │                    │                    │         │
-│         └────────────────────┼────────────────────┘         │
-│                              │                              │
-│                    ┌─────────▼─────────┐                    │
-│                    │   PostgreSQL DB   │                    │
-│                    └───────────────────┘                    │
+│  ┌──────────────┐                         ┌──────────────┐ │
+│  │ Portal Web   │◄────────────────────────┤   API REST   │ │
+│  │  (React)     │                         │  (NestJS)    │ │
+│  └──────────────┘                         └──────┬───────┘ │
+│                                                   │         │
+│                                         ┌─────────▼─────────┐
+│                                         │   PostgreSQL DB   │
+│                                         └───────────────────┘
 │                                                             │
 │  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐ │
 │  │   Redis      │    │  Prometheus  │    │   Grafana    │ │
@@ -144,9 +136,6 @@ nx serve api
 
 # Ejecutar ambos en paralelo
 npm run dev:all
-
-# Ejecutar aplicación móvil
-npm run dev:mobile
 ```
 
 ### Build
@@ -183,7 +172,6 @@ RP-ReleasePlanner-Web/
 ├── apps/
 │   ├── portal/          # Portal Web React
 │   ├── api/             # API REST NestJS
-│   ├── mobile/          # App móvil React Native
 │   └── portal-e2e/      # Tests end-to-end
 ├── libs/
 │   ├── shared/
@@ -258,12 +246,6 @@ RP-ReleasePlanner-Web/
 - **[Resiliencia y Monitoreo](./docs/architecture/RESILIENCE_AND_MONITORING_SUMMARY.md)** - Estrategias implementadas
 - **[Setup de Monitoreo](./docs/ci-cd/MONITORING_SETUP.md)** - Configuración Prometheus/Grafana
 - **[Redis Caching](./docs/architecture/REDIS_CACHING_IMPLEMENTATION.md)** - Implementación de caché
-
-#### 📱 Mobile
-
-- **[Arquitectura Mobile](./docs/mobile/MOBILE_ARCHITECTURE.md)** - Estructura de la app móvil
-- **[README Mobile](./docs/mobile/README_MOBILE.md)** - Guía de desarrollo móvil
-- **[Checklist Mobile](./docs/mobile/CHECKLIST.md)** - Checklist de verificación
 
 #### 🔧 Optimizaciones y Refactorizaciones
 
@@ -363,11 +345,6 @@ RP-ReleasePlanner-Web/
 - **JWT** - Autenticación
 - **Swagger** - Documentación API
 
-### Mobile
-
-- **React Native** - Framework móvil
-- **Expo** - Plataforma de desarrollo
-
 ### Infraestructura
 
 - **Nx** 22 - Monorepo tool
@@ -387,7 +364,6 @@ RP-ReleasePlanner-Web/
 ```bash
 npm run dev              # Ejecutar Portal Web
 npm run dev:api          # Ejecutar API
-npm run dev:mobile        # Ejecutar Mobile
 npm run dev:all          # Ejecutar Portal y API en paralelo
 ```
 

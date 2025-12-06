@@ -19,10 +19,12 @@ describe('queryClient', () => {
       const error400 = new HttpClientError('Bad Request', 400);
       expect(retryFn(0, error400)).toBe(false);
       
-      const error408 = new HttpClientError('Timeout', 408);
+      // 408 timeout error needs isTimeout flag to be categorized correctly
+      const error408 = new HttpClientError('Timeout', 408, 'TIMEOUT', 'REQUEST_TIMEOUT', undefined, undefined, false, true);
       expect(retryFn(0, error408)).toBe(true);
       
-      const error429 = new HttpClientError('Rate Limit', 429);
+      // 429 rate limit error
+      const error429 = new HttpClientError('Rate Limit', 429, 'RATE_LIMIT', 'RATE_LIMIT');
       expect(retryFn(0, error429)).toBe(true);
       
       // Test with 5xx error (should retry)
@@ -35,10 +37,9 @@ describe('queryClient', () => {
       expect(retryFn(0, networkError)).toBe(true);
       expect(retryFn(3, networkError)).toBe(false);
       
-      // Test with unknown error (should retry up to 2 times)
+      // Test with unknown error (should not retry - ErrorHandler marks unknown errors as non-retryable)
       const unknownError = new Error('Unknown error');
-      expect(retryFn(0, unknownError)).toBe(true);
-      expect(retryFn(2, unknownError)).toBe(false);
+      expect(retryFn(0, unknownError)).toBe(false);
     }
   });
 });
