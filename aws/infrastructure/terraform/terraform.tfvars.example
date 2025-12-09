@@ -1,0 +1,12 @@
+# Copiar a terraform.tfvars y completar valores
+
+aws_region   = "us-east-1"
+environment  = "production"
+project_name = "release-planner"
+ec2_key_name = "release-planner-key" # Debe existir en AWS
+
+# Base de datos
+db_name     = "releaseplanner"
+db_username = "releaseplanner"
+db_password = "CAMBIAR_POR_PASSWORD_SEGURO" # Mínimo 8 caracteres, mayúsculas, minúsculas, números
+

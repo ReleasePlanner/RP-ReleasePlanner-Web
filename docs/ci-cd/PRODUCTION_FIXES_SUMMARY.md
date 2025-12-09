@@ -166,3 +166,6 @@ Para problemas o preguntas:
 2. Ejecutar `./scripts/verify-production-config.sh` para diagnóstico
 3. Consultar logs: `docker-compose -f docker-compose.prod.yml logs`
 
+
+
+
